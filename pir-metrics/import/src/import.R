@@ -1,5 +1,10 @@
 library(janitor)
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(purrr)
+library(readr)
+library(tibble)
 library(readxl)
 year <- c('2019', '2021', '2022')
 
@@ -16,7 +21,7 @@ read_pir_export <- function(year) {
                      sheet = 'Section C', skip = 1)
   
   pir <- list(pirA, pirB, pirC) %>%
-    reduce(left_join)
+    reduce(left_join, by = c('Region', 'State', 'Grant Number', 'Program Number', 'Type', 'Grantee', 'Program', 'City', 'ZIP Code', 'ZIP 4'))
   
   # Prepare PIR reference table for col identification ----
   pir_ref <- read_excel(pir_path,
@@ -36,19 +41,19 @@ read_pir_export <- function(year) {
   )
 }
 
-pir19 <- read_pir_export(year[1])
-pir21 <- read_pir_export(year[2])
-pir22 <- read_pir_export(year[3])
+pir19 <- suppressWarnings(read_pir_export(year[1]))
+pir21 <- suppressWarnings(suppressMessages(read_pir_export(year[2])))
+pir22 <- suppressWarnings(read_pir_export(year[3]))
 
 ## Define extract col names ----
 id_cols <- c('region', 'state', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
 
 extract_cols <- c(
-  # Cumulative Enrollment
-  # 'total_cumulative_enrollment_of_children',
+  ## Cumulative Enrollment
+  ## 'total_cumulative_enrollment_of_children',
   'total_cumulative_enrollment', 
   'pregnant_women', # total_cumulative_enrollment - pregnant_women = total_cumulative_enrollment_of_children
-  # Race / Ethnicity
+  ## Race / Ethnicity
   'american_indian_alaska_native_hispanic_or_latino_origin',
   'american_indian_alaska_native_non_hispanic_or_non_latino_origin',
   'asian_hispanic_or_latino_origin',
@@ -63,14 +68,14 @@ extract_cols <- c(
   'biracial_or_multi_racial_non_hispanic_or_non_latino_origin',
   'other_race_hispanic_or_latino_origin',
   'other_race_non_hispanic_or_non_latino_origin',
-  # Age
+  ## Age
   # 'less_than_1_year_old',
   # 'x1_year_old',
   # 'x2_years_old',
   # 'x3_years_old',
   # 'x4_years_old',
   # 'x5_years_and_older',
-  # Language spoken by children
+  ## Language spoken by children
   # 'total_of_dual_language_learners',
   # 'english',
   # 'of_these_the_of_children_acquiring_learning_another_Language_in_addition_to_english',
@@ -86,36 +91,36 @@ extract_cols <- c(
   # 'american_sign_language', # Is contained within the "Other" text response category prior to 2021
   # 'other_languages',
   # 'unspecified_languages',
-  # Child Characteristics
+  ## Child Characteristics
   'homeless_children', 
   # 'foster_children', 
   # 'children_with_an_iep', 
   # 'children_with_an_ifsp',
-  # Staff
-  'total_head_start_staff', 
-  'total_contracted_staff', 
-  'total_staff', 
-  'total_education_and_child_development_staff',
-  # Staff Turnover
-  #'total_departed_head_start_staff', # This is a 2019 specific variable
-  'teacher_turnover_total', # This is a 2019 specific variable
-  'home-based_visitor_turnover_total', # This is a 2019 specific variable, teacher_turnover_total + home-based_visitor_turnover_total = total_education_and_child_development_staff?
-  'children_who_moved_out_education_and_child_development_staff', 
-  # 'total_classroom_teachers', # total_preschool_teachers + total_infant_and_toddler_classroom_teachers = total_classroom teachers
-  'total_preschool_teachers',
-  'total_infant_and_toddler_classroom_teachers',
-  # Staff education
+  ## Staff
+  'total_head_start_staff', # 2019/21/22 total staff
+  'total_contracted_staff', # 2019/21/22 total staff
+  'total_classroom_teachers', # 2022/21 HS teachers
+  'total_infant_and_toddler_classroom_teachers', #2019/21/22 EHS teachers
+  'total_preschool_classroom_teachers', # 2019 HS teachers
+  ## Staff Turnover
+  'teacher_turnover_total', # 2019 departed teachers
+  'total_departed_head_start_staff', # 2019 departed staff
+  'total_departed_contracted_staff', # 2019 departed staff
+  'total_contracted_staff_2', # 2022/21 departed staff
+  'total_staff', # 2022/21 departed staff
+  'children_who_moved_out_education_and_child_development_staff', # 2022 departed teachers, note that this doesn't exist for '21
+  ## Staff education
   # 'associate_degree_classroom_teachers', 
   # 'advanced_degree_classroom_teachers', 
   # 'baccalaureate_degree_classroom_teachers', 
   # 'associate_degree_classroom_teachers', 
   # 'cda_classroom_teachers',
-  # EPDST
+  ## EPDST
   'children_up_to_date_according_to_relevant_states_epsdt_schedule_at_enrollment',
   'children_up_to_date_according_to_relevant_states_epsdt_schedule_at_end_of_enrollment_year',
-  # Behavioral Screenings
+  ## Behavioral Screenings
   'newly_enrolled_children_who_completed_behavorial_screenings'
-  # Health Insurance and Care
+  ## Health Insurance and Care
   # 'children_with_health_insurance_at_enrollment', 
   # 'children_with_health_insurance_at_end_of_enrollment_year', 
   # 'number_of_children_with_no_health_insurance_at_enrollment', 
@@ -124,36 +129,86 @@ extract_cols <- c(
 )
 
 ## Pull reference tables ----
-create_reference_objects <- function(data) {
+create_reference_table <- function(data) {
   data %>% 
     filter(question_name %in% c(id_cols, extract_cols))
 }
 
-pir19_ref <- create_reference_objects(pir19[['reference']])
-pir21_ref <- create_reference_objects(pir21[['reference']])
-pir22_ref <- create_reference_objects(pir22[['reference']])
+pir19_ref <- create_reference_table(pir19[['reference']])
+pir21_ref <- create_reference_table(pir21[['reference']])
+pir22_ref <- create_reference_table(pir22[['reference']])
+
+## Identify question name differences across reference tables ----
+ref_list <- list('2019' = pir19_ref, '2021' = pir21_ref, '2022' = pir22_ref)
+
+ref_diff_table <- map(
+  year, 
+  \(x) {
+    ref_list[[x]] %>%
+      mutate(year = x) 
+  }
+) %>%
+  reduce(bind_rows) %>%
+  pivot_wider(
+    names_from  = year,
+    names_glue = 'year_{year}',
+    values_from = question_number
+  )
+
+extract_var_crosswalk <- c(
+  ## Staff
+  'total_head_start_staff' = 'total_hs_staff', # 2019/21/22 total staff
+  'total_contracted_staff' = 'total_contracted_staff', # 2019/21/22 total staff
+  'total_classroom_teachers' = 'total_hs_teachers', # 2022/21 HS teachers
+  'total_infant_and_toddler_classroom_teachers' = 'total_ehs_teachers', #2019/21/22 EHS teachers
+  'total_preschool_classroom_teachers' = 'total_hs_teachers', # 2019 HS teachers
+  ## Staff Turnover
+  'teacher_turnover_total' = 'total_departed_teachers', # 2019 departed teachers
+  'total_departed_head_start_staff' = 'total_departed_hs_staff', # 2019 departed staff
+  'total_departed_contracted_staff' = 'total_departed_contracted_staff', # 2019 departed staff
+  'total_contracted_staff_2' = 'total_departed_contracted_staff', # 2022/21 departed staff
+  'total_staff' = 'total_departed_staff', # 2022/21 departed staff
+  'children_who_moved_out_education_and_child_development_staff' = 'total_departed_teachers' # 2022 departed teachers, note that this doesn't exist for '21
+)
+
+ref_diff_table <- ref_diff_table %>%
+  mutate(question_name_normalized = ifelse(is.na(extract_var_crosswalk[question_name]), 
+                                           question_name, 
+                                           extract_var_crosswalk[question_name]))
+
+write_csv(ref_diff_table,
+          here::here('pir-metrics', 'import', 'output', 'ref_diff_table.csv'))
 
 # Extract final PIR data frame ----
-finalize_export <- function(data, ref) {
-  ref_renamer <- deframe(ref)
+finalize_export <- function(data, year) {
+  ref_renamer <- ref_diff_table %>%
+    select(sym(paste0('year_', year)), question_name_normalized) %>%
+    drop_na %>%
+    deframe
   
   data %>%
     janitor::clean_names() %>%
-    select(all_of(c(id_cols, ref$question_number))) %>%
+    select(all_of(c(id_cols, names(ref_renamer)))) %>%
     rename_with(
       .fn = \(x) ref_renamer[x],
       .cols = -all_of(id_cols)
     )
 }
 
-pir19_export <- finalize_export(pir19[['data']], pir19_ref)
-pir21_export <- finalize_export(pir21[['data']], pir21_ref)
-pir22_export <- finalize_export(pir22[['data']], pir22_ref)
+pir19_export <- finalize_export(pir19[['data']], year[1])
+pir21_export <- finalize_export(pir21[['data']], year[2])
+pir22_export <- finalize_export(pir22[['data']], year[3])
 
+## Manually add in missing column from 2021 (children_who_moved_out_education_and_child_development_staff | total_departed_teachers) ----
+pir21_export$total_departed_teachers <- NA_real_
+
+## Stop and throw an error if exports don't all have matched col names and types ----
+if (!janitor::compare_df_cols_same(pir19_export, pir21_export, pir22_export)) {
+  stop('Export columns are not normalized. Col names or types do not match.')
+}
 
 # Export ----
 export_pir <- function(pir_export, year) {
-  if (nrow(pir) != nrow(pir_export)) warning('Exported file is missing rows.')
   export_path <- here::here('pir-metrics', 'import', 'output', str_glue('pir_{year}.csv'))
   write_csv(pir_export, export_path)
 }
@@ -162,28 +217,16 @@ export_pir(pir19_export, year[1])
 export_pir(pir21_export, year[2])
 export_pir(pir22_export, year[3])
 
+## Single file ----
+list(
+  pir19_export %>%
+    mutate(year = '2019', .after = grant_number),
+  pir21_export %>%
+    mutate(year = '2021', .after = grant_number),
+  pir22_export %>%
+    mutate(year = '2022', .after = grant_number)
+) %>%
+  reduce(bind_rows) %>%
+  write_csv(here::here('pir-metrics', 'import', 'output', 'pir_19-22.csv'))
+
 rm(list = ls()) # TODO: Remove this
-
-# 2022: B.3-1, B.3-2, B.6, B.8, and B.9 = total number of HS education staff; B.15 / this is % spanish proficient non-supervisory education and child development staff
-
-# Check for missing values across years ---
-# year <- '2019'
-# if (file.exists(here::here('pir-metrics', 'import', 'output', str_glue('pir_{year}.csv')))) {
-#   pir_2019 <- read_csv(here::here('pir-metrics', 'import', 'output', str_glue('pir_{year}.csv')))
-#   check_2019 <- tibble(
-#     qnames = names(pir_2019),
-#     dummy = year
-#   )
-#   df <- left_join(
-#     pir_ref_select,
-#     check_2019,
-#     by = c('question_name' = 'qnames')
-#   )
-#   df %>%
-#     filter(is.na(dummy)) %>%
-#     pull(question_name)
-# }
-
-shared_names <- read_csv(here::here('pir-metrics', 'import', 'output', 'shared_names.csv'))
-shared_names %>%
-  filter(if_any(everything(), is.na))
