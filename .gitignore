@@ -2,9 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
-.Rproj*
+*.Rproj*
 
-.xlsx
-.csv
-.geojson
+*.xlsx
+*.csv
+*.geojson
 
