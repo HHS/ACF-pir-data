@@ -23,6 +23,9 @@ read_pir_export <- function(year) {
   pir <- list(pirA, pirB, pirC) %>%
     reduce(left_join, by = c('Region', 'State', 'Grant Number', 'Program Number', 'Type', 'Grantee', 'Program', 'City', 'ZIP Code', 'ZIP 4'))
   
+  pir <- pir %>%
+    filter(Region != 'Totals')
+  
   # Prepare PIR reference table for col identification ----
   pir_ref <- read_excel(pir_path,
                         sheet = 'Reference')
@@ -34,19 +37,29 @@ read_pir_export <- function(year) {
     mutate(across(c(question_number, question_name), janitor::make_clean_names)) %>% 
     select(question_number, question_name) 
   
+  # Prepare program details table for export ----
+  
+  pir_programs <- read_excel(pir_path,
+                             sheet = 'Program Details')
+  
+  pir_programs <- pir_programs %>%
+    janitor::clean_names()
+  
   list(
     'year' = year,
     'data' = pir,
-    'reference' = pir_ref
+    'reference' = pir_ref,
+    'programs' = pir_programs
   )
 }
 
 pir19 <- suppressWarnings(read_pir_export(year[1]))
-pir21 <- suppressWarnings(suppressMessages(read_pir_export(year[2])))
+pir21 <- suppressWarnings(read_pir_export(year[2]))
 pir22 <- suppressWarnings(read_pir_export(year[3]))
 
 ## Define extract col names ----
 id_cols <- c('region', 'state', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
+program_cols <- c('region', 'grant_number', 'program_number', 'program_type', 'grantee_name', 'program_name')
 
 extract_cols <- c(
   ## Cumulative Enrollment
@@ -69,12 +82,12 @@ extract_cols <- c(
   'other_race_hispanic_or_latino_origin',
   'other_race_non_hispanic_or_non_latino_origin',
   ## Age
-  # 'less_than_1_year_old',
-  # 'x1_year_old',
-  # 'x2_years_old',
-  # 'x3_years_old',
-  # 'x4_years_old',
-  # 'x5_years_and_older',
+  'less_than_1_year_old',
+  'x1_year_old',
+  'x2_years_old',
+  'x3_years_old',
+  'x4_years_old',
+  'x5_years_and_older',
   ## Language spoken by children
   # 'total_of_dual_language_learners',
   # 'english',
@@ -180,24 +193,28 @@ write_csv(ref_diff_table,
           here::here('pir-metrics', 'import', 'output', 'ref_diff_table.csv'))
 
 # Extract final PIR data frame ----
-finalize_export <- function(data, year) {
+finalize_export <- function(pir_list, year) {
   ref_renamer <- ref_diff_table %>%
     select(sym(paste0('year_', year)), question_name_normalized) %>%
     drop_na %>%
     deframe
   
-  data %>%
+  df <- pir_list[['data']] %>%
     janitor::clean_names() %>%
     select(all_of(c(id_cols, names(ref_renamer)))) %>%
     rename_with(
       .fn = \(x) ref_renamer[x],
       .cols = -all_of(id_cols)
     )
+  
+  df %>%
+    left_join(pir_list[['programs']], by = c('region', 'grant_number', 'program_number', 'type' = 'program_type', 'grantee' = 'grantee_name', 'program' = 'program_name')) %>%
+    select(all_of(id_cols), starts_with('program'), everything())
 }
 
-pir19_export <- finalize_export(pir19[['data']], year[1])
-pir21_export <- finalize_export(pir21[['data']], year[2])
-pir22_export <- finalize_export(pir22[['data']], year[3])
+pir19_export <- finalize_export(pir19, year[1])
+pir21_export <- finalize_export(pir21, year[2])
+pir22_export <- finalize_export(pir22, year[3])
 
 ## Manually add in missing column from 2021 (children_who_moved_out_education_and_child_development_staff | total_departed_teachers) ----
 pir21_export$total_departed_teachers <- NA_real_
@@ -206,6 +223,7 @@ pir21_export$total_departed_teachers <- NA_real_
 if (!janitor::compare_df_cols_same(pir19_export, pir21_export, pir22_export)) {
   stop('Export columns are not normalized. Col names or types do not match.')
 }
+
 
 # Export ----
 export_pir <- function(pir_export, year) {
@@ -218,7 +236,7 @@ export_pir(pir21_export, year[2])
 export_pir(pir22_export, year[3])
 
 ## Single file ----
-list(
+pir_longitudinal <- list(
   pir19_export %>%
     mutate(year = '2019', .after = grant_number),
   pir21_export %>%
@@ -226,7 +244,9 @@ list(
   pir22_export %>%
     mutate(year = '2022', .after = grant_number)
 ) %>%
-  reduce(bind_rows) %>%
-  write_csv(here::here('pir-metrics', 'import', 'output', 'pir_19-22.csv'))
+  reduce(bind_rows)
+
+pir_longitudinal %>%
+  write_csv(here::here('pir-metrics', 'import', 'output', str_glue('pir_{year[1]}_{year[length(year)]}.csv')))
 
 rm(list = ls()) # TODO: Remove this
