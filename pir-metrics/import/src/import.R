@@ -142,14 +142,14 @@ extract_cols <- c(
 )
 
 ## Pull reference tables ----
-create_reference_table <- function(data) {
-  data %>% 
+create_reference_table <- function(pir_data) {
+  pir_data[['reference']] %>% 
     filter(question_name %in% c(id_cols, extract_cols))
 }
 
-pir19_ref <- create_reference_table(pir19[['reference']])
-pir21_ref <- create_reference_table(pir21[['reference']])
-pir22_ref <- create_reference_table(pir22[['reference']])
+pir19_ref <- create_reference_table(pir19)
+pir21_ref <- create_reference_table(pir21)
+pir22_ref <- create_reference_table(pir22)
 
 ## Identify question name differences across reference tables ----
 ref_list <- list('2019' = pir19_ref, '2021' = pir21_ref, '2022' = pir22_ref)
@@ -168,6 +168,16 @@ ref_diff_table <- map(
     values_from = question_number
   )
 
+ref_diff_table <- ref_diff_table %>%
+  mutate(question_name_normalized = ifelse(is.na(extract_var_crosswalk[question_name]), 
+                                           question_name, 
+                                           extract_var_crosswalk[question_name]))
+
+write_csv(ref_diff_table,
+          here::here('pir-metrics', 'import', 'output', 'ref_diff_table.csv'))
+
+
+### crosswalk for normalizing variables before export, based on ref diff table ----
 extract_var_crosswalk <- c(
   ## Staff
   'total_head_start_staff' = 'total_hs_staff', # 2019/21/22 total staff
@@ -184,22 +194,14 @@ extract_var_crosswalk <- c(
   'children_who_moved_out_education_and_child_development_staff' = 'total_departed_teachers' # 2022 departed teachers, note that this doesn't exist for '21
 )
 
-ref_diff_table <- ref_diff_table %>%
-  mutate(question_name_normalized = ifelse(is.na(extract_var_crosswalk[question_name]), 
-                                           question_name, 
-                                           extract_var_crosswalk[question_name]))
-
-write_csv(ref_diff_table,
-          here::here('pir-metrics', 'import', 'output', 'ref_diff_table.csv'))
-
 # Extract final PIR data frame ----
-finalize_export <- function(pir_list, year) {
+finalize_export <- function(pir_data, year) {
   ref_renamer <- ref_diff_table %>%
     select(sym(paste0('year_', year)), question_name_normalized) %>%
     drop_na %>%
     deframe
   
-  df <- pir_list[['data']] %>%
+  df <- pir_data[['data']] %>%
     janitor::clean_names() %>%
     select(all_of(c(id_cols, names(ref_renamer)))) %>%
     rename_with(
@@ -208,7 +210,8 @@ finalize_export <- function(pir_list, year) {
     )
   
   df %>%
-    left_join(pir_list[['programs']], by = c('region', 'grant_number', 'program_number', 'type' = 'program_type', 'grantee' = 'grantee_name', 'program' = 'program_name')) %>%
+    left_join(pir_list[['programs']], 
+              by = c('region', 'grant_number', 'program_number', 'type' = 'program_type', 'grantee' = 'grantee_name', 'program' = 'program_name')) %>%
     select(all_of(id_cols), starts_with('program'), everything())
 }
 
@@ -223,7 +226,6 @@ pir21_export$total_departed_teachers <- NA_real_
 if (!janitor::compare_df_cols_same(pir19_export, pir21_export, pir22_export)) {
   stop('Export columns are not normalized. Col names or types do not match.')
 }
-
 
 # Export ----
 export_pir <- function(pir_export, year) {
