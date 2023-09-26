@@ -9,8 +9,8 @@ library(readxl)
 `%nin%` = Negate(`%in%`)
 
 # import from /pir-metrics/import/output ----
-year <- c('2019', '2021', '2022')
-path <- here::here('pir-metrics', 'import', 'output', str_glue('pir_{year[1]}_{year[length(year)]}.csv'))
+years <- c('2019', '2021', '2022')
+path <- here::here('pir-metrics', 'import', 'output', str_glue('pir_{years[1]}_{years[length(years)]}.csv'))
 
 id_cols <- c('region', 'year', 'state', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
 program_cols <- c('region', 'grant_number', 'program_number', 'program_type', 'grantee_name', 'program_name', 'program_address_line_1', 'program_address_line_2')
@@ -29,12 +29,12 @@ path <- here::here('process-centers', 'output', 'enrollment_by_grant.csv')
 enrollment_data <- read_csv(path)
 
 # remove agencies that don't report relevant data ----
-clean_data <- import_data %>%
+agencies_filtered <- import_data %>%
   filter(program_agency_description %nin% c('Grantee that maintains central office staff only and operates no program(s) directly', 
                                             'Grantee that delegates all of its programs; it operates no programs directly and maintains no central office staff'))
 
 # turnover ----
-clean_data <- clean_data %>%
+turnover <- agencies_filtered %>%
   mutate(
     total_departed_staff = ifelse(is.na(total_departed_staff),
                                   total_departed_hs_staff + total_departed_contracted_staff,
@@ -46,31 +46,31 @@ clean_data <- clean_data %>%
 # demographic values ----
 
 # this value should equal the sum of the col created in the next step
-check_value <- clean_data %>%
+check_value <- turnover %>%
   summarize(across(ends_with('hispanic_or_latino_origin'), sum)) %>%
   mutate(check = rowSums(across(everything()))) %>%
   pull(check)
 
-clean_data <- clean_data %>% 
+race_eth_summed <- turnover %>% 
   rename_with(.fn = \(x) str_remove(x, '_non_hispanic_or_non_latino_origin')) %>%
   mutate(hispanic_or_latino_origin = rowSums(across((ends_with('hispanic_or_latino_origin')))), .after = american_indian_alaska_native) %>%
   select(-ends_with('_hispanic_or_latino_origin'))
 
 if ( !
-     clean_data %>%
+     race_eth_summed %>%
      summarize(check = sum(hispanic_or_latino_origin)) %>%
      pull(check) %>% 
      `==`(check_value)
 ) warning('Summed hispanic_or_latino_origin values do not match.')
 
 # total children ----
-clean_data <- clean_data %>%
+children_summed <- race_eth_summed %>%
   mutate(total_cumulative_enrolled_children = total_cumulative_enrollment - pregnant_women, .after = pregnant_women)
 
 # service location (state col) ----
 
 ## join centers data to pir import ----
-service_locations <- clean_data %>% 
+service_locations <- children_summed %>% 
   distinct(state, grant_number, program_number, type, year)
 
 service_locations <- left_join(service_locations, service_location_check_table, by = c('grant_number', 'program_number', 'type' = 'program_type'))
@@ -84,7 +84,7 @@ print(paste0('There are ', nrow(distinct(missing_grants_in_centers_data, grant_n
 
 ## flag multi-state grants and incorrect service locations ----
 incorrect_service_location <- left_join(
-  clean_data,
+  children_summed,
   service_location_check_table,
   by = c('grant_number', 'program_number', 'type' = 'program_type')
 ) %>%
@@ -97,7 +97,7 @@ print(paste0('There are ', nrow(distinct(incorrect_service_location, grant_numbe
 
 ## fix the service location for records that aren't multi-state
 corrected_service_location <- left_join(
-  clean_data,
+  children_summed,
   service_location_check_table,
   by = c('grant_number', 'program_number', 'type' = 'program_type')
 ) %>% 
@@ -116,7 +116,7 @@ region_mismatch <- left_join(
   arrange(desc(pir_region)) 
 
 # export ----
-path <- here::here('pir-metrics', 'clean', 'output', str_glue('pir_clean_{year[1]}_{year[length(year)]}.csv'))
+path <- here::here('pir-metrics', 'clean', 'output', str_glue('pir_clean_{years[1]}_{years[length(years)]}.csv'))
 write_csv(corrected_service_location, path)
 
 path <- here::here('pir-metrics', 'clean', 'output', 'region_mismatch.csv')
@@ -127,5 +127,3 @@ write_csv(incorrect_service_location, path)
 
 path <- here::here('pir-metrics', 'clean', 'output', 'missing_grants_in_centers_data.csv')
 write_csv(missing_grants_in_centers_data, path)
-
-rm(list = ls())
