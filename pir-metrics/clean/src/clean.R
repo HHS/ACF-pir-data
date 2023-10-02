@@ -7,17 +7,15 @@ library(tibble)
 library(readxl)
 
 `%nin%` = Negate(`%in%`)
+years <- c('2019', '2021', '2022')
+id_cols <- c('region', 'state', 'year', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
 
 # import from /pir-metrics/import/output ----
-years <- c('2019', '2021', '2022')
 path <- here::here('pir-metrics', 'import', 'output', str_glue('pir_{years[1]}_{years[length(years)]}.csv'))
-
-id_cols <- c('region', 'year', 'state', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
-program_cols <- c('region', 'grant_number', 'program_number', 'program_type', 'grantee_name', 'program_name', 'program_address_line_1', 'program_address_line_2')
-age_cols <- c('less_than_1_year_old', 'x1_year_old', 'x2_years_old', 'x3_years_old', 'x4_years_old', 'x5_years_and_older')
-
 import_data <- read_csv(path)
 
+# import region-state crosswalk ----
+# written based off of https://www.acf.hhs.gov/oro/regional-offices
 path <- here::here('pir-metrics', 'clean', 'input', 'region_state_crosswalk.csv')
 region_state_crosswalk <- read_csv(path)
 
@@ -103,7 +101,7 @@ corrected_service_location <- left_join(
 ) %>% 
   mutate(state = ifelse(!multi_state & 
                           states_abbr != state & 
-                          !is.na(states_abbr), states_abbr, state))
+                          !is.na(states_abbr), states_abbr, state)) 
 
 ## append region for records that had their state value corrected
 region_mismatch <- left_join(
@@ -114,6 +112,10 @@ region_mismatch <- left_join(
   filter(region != Region) %>%
   select(year, 'pir_region' = region, 'crosswalk_region' = Region, 'pir_state' = state, 'centers_state' = states_abbr, grant_number, program_number, type) %>%
   arrange(desc(pir_region)) 
+
+# transitory cleaning columns like multi_state are being removed to reduce confusion when sharing output
+corrected_service_location <- corrected_service_location %>%
+  select(all_of(id_cols), less_than_1_year_old:total_departed_staff)
 
 # export ----
 path <- here::here('pir-metrics', 'clean', 'output', str_glue('pir_clean_{years[1]}_{years[length(years)]}.csv'))
@@ -127,3 +129,5 @@ write_csv(incorrect_service_location, path)
 
 path <- here::here('pir-metrics', 'clean', 'output', 'missing_grants_in_centers_data.csv')
 write_csv(missing_grants_in_centers_data, path)
+
+rm(list = ls())

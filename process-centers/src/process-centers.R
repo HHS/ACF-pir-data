@@ -5,7 +5,6 @@ library(purrr)
 library(readr)
 library(tibble)
 library(readxl)
-library(readxl)
 
 # agency data ----
 path <- here::here('process-centers', 'input', 'Agency List.xlsx')
@@ -85,4 +84,3 @@ path <- here::here('process-centers', 'output', 'grants_by_state.csv')
 write_csv(multi_state_flag ,path)
 
 rm(list = ls())
-

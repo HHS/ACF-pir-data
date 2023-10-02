@@ -23,6 +23,7 @@ read_pir_export <- function(year) {
   pir <- list(pirA, pirB, pirC) %>%
     reduce(left_join, by = c('Region', 'State', 'Grant Number', 'Program Number', 'Type', 'Grantee', 'Program', 'City', 'ZIP Code', 'ZIP 4'))
   
+  # some pir exports include a totals row that is unnecessary
   pir <- pir %>%
     filter(Region != 'Totals')
   
@@ -247,5 +248,7 @@ pir_longitudinal <- list(
 ) %>%
   reduce(bind_rows)
 
-pir_longitudinal %>%
-  write_csv(here::here('pir-metrics', 'import', 'output', str_glue('pir_{years[1]}_{years[length(years)]}.csv')))
+path <- here::here('pir-metrics', 'import', 'output', str_glue('pir_{years[1]}_{years[length(years)]}.csv'))
+write_csv(pir_longitudinal, path)
+
+rm(list = ls())
