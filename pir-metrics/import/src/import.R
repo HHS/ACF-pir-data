@@ -64,7 +64,6 @@ program_cols <- c('region', 'grant_number', 'program_number', 'program_type', 'g
 
 extract_cols <- c(
   ## Cumulative Enrollment
-  ## 'total_cumulative_enrollment_of_children',
   'total_cumulative_enrollment', 
   'pregnant_women', # total_cumulative_enrollment - pregnant_women = total_cumulative_enrollment_of_children
   ## Race / Ethnicity
@@ -89,22 +88,6 @@ extract_cols <- c(
   'x3_years_old',
   'x4_years_old',
   'x5_years_and_older',
-  ## Language spoken by children
-  # 'total_of_dual_language_learners',
-  # 'english',
-  # 'of_these_the_of_children_acquiring_learning_another_Language_in_addition_to_english',
-  # 'spanish',
-  # 'central_south_american_and_mexican',
-  # 'caribbean_languages',
-  # 'middle_eastern_south_asian_languages',
-  # 'east_asian_languages',
-  # 'native_north_american_alaska_native_languages',
-  # 'pacific_island_languages',
-  # 'european_and_slavic_languages',
-  # 'african_languages',
-  # 'american_sign_language', # Is contained within the "Other" text response category prior to 2021
-  # 'other_languages',
-  # 'unspecified_languages',
   ## Child Characteristics
   'homeless_children', 
   # 'foster_children', 
@@ -138,12 +121,6 @@ extract_cols <- c(
   'total_contracted_staff_2', # 2022/21 departed staff
   'total_staff', # 2022/21 departed staff
   'children_who_moved_out_education_and_child_development_staff', # 2022 departed teachers, note that this doesn't exist for '21
-  ## Staff education
-  # 'associate_degree_classroom_teachers', 
-  # 'advanced_degree_classroom_teachers', 
-  # 'baccalaureate_degree_classroom_teachers', 
-  # 'associate_degree_classroom_teachers', 
-  # 'cda_classroom_teachers',
   ## EPDST
   'children_up_to_date_according_to_relevant_states_epsdt_schedule_at_enrollment',
   'children_up_to_date_according_to_relevant_states_epsdt_schedule_at_end_of_enrollment_year',
@@ -245,7 +222,7 @@ pir22_export <- finalize_export(pir22, years[3])
 ## Manually add in missing column from 2021 (children_who_moved_out_education_and_child_development_staff | total_departed_teachers) ----
 pir21_export$total_departed_teachers <- NA_real_
 
-## Stop and throw an error if exports don't all have matched col names and types ----
+## throw a warning if exports don't all have matched col names and types ----
 if (!janitor::compare_df_cols_same(pir19_export, pir21_export, pir22_export)) {
   warning('Export columns are not normalized. Col names or types do not match.')
 }
