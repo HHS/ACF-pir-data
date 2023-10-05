@@ -59,7 +59,7 @@ pir21 <- suppressWarnings(read_pir_export(years[2]))
 pir22 <- suppressWarnings(read_pir_export(years[3]))
 
 ## Define extract col names ----
-id_cols <- c('region', 'state', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
+id_cols <- c('region', 'state', 'grant_number', 'grant_type', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
 program_cols <- c('region', 'grant_number', 'program_number', 'program_type', 'grantee_name', 'program_name')
 
 extract_cols <- c(
@@ -224,11 +224,12 @@ finalize_export <- function(pir_data, year) {
   
   df <- pir_data[['data']] %>%
     janitor::clean_names() %>%
-    select(all_of(c(id_cols, names(ref_renamer)))) %>%
+    select(any_of(c(id_cols, names(ref_renamer)))) %>%
+    mutate(grant_type = str_extract(grant_number, '[A-Z]{2}'), .after = 'grant_number') %>%
     rename_with(
       .fn = \(x) ref_renamer[x],
       .cols = -all_of(id_cols)
-    )
+    ) 
   
   df %>%
     left_join(pir_data[['programs']], 

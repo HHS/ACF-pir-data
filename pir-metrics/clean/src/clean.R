@@ -8,7 +8,7 @@ library(readxl)
 
 `%nin%` <- Negate(`%in%`)
 years <- c('2019', '2021', '2022')
-id_cols <- c('region', 'state', 'year', 'grant_number', 'program_number', 'program_type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
+id_cols <- c('region', 'state', 'year', 'grant_number', 'grant_type', 'program_number', 'program_type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
 age_and_pregnant_cols <- c(
   'less_than_1_year_old',
   'x1_year_old',
@@ -40,7 +40,8 @@ agencies_filtered <- import_data %>%
   filter(program_agency_description %nin% c('Grantee that maintains central office staff only and operates no program(s) directly', 
                                             'Grantee that delegates all of its programs; it operates no programs directly and maintains no central office staff'))
 
-# impute ages and pregnant people ----
+# impute age and pregnant people counts ----
+## EHS programs don't serve ages 4 or 5 and older, HS programs don't serve pregnant people
 ages_imputed <- agencies_filtered %>%
   mutate(across(all_of(age_and_pregnant_cols), \(x) ifelse(is.na(x), 0, x)))
 
