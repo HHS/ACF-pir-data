@@ -6,9 +6,18 @@ library(readr)
 library(tibble)
 library(readxl)
 
-`%nin%` = Negate(`%in%`)
+`%nin%` <- Negate(`%in%`)
 years <- c('2019', '2021', '2022')
-id_cols <- c('region', 'state', 'year', 'grant_number', 'program_number', 'type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
+id_cols <- c('region', 'state', 'year', 'grant_number', 'program_number', 'program_type', 'grantee', 'program', 'city', 'zip_code', 'zip_4')
+age_and_pregnant_cols <- c(
+  'less_than_1_year_old',
+  'x1_year_old',
+  'x2_years_old',
+  'x3_years_old',
+  'x4_years_old',
+  'x5_years_and_older',
+  'pregnant_women'
+)
 
 # import from /pir-metrics/import/output ----
 path <- here::here('pir-metrics', 'import', 'output', str_glue('pir_{years[1]}_{years[length(years)]}.csv'))
@@ -31,27 +40,29 @@ agencies_filtered <- import_data %>%
   filter(program_agency_description %nin% c('Grantee that maintains central office staff only and operates no program(s) directly', 
                                             'Grantee that delegates all of its programs; it operates no programs directly and maintains no central office staff'))
 
+# impute ages and pregnant people ----
+ages_imputed <- agencies_filtered %>%
+  mutate(across(all_of(age_and_pregnant_cols), \(x) ifelse(is.na(x), 0, x)))
+
 # turnover ----
-turnover <- agencies_filtered %>%
+turnover <- ages_imputed %>%
   mutate(
     total_departed_staff = ifelse(is.na(total_departed_staff),
                                   total_departed_hs_staff + total_departed_contracted_staff,
-                                  total_departed_staff),
-    across(-c(any_of(id_cols), starts_with('program'), 'total_departed_teachers'), 
-           \(x) ifelse(is.na(x), 0, x))
+                                  total_departed_staff)
   )
 
 # demographic values ----
 
 # this value should equal the sum of the col created in the next step
 check_value <- turnover %>%
-  summarize(across(ends_with('hispanic_or_latino_origin'), sum)) %>%
+  summarize(across(ends_with('hispanic_or_latino_origin'), \(x) sum(x, na.rm = T))) %>%
   mutate(check = rowSums(across(everything()))) %>%
   pull(check)
 
 race_eth_summed <- turnover %>% 
   rename_with(.fn = \(x) str_remove(x, '_non_hispanic_or_non_latino_origin')) %>%
-  mutate(hispanic_or_latino_origin = rowSums(across((ends_with('hispanic_or_latino_origin')))), .after = american_indian_alaska_native) %>%
+  mutate(hispanic_or_latino_origin = rowSums(across((ends_with('hispanic_or_latino_origin'))), na.rm = T), .after = american_indian_alaska_native) %>%
   select(-ends_with('_hispanic_or_latino_origin'))
 
 if ( !
@@ -69,13 +80,13 @@ children_summed <- race_eth_summed %>%
 
 ## join centers data to pir import ----
 service_locations <- children_summed %>% 
-  distinct(state, grant_number, program_number, type, year)
+  distinct(state, grant_number, program_number, program_type, year)
 
-service_locations <- left_join(service_locations, service_location_check_table, by = c('grant_number', 'program_number', 'type' = 'program_type'))
+service_locations <- left_join(service_locations, service_location_check_table, by = c('grant_number', 'program_number', 'program_type'))
 
 missing_grants_in_centers_data <- service_locations %>%
   filter(if_any(any_of(c('multi_state', 'states_abbr', 'states')), is.na)) %>%
-  select(state, grant_number, program_number, type, year) 
+  select(state, grant_number, program_number, program_type, year) 
 
 print(paste0('There are ', nrow(distinct(missing_grants_in_centers_data, grant_number)), ' grants covering ', 
              nrow(missing_grants_in_centers_data), ' programs that cannot be found in the centers data.'))
@@ -84,11 +95,11 @@ print(paste0('There are ', nrow(distinct(missing_grants_in_centers_data, grant_n
 incorrect_service_location <- left_join(
   children_summed,
   service_location_check_table,
-  by = c('grant_number', 'program_number', 'type' = 'program_type')
+  by = c('grant_number', 'program_number', 'program_type')
 ) %>%
   filter(multi_state | states_abbr != state) %>%
   mutate(count_states = str_count(states_abbr, ',') + 1) %>%
-  select(year, region, state, states_abbr, multi_state, grant_number, program_number, type)
+  select(year, region, state, states_abbr, multi_state, grant_number, program_number,program_type)
 
 print(paste0('There are ', nrow(distinct(incorrect_service_location, grant_number)), ' grants covering ',
              nrow(incorrect_service_location), ' programs with service locations that need review.'))
@@ -97,7 +108,7 @@ print(paste0('There are ', nrow(distinct(incorrect_service_location, grant_numbe
 corrected_service_location <- left_join(
   children_summed,
   service_location_check_table,
-  by = c('grant_number', 'program_number', 'type' = 'program_type')
+  by = c('grant_number', 'program_number', 'program_type')
 ) %>% 
   mutate(state = ifelse(!multi_state & 
                           states_abbr != state & 
@@ -110,7 +121,7 @@ region_mismatch <- left_join(
   by = c('states_abbr' = 'Abbreviation')
 ) %>%
   filter(region != Region) %>%
-  select(year, 'pir_region' = region, 'crosswalk_region' = Region, 'pir_state' = state, 'centers_state' = states_abbr, grant_number, program_number, type) %>%
+  select(year, 'pir_region' = region, 'crosswalk_region' = Region, 'pir_state' = state, 'centers_state' = states_abbr, grant_number, program_number, program_type) %>%
   arrange(desc(pir_region)) 
 
 # transitory cleaning columns like multi_state are being removed to reduce confusion when sharing output
