@@ -108,14 +108,29 @@ extract_cols <- c(
   ## Child Characteristics
   'homeless_children', 
   # 'foster_children', 
-  # 'children_with_an_iep', 
-  # 'children_with_an_ifsp',
+  'children_with_an_iep',
+  'children_with_an_ifsp',
+  ## Children with disabilities
+  'health_impairment', 
+  'emotional_disturbance',
+  'speech_impairment',
+  'intellectual_disabilities', 
+  'hearing_impairment',
+  'orthopedic_impairment',
+  'visual_impairment',
+  'specific_learning_disabilities',
+  'autism',
+  'traumatic_brain_injury',
+  'non_categorical_developmental_delay',
+  'multiple_disabilities_excluding_deaf_blind',
+  'deaf_blind',
   ## Staff
   'total_head_start_staff', # 2019/21/22 total staff
   'total_contracted_staff', # 2019/21/22 total staff
   'total_classroom_teachers', # 2022/21 HS teachers
   'total_infant_and_toddler_classroom_teachers', #2019/21/22 EHS teachers
   'total_preschool_classroom_teachers', # 2019 HS teachers
+  'number_of_all_newly_enrolled_children_since_last_year_s_pir_was_reported',
   ## Staff Turnover
   'teacher_turnover_total', # 2019 departed teachers
   'total_departed_head_start_staff', # 2019 departed staff
@@ -133,13 +148,16 @@ extract_cols <- c(
   'children_up_to_date_according_to_relevant_states_epsdt_schedule_at_enrollment',
   'children_up_to_date_according_to_relevant_states_epsdt_schedule_at_end_of_enrollment_year',
   ## Behavioral Screenings
-  'newly_enrolled_children_who_completed_behavorial_screenings'
+  'newly_enrolled_children_who_completed_behavorial_screenings',
   ## Health Insurance and Care
-  # 'children_with_health_insurance_at_enrollment', 
-  # 'children_with_health_insurance_at_end_of_enrollment_year', 
-  # 'number_of_children_with_no_health_insurance_at_enrollment', 
-  # 'number_of_children_with_no_health_insurance_at_end_of_enrollment',
-  # 'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_enrollment'
+  'children_with_health_insurance_at_enrollment',
+  'children_with_health_insurance_at_end_of_enrollment_year',
+  'children_continuous_accessible_health_care_at_enrollment',
+  'children_continuous_accessible_health_care_at_end_of_enrollment_year',
+  'number_of_children_with_no_health_insurance_at_enrollment',
+  'number_of_children_with_no_health_insurance_at_end_of_enrollment',
+  'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_enrollment',
+  'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_end_enrollment'
 )
 
 ## Pull reference tables ----
@@ -171,6 +189,9 @@ ref_diff_table <- map(
 
 ### crosswalk for normalizing variables before export, based on ref diff table ----
 extract_var_crosswalk <- c(
+  ## Child healthcare
+  'children_continuous_accessible_health_care_at_enrollment' =  'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_enrollment', # 2022 continuous access to care
+  'children_continuous_accessible_health_care_at_end_of_enrollment_year' = 'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_end_enrollment', # 2022 continuous access to care
   ## Staff
   'total_head_start_staff' = 'total_hs_staff', # 2019/21/22 total staff
   'total_contracted_staff' = 'total_contracted_staff', # 2019/21/22 total staff
@@ -212,7 +233,8 @@ finalize_export <- function(pir_data, year) {
   df %>%
     left_join(pir_data[['programs']], 
               by = c('region', 'grant_number', 'program_number', 'type' = 'program_type', 'grantee' = 'grantee_name', 'program' = 'program_name')) %>%
-    select(all_of(id_cols), starts_with('program'), everything())
+    select(all_of(id_cols), starts_with('program'), everything()) %>%
+    rename('program_type' = 'type')
 }
 
 pir19_export <- finalize_export(pir19, years[1])
