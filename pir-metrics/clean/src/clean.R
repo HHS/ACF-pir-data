@@ -126,8 +126,12 @@ region_mismatch <- left_join(
   arrange(desc(pir_region)) 
 
 # finalize names and columns ----
-export_data <- corrected_service_location %>%
+export_data <- corrected_service_location  %>%
+  mutate(
+    uid = paste(grant_number, program_number, year, sep = '-')
+  ) %>%
   select(
+    uid,
     year,
     region, 
     'service_state' = state,
@@ -186,8 +190,7 @@ export_data <- corrected_service_location %>%
     newly_enrolled_children_who_completed_behavorial_screenings,
     homeless_children_served,
     foster_care_children_served
-  ) %>%
-  mutate(uid = paste(grant_number, program_number, year, sep = '-'), .before = 'year')
+  )
 
 # export ----
 path <- here::here('pir-metrics', 'clean', 'output', str_glue('pir_clean_{years[1]}_{years[length(years)]}.csv'))
