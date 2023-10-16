@@ -66,7 +66,7 @@ extract_cols <- c(
   ## Cumulative Enrollment
   'total_cumulative_enrollment', 
   'pregnant_women', # total_cumulative_enrollment - pregnant_women = total_cumulative_enrollment_of_children
-  ## Race / Ethnicity
+  ## Child Race / Ethnicity
   'american_indian_alaska_native_hispanic_or_latino_origin',
   'american_indian_alaska_native_non_hispanic_or_non_latino_origin',
   'asian_hispanic_or_latino_origin',
@@ -89,11 +89,19 @@ extract_cols <- c(
   'x4_years_old',
   'x5_years_and_older',
   ## Child Characteristics
-  'homeless_children', 
-  # 'foster_children', 
+  'homeless_children_served', 
+  'foster_care_children_served',
+  ## Eligibility Characteristics,
+  'income_eligibility',
+  'receipt_of_public_assistance',
+  'foster_children',
+  'homeless_children',
+  'over_income',
+  'income_between_100_percent_and_130_percent_of_poverty',
+  'eligibility_based_on_other_type_of_need_but_not_counted_in_a_13_a_through_d', # over_income for 21/22
+  ## Children with disabilities
   'children_with_an_iep',
   'children_with_an_ifsp',
-  ## Children with disabilities
   'health_impairment', 
   'emotional_disturbance',
   'speech_impairment',
@@ -166,6 +174,8 @@ ref_diff_table <- map(
 
 ### crosswalk for normalizing variables before export, based on ref diff table ----
 extract_var_crosswalk <- c(
+  ## Eligibility
+  'eligibility_based_on_other_type_of_need_but_not_counted_in_a_13_a_through_d' = 'over_income', # 2021/22
   ## Child healthcare
   'children_continuous_accessible_health_care_at_enrollment' =  'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_enrollment', # 2022 continuous access to care
   'children_continuous_accessible_health_care_at_end_of_enrollment_year' = 'number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_end_enrollment', # 2022 continuous access to care
