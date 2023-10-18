@@ -194,7 +194,7 @@ export_data <- corrected_service_location  %>%
 
 # export ----
 path <- here::here('pir-metrics', 'clean', 'output', str_glue('pir_clean_{years[1]}_{years[length(years)]}.csv'))
-write_csv(export_data, path)
+write_csv(export_data, path, na = '')
 
 path <- here::here('pir-metrics', 'clean', 'output', 'region_mismatch.csv')
 write_csv(region_mismatch, path)
