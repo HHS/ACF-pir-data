@@ -8,4 +8,4 @@ This is an early version of the processed data and is still being tested by the 
 
 ## Downloading the Processed Data
 
-You can access the processed data by navigating to [`/pir-metrics/clean/output`](https://github.com/HHS/ACF-pir-data/blob/pir-metrics/pir-metrics/clean/output/). Within that folder is a CSV file containing the latest version of the processed data. The data dictionary is hosted at [`/pir-metrics/clean/hand`](https://github.com/HHS/ACF-pir-data/blob/pir-metrics/pir-metrics/clean/hand/). 
+You can access the processed data by navigating to [`/pir-metrics/clean/output`](https://github.com/HHS/ACF-pir-data/tree/main/pir-metrics/clean/output). Within that folder is a CSV file containing the latest version of the processed data. The data dictionary is hosted at [`/pir-metrics/clean/hand`](https://github.com/HHS/ACF-pir-data/tree/main/pir-metrics/clean/hand). 
