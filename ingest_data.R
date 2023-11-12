@@ -13,17 +13,38 @@ rm(list = ls())
 pkgs <- c(
   "tidyr", "dplyr", "readxl", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
-  "jsonlite"
+  "furrr"
 )
 invisible(lapply(pkgs, library, character.only = T))
 
-# Functions
+# Configuration (paths, db_name, etc.)
+source(here("config.R"))
+
+# Make connection and get schemas
+conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
+schema <- list()
+walk(
+  c("program", "response", "question"),
+  function(table) {
+    vars <- dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
+    vars <- vars$Field
+    schema[[table]] <- vars
+    assign("schema", schema, envir = .GlobalEnv)
+  }
+)
+
+# Set up parallelization
+future::plan(multisession, workers = 2)
+
+# Functions ----
+
 walk(
   list.files(here("utils"), full.names = T),
   source
 )
+
 hashVector <- function(string) {
-  hashed <- map_chr(
+  hashed <- future_map_chr(
     string,
     rlang::hash
   )
@@ -112,7 +133,7 @@ cleanPirData <- function(df_list, schema, yr) {
     function(table) {
       assign(
         paste0(tolower(table), "_vars"),
-        schema[[table]][['vars']],
+        schema[[table]],
         envir = func_env
       )
     }
@@ -182,9 +203,6 @@ cleanPirData <- function(df_list, schema, yr) {
   return(df_list)
 }
 
-# Configuration (paths, db_name, etc.)
-source(here("config.R"))
-
 # Ingestion ----
 
 # Get workbooks
@@ -206,14 +224,10 @@ wb_appended <- mergePirReference(wb_appended, wb_2022)
 program <- readxl::read_excel(wb_2022, sheet = "Program Details")
 wb_appended <- append(wb_appended, list("program" = program))
 
-schema <- jsonlite::fromJSON(file.path(datadir, "schemas", "schema.json"))
 yr <- stringr::str_extract(wb_2022, "(\\d+).xlsx", group = 1)
 wb_appended <- cleanPirData(wb_appended, schema, yr)
 
 # Load to DB ----
-
-# Make connection
-conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
 
 # Write data - This method breaks the foreign key associations
 walk(
@@ -222,8 +236,9 @@ walk(
     dbWriteTable(conn, table, wb_appended[[table]], overwrite = T)
   }
 )
-
+gc()
 # Foreign key references are removed, add them back in here
 # Currently does not work because there are some cases where ID is null
 # dbSendQuery(conn, "ALTER TABLE `Response` ADD FOREIGN KEY (`uid`) REFERENCES `Program` (`uid`)")
 # dbSendQuery(conn, "ALTER TABLE `Response` ADD FOREIGN KEY (`question_id`) REFERENCES `Question` (`question_id`)")
+dbDisconnect(conn)
