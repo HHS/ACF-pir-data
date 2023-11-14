@@ -73,8 +73,44 @@ if ( !
      `==`(check_value)
 ) warning('Summed hispanic_or_latino_origin values do not match.')
 
+# credentials ----
+# This is not a robust solution to fixing these columns, will need to be revisited
+consolidate_cols_at_selection <- function(group, sel, consolidated_var, ...) {
+  x <- list(...) %>%
+    reduce(`+`)
+  ifelse(group == sel,
+         x,
+         consolidated_var)
+}
+
+credentials_normalized <- race_eth_summed %>%
+  mutate(
+    year,
+    # 2019 needs to have values summed to individual degree attainment values
+    ## HS
+    advanced_degree_classroom_teachers = consolidate_cols_at_selection(year, '2019', advanced_degree_classroom_teachers,
+                                                                       advanced_degree_in_ece_preschool_classroom_teachers, advanced_degree_in_any_related_field_preschool_classroom_teachers),
+    
+    baccalaureate_degree_classroom_teachers = consolidate_cols_at_selection(year, '2019', baccalaureate_degree_classroom_teachers,
+                                                                            baccalaureate_degree_in_ece_preschool_classroom_teachers, baccalaureate_degree_in_any_related_field_preschool_classroom_teachers, baccalaureate_degree_with_teach_for_america_preschool_classroom_teachers),
+    
+    associate_degree_classroom_teachers = consolidate_cols_at_selection(year, '2019', associate_degree_classroom_teachers,
+                                                                        associate_degree_in_ece_preschool_classroom_teachers, associate_degree_in_any_related_field_preschool_classroom_teachers),
+    ## EHS
+    advanced_degree_infant_and_toddler_classroom_teachers = consolidate_cols_at_selection(year, '2019', advanced_degree_infant_and_toddler_classroom_teachers,
+                                                                                          advanced_degree_in_ece_infant_and_toddler_classroom_teachers, advanced_degree_in_any_related_field_infant_and_toddler_classroom_teachers),
+   
+    baccalaureate_degree_infant_and_toddler_classroom_teachers = consolidate_cols_at_selection(year, '2019', baccalaureate_degree_infant_and_toddler_classroom_teachers,
+                                                                        baccalaureate_degree_in_ece_infant_and_toddler_classroom_teachers, baccalaureate_degree_in_any_related_field_infant_and_toddler_classroom_teachers),
+    
+    associate_degree_infant_and_toddler_classroom_teachers = consolidate_cols_at_selection(year, '2019', associate_degree_infant_and_toddler_classroom_teachers,
+                                                                                           associate_degree_in_ece_infant_and_toddler_classroom_teachers, associate_degree_in_any_related_field_infant_and_toddler_classroom_teachers),
+    # NA values replaced by 0 where there are not IT or PreK teachers (no advanced degree EHS teachers at HS programs)
+    .keep = 'unused'
+  )
+
 # total children ----
-children_summed <- race_eth_summed %>%
+children_summed <- credentials_normalized %>%
   mutate(total_cumulative_enrolled_children = total_cumulative_enrollment - pregnant_women, .after = pregnant_women)
 
 # service location (state col) ----
@@ -131,6 +167,7 @@ export_data <- corrected_service_location  %>%
     uid = paste(grant_number, program_number, year, sep = '-')
   ) %>%
   select(
+    # id and geo cols 
     uid,
     year,
     region, 
@@ -141,16 +178,11 @@ export_data <- corrected_service_location  %>%
     'program_name' = program,
     program_number,
     program_type,
+    # enrollment and demographics
     total_cumulative_enrollment,
     total_cumulative_enrolled_children,
     'newly_enrolled_children' = number_of_all_newly_enrolled_children_since_last_year_s_pir_was_reported,
     less_than_1_year_old:pregnant_women,
-    income_eligibility,
-    'receipt_of_public_assistance_eligibility' = receipt_of_public_assistance,
-    'foster_children_eligibility' = foster_children,
-    'homeless_children_eligibility' = homeless_children,
-    'over_income_eligibility' = over_income,
-    'income_between_100_percent_and_130_percent_of_poverty_eligibility' = income_between_100_percent_and_130_percent_of_poverty,
     'hispanic_or_latino_origin_any_race_enrollees' = hispanic_or_latino_origin,
     'asian_non_hispanic_enrollees' = asian,
     'black_or_african_american_non_hispanic_enrollees' = black_or_african_american,
@@ -158,6 +190,14 @@ export_data <- corrected_service_location  %>%
     'white_non_hispanic_enrollees' = white,
     'biracial_or_multi_racial_non_hispanic_enrollees' = biracial_or_multi_racial,
     'other_race_non_hispanic_enrollees' = other_race,
+    # eligibility
+    income_eligibility,
+    'receipt_of_public_assistance_eligibility' = receipt_of_public_assistance,
+    'foster_children_eligibility' = foster_children,
+    'homeless_children_eligibility' = homeless_children,
+    'over_income_eligibility' = over_income,
+    'income_between_100_percent_and_130_percent_of_poverty_eligibility' = income_between_100_percent_and_130_percent_of_poverty,
+    # staff
     'total_noncontracted_staff' = total_hs_staff,
     total_contracted_staff,
     total_departed_staff,
@@ -166,6 +206,21 @@ export_data <- corrected_service_location  %>%
     'total_hs_prek_teachers' = total_hs_teachers,
     'total_ehs_it_teachers' = total_ehs_teachers,
     total_departed_teachers,
+    total_assistant_teachers,
+    total_home_visitors,
+    total_family_child_care_providers,
+    # credentials
+    'advanced_degree_hs_prek_teachers' = advanced_degree_classroom_teachers,
+    'baccalaureate_degree_hs_prek_teachers' = baccalaureate_degree_classroom_teachers,
+    'associate_degree_hs_prek_teachers' = associate_degree_classroom_teachers,
+    cda_hs_prek_teachers,
+    'unqualified_hs_prek_teachers' = unqualified_hs_teachers,
+    'advanced_degree_ehs_it_teachers' = advanced_degree_infant_and_toddler_classroom_teachers,
+    'baccalaureate_degree_ehs_it_teachers' = baccalaureate_degree_infant_and_toddler_classroom_teachers,
+    'associate_degree_ehs_it_teachers' = associate_degree_infant_and_toddler_classroom_teachers,
+    cda_ehs_it_teachers,
+    'unqualified_ehs_it_teachers' = unqualified_ehs_teachers,
+    # health and healthcare
     children_with_health_insurance_at_enrollment,
     children_with_health_insurance_at_end_of_enrollment_year,
     'children_with_ongoing_source_of_continuous_accessible_health_care_at_enrollment_start' = number_of_children_with_an_ongoing_source_of_continuous_accessible_health_care_provided_by_a_health_care_professional_that_maintains_their_ongoing_health_record_and_is_not_primarily_a_source_of_emergency_or_urgent_care_at_enrollment,
@@ -188,6 +243,7 @@ export_data <- corrected_service_location  %>%
     'hs_prek_multiple_disabilities_excluding_deaf_blind' = multiple_disabilities_excluding_deaf_blind,
     'hs_prek_deaf_blind' = deaf_blind,
     newly_enrolled_children_who_completed_behavorial_screenings,
+    # homeless and foster children
     homeless_children_served,
     foster_care_children_served
   )

@@ -122,6 +122,45 @@ extract_cols <- c(
   'total_infant_and_toddler_classroom_teachers', #2019/21/22 EHS teachers
   'total_preschool_classroom_teachers', # 2019 HS teachers
   'number_of_all_newly_enrolled_children_since_last_year_s_pir_was_reported',
+  'total_preschool_assistant_teachers', # 2019 HS assistant teachers
+  'total_assistant_teachers', # 21/22 HS assistant teachers
+  'total_home_based_visitors', # 2019 home visitors
+  'total_home_visitors', # 21/22 home visitors
+  'total_family_child_care_providers', # 2019 FCC providers
+  'total_number_of_family_child_care_providers', # 21/22 FCC providers
+  ## Staff Credentials
+  'advanced_degree_classroom_teachers', # 21/22 advanced degree HS
+  'baccalaureate_degree_classroom_teachers', # 21/22 BA HS
+  'associate_degree_classroom_teachers', # 21/22 AA HS
+  'cda_classroom_teachers', # 21/22 CDA HS
+  ### HS/EHS teacher credentials
+  'advanced_degree_in_ece_preschool_classroom_teachers', # 19 advanced degree HS
+  'advanced_degree_in_any_related_field_preschool_classroom_teachers', # 19 advanced degree HS
+  'baccalaureate_degree_in_ece_preschool_classroom_teachers', # 19 BA HS
+  'baccalaureate_degree_in_any_related_field_preschool_classroom_teachers', # 19 BA HS
+  'baccalaureate_degree_with_teach_for_america_preschool_classroom_teachers', # 19 BA HS
+  'associate_degree_in_ece_preschool_classroom_teachers', # 19 AA HS
+  'associate_degree_in_any_related_field_preschool_classroom_teachers', # 19 AA HS
+  'child_development_associate_cda_preschool_classroom_teachers', # 19 CDA HS,
+  'no_ece_credential_preschool_classroom_teachers', # 19 no credentials HS
+  'advanced_degree_in_ece_infant_and_toddler_classroom_teachers', # 19 advanced degree EHS
+  'advanced_degree_in_any_related_field_infant_and_toddler_classroom_teachers', # 19 advanced degree EHS
+  'baccalaureate_degree_in_ece_infant_and_toddler_classroom_teachers', # 19 BA EHS
+  'baccalaureate_degree_in_any_related_field_infant_and_toddler_classroom_teachers', # 19 BA EHS
+  'associate_degree_in_ece_infant_and_toddler_classroom_teachers', # 19 AA EHS
+  'associate_degree_in_any_related_field_infant_and_toddler_classroom_teachers', # 19 AA EHS
+  'child_development_associate_cda_infant_and_toddler_classroom_teachers', # 19 CDA EHS 
+  'no_ece_credential_infant_and_toddler_classroom_teachers', # 19 no credentials EHS
+  'advanced_degree_classroom_teachers', # 21/22 advanced degree HS
+  'baccalaureate_degree_classroom_teachers', # 21/22 BA HS
+  'associate_degree_classroom_teachers', # 21/22 AA HS
+  'cda_classroom_teachers', # 21/22 CDA HS
+  'unqualified_classroom_teachers', # 21/22 no credentials HS
+  'advanced_degree_infant_and_toddler_classroom_teachers', # 21/22 advanced degree EHS
+  'baccalaureate_degree_infant_and_toddler_classroom_teachers', # 21/22 BA EHS
+  'associate_degree_infant_and_toddler_classroom_teachers', # 21/22 AA EHS
+  'certified_infant_and_toddler_classroom_teachers', # 21/22 CDA EHS
+  'unqualified_infant_and_toddler_classroom_teachers', # 21/22 no credentials EHS
   ## Staff Turnover
   'teacher_turnover_total', # 2019 departed teachers
   'total_departed_head_start_staff', # 2019 departed staff
@@ -185,6 +224,18 @@ extract_var_crosswalk <- c(
   'total_classroom_teachers' = 'total_hs_teachers', # 2022/21 HS teachers
   'total_infant_and_toddler_classroom_teachers' = 'total_ehs_teachers', #2019/21/22 EHS teachers
   'total_preschool_classroom_teachers' = 'total_hs_teachers', # 2019 HS teachers
+  'total_preschool_assistant_teachers' = 'total_assistant_teachers', # 2019 HS assistant teachers
+  'total_home_based_visitors' = 'total_home_visitors', # 2019 home visitors
+  'total_number_of_family_child_care_providers' = 'total_family_child_care_providers', # 21/22 FCC providers
+  ## Staff Credentials
+  'child_development_associate_cda_preschool_classroom_teachers' = 'cda_hs_prek_teachers', # 19 hs cda
+  'child_development_associate_cda_infant_and_toddler_classroom_teachers' = 'cda_ehs_it_teachers', # 19 hs cda
+  'no_ece_credential_preschool_classroom_teachers' = 'unqualified_hs_teachers', # 19 hs no cert
+  'no_ece_credential_infant_and_toddler_classroom_teachers' = 'unqualified_ehs_teachers', # 19 ehs no cert
+  'cda_classroom_teachers' = 'cda_hs_prek_teachers',
+  'certified_infant_and_toddler_classroom_teachers' = 'cda_ehs_it_teachers',
+  'unqualified_classroom_teachers' = 'unqualified_hs_teachers', # 21/22 hs no cert
+  'unqualified_infant_and_toddler_classroom_teachers' = 'unqualified_ehs_teachers', # 21/22 ehs no cert
   ## Staff Turnover
   'teacher_turnover_total' = 'total_departed_teachers', # 2019 departed teachers
   'total_departed_head_start_staff' = 'total_departed_hs_staff', # 2019 departed staff
