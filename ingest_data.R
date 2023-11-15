@@ -11,27 +11,30 @@ rm(list = ls())
 
 # Packages
 pkgs <- c(
-  "tidyr", "dplyr", "readxl", "assertr", 
+  "tidyr", "dplyr", "officer", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
-  "furrr"
+  "furrr", "readxl"
 )
-invisible(lapply(pkgs, library, character.only = T))
+
+
+invisible(
+  lapply(
+    pkgs,
+    function(pkg) {
+      if (!requireNamespace(pkg, quietly = TRUE)) {
+        renv::install(pkg, prompt = FALSE)
+      }
+      library(pkg, character.only = T)
+    }
+  )
+)
 
 # Configuration (paths, db_name, etc.)
 source(here("config.R"))
 
-# Make connection and get schemas
-conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
-schema <- list()
-walk(
-  c("program", "response", "question"),
-  function(table) {
-    vars <- dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
-    vars <- vars$Field
-    schema[[table]] <- vars
-    assign("schema", schema, envir = .GlobalEnv)
-  }
-)
+# Begin documenting
+doc <- read_docx()
+doc <- body_add_par(doc, "## Functions", style = "heading 2")
 
 # Set up parallelization
 future::plan(multisession, workers = 2)
@@ -43,6 +46,20 @@ walk(
   source
 )
 
+# Function to log messages to a file
+log_message <- function(message) {
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  log_entry <- paste(timestamp, message, "\n")
+  date <- format(Sys.Date(), "%Y%m%d")
+  logdir <- file.path(logdir, "automated_pipeline_logs")
+  cat(
+    log_entry, 
+    file = file.path(logdir, paste0("ingestion_log", "_", date, ".txt")), 
+    append = TRUE
+  )
+}
+
+# Function to hash a string vector
 hashVector <- function(string) {
   hashed <- future_map_chr(
     string,
@@ -60,7 +77,7 @@ appendPirSheets <- function(workbook, sheets) {
   walk(
     sheets,
     function(sheet) {
-      if (sheet %in% c("Section A", "Section B", "Section C", "Section D")) {
+      if (sheet %in% c("Section A", "Section B", "Section C", "Section D")) { #note: some years don't include Section D
         to_append <- append(to_append, sheet)
         assign("to_append", to_append, envir = func_env)
       }
@@ -101,7 +118,7 @@ mergePirReference <- function(response, workbook) {
   
   # Set of unique questions
   response_vars <- unique(response$variable)
-  question_vars <- unique(question$question_number)
+  question_vars <- unique(question$question_number) # cannot count on question number to be distinct
   
   # Check that reference has all questions
   response <- assertr::verify(
@@ -146,7 +163,8 @@ cleanPirData <- function(df_list, schema, yr) {
       year = yr,
       uid_hash = paste0(grant_number, program_number, program_type),
       uid = hashVector(uid_hash),
-      question_id = hashVector(question_text)
+      question_id_hash = paste0(variable, question_text),
+      question_id = hashVector(question_id_hash)
     ) %>%
     select(all_of(response_vars))
   
@@ -159,7 +177,8 @@ cleanPirData <- function(df_list, schema, yr) {
     ) %>%
     mutate(
       year = yr,
-      question_id = hashVector(question_text)
+      question_id_hash = paste0(question_number, question_text),
+      question_id = hashVector(question_id_hash)
     ) %>%
     pipeExpr(
       assign(
@@ -203,13 +222,48 @@ cleanPirData <- function(df_list, schema, yr) {
   return(df_list)
 }
 
+# Establish DB connection ----
+
+tryCatch(
+  {
+    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
+    log_message("Connection established successfully.")
+  },
+  error = function(cnd) {
+    error_message <- paste("Error:", conditionMessage(cnd))
+    log_message(error_message)
+    stop(error_message)
+  }
+)
+
+tryCatch(
+  {
+    schema <- list()
+    walk(
+      c("program", "response", "question"),
+      function(table) {
+        vars <- dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
+        vars <- vars$Field
+        schema[[table]] <- vars
+        assign("schema", schema, envir = .GlobalEnv)
+      }
+    )
+    log_message("Schemas read from database.")
+  },
+  error = function(cnd) {
+    error_message <- paste("Error:", conditionMessage(cnd))
+    log_message(error_message)
+    stop(error_message)
+  }
+)
+
 # Ingestion ----
 
 # Get workbooks
 
 wb_list <- list.files(
   file.path(datadir),
-  pattern = "*.xlsx",
+  pattern = "*.xlsx", #filter for "pir_export_"
   full.names = T
 )
 
@@ -226,17 +280,43 @@ wb_appended <- append(wb_appended, list("program" = program))
 
 yr <- stringr::str_extract(wb_2022, "(\\d+).xlsx", group = 1)
 wb_appended <- cleanPirData(wb_appended, schema, yr)
+gc()
 
+print(doc, target = file.path(logdir, "automated_pipeline_logs", "ingestion.docx"))
+stop()
 # Load to DB ----
 
 # Write data - This method breaks the foreign key associations
+
+insertData <- function(conn, df) {
+  
+  query <- paste(
+    "INSERT INTO question",
+    "(",
+    paste(names(df), collapse = ","),
+    ")",
+    "VALUES",
+    "(",
+    paste0(
+      "?",
+      vector(mode = "character", length = length(names(df))),
+      collapse = ","
+    ),
+    ")"
+  )
+  print(query)
+  dbExecute(conn, query, params = unname(as.list(df)))
+}
+
+insertData(conn, wb_appended$question)
+
 walk(
   c("response", "program", "question"),
   function(table) {
     dbWriteTable(conn, table, wb_appended[[table]], overwrite = T)
   }
 )
-gc()
+
 # Foreign key references are removed, add them back in here
 # Currently does not work because there are some cases where ID is null
 # dbSendQuery(conn, "ALTER TABLE `Response` ADD FOREIGN KEY (`uid`) REFERENCES `Program` (`uid`)")
