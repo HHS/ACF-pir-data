@@ -46,29 +46,8 @@ walk(
   source
 )
 
-# Function to log messages to a file
-log_message <- function(message) {
-  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-  log_entry <- paste(timestamp, message, "\n")
-  date <- format(Sys.Date(), "%Y%m%d")
-  logdir <- file.path(logdir, "automated_pipeline_logs")
-  cat(
-    log_entry, 
-    file = file.path(logdir, paste0("ingestion_log", "_", date, ".txt")), 
-    append = TRUE
-  )
-}
-
-# Function to hash a string vector
-hashVector <- function(string) {
-  hashed <- future_map_chr(
-    string,
-    rlang::hash
-  )
-  return(hashed)
-}
-
-appendPirSheets <- function(workbook, sheets) {
+# Append sheets of the PIR data which include responses
+appendPirSections <- function(workbook, sheets) {
   
   to_append <- list()
   func_env <- environment()
@@ -77,19 +56,44 @@ appendPirSheets <- function(workbook, sheets) {
   walk(
     sheets,
     function(sheet) {
-      if (sheet %in% c("Section A", "Section B", "Section C", "Section D")) { #note: some years don't include Section D
+      if (grepl("Section", sheet)) {
         to_append <- append(to_append, sheet)
         assign("to_append", to_append, envir = func_env)
       }
     }
   )
-  
+
   # Reshape the data
   to_append <- map(
     to_append,
     function(sheet) {
-      df <- readxl::read_excel(wb_2022, sheet = sheet, skip = 1)
-      
+      # Do not load colnames. Extract text and colnames below
+      df <- readxl::read_excel(workbook, sheet = sheet, col_names = F)
+      names(df) <- df[2, ] %>%
+        pivot_longer(
+          everything(),
+          names_to = "variable",
+          values_to = "question_number"
+        ) %>%
+        group_by(question_number) %>%
+        mutate(
+          num = row_number()
+        ) %>%
+        ungroup() %>%
+        mutate(
+          question_number = ifelse(num != 1, paste(question_number, num, sep = "_"), question_number)
+        ) %>%
+        {.[["question_number"]]}
+
+      text_df <- df[1,] %>%
+        pivot_longer(
+          cols = everything(),
+          names_to = "variable",
+          values_to = "question_name"
+        ) %>%
+        filter(!is.na(question_name))
+      df <- df[3:nrow(df),]
+        
       df <- df %>% 
         mutate(across(everything(), as.character)) %>%
         pivot_longer(
@@ -99,36 +103,57 @@ appendPirSheets <- function(workbook, sheets) {
           ),
           names_to = "variable",
           values_to = "answer"
-        )
+        ) %>%
+        filter(!is.na("Grant Number"))
+      
+      attr(df, "text_df") <- text_df
+      return(df)
     }
   )
   
   # Append the data
   appended <- bind_rows(to_append)
+  text_list <- map(to_append, ~ attr(., "text_df"))
+  attr(appended, "text_df") <- bind_rows(text_list)
   return(appended)
 }
 
 mergePirReference <- function(response, workbook) {
   
   yr <- stringr::str_extract(workbook, "(\\d+).xlsx", group = 1)
+  func_env <- environment()
   
   # Load reference sheet
   question <- readxl::read_excel(workbook, sheet = "Reference") %>%
-    janitor::clean_names()
+    janitor::clean_names() %>%
+    assert_rows(col_concat, is_uniq, question_number, question_name)
   
   # Set of unique questions
-  response_vars <- unique(response$variable)
-  question_vars <- unique(question$question_number) # cannot count on question number to be distinct
+  question_vars <- unique(question$question_number)
   
   # Check that reference has all questions
-  response <- assertr::verify(
-    response,
-    length(setdiff(response_vars, question_vars)) == 0
-  ) %>%
+  response <- response %>%
+    # Remove numeric strings added to uniquely identify
+    mutate(
+      variable = gsub("_\\d+$", "", variable, perl = T)
+    ) %>%
+    pipeExpr(
+      assign("response_vars", unique(.$variable), envir = func_env)
+    ) %>%
+    assertr::verify(
+      length(setdiff(response_vars, question_vars)) == 0
+    ) %>%
+    # Merge to question_text
+    left_join(
+      attr(response, "text_df"),
+      by = c("variable"),
+      relationship = "many-to-one"
+    ) %>%
+    assertr::verify(!is.na(question_name)) %>%
     # Merge to appended data
     left_join(
       question,
-      by = c("variable" = "question_number"),
+      by = c("variable" = "question_number", "question_name"),
       relationship = "many-to-one"
     )
   return(list("response" = response, "question" = question))
@@ -226,13 +251,11 @@ cleanPirData <- function(df_list, schema, yr) {
 
 tryCatch(
   {
-    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
-    log_message("Connection established successfully.")
+    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data_2", username = dbusername, password = dbpassword)
+    logMessage("Connection established successfully.")
   },
   error = function(cnd) {
-    error_message <- paste("Error:", conditionMessage(cnd))
-    log_message(error_message)
-    stop(error_message)
+    errorMessage(cnd)
   }
 )
 
@@ -248,33 +271,85 @@ tryCatch(
         assign("schema", schema, envir = .GlobalEnv)
       }
     )
-    log_message("Schemas read from database.")
+    logMessage("Schemas read from database.")
   },
   error = function(cnd) {
-    error_message <- paste("Error:", conditionMessage(cnd))
-    log_message(error_message)
-    stop(error_message)
+    logMessage("Failed to read schemas from database.")
+    errorMessage(cnd)
   }
 )
 
 # Ingestion ----
 
 # Get workbooks
-
-wb_list <- list.files(
-  file.path(datadir),
-  pattern = "*.xlsx", #filter for "pir_export_"
-  full.names = T
+tryCatch(
+  {
+    wb_list <- list.files(
+      file.path(datadir),
+      pattern = "pir_export_.*.xlsx",
+      full.names = T
+    )
+    logMessage("PIR workbooks found.")
+  },
+  error = function(cnd) {
+    logMessage("Failed to find PIR workbooks.")
+    errorMessage(cnd)
+  }
 )
+
 
 # Ingest each workbook
 
-wb_2022 <- wb_list[grepl("2022.xlsx", wb_list)] # For now, just 2022
+# wb_list<- wb_list[grepl("2022.xlsx", wb_list)] # For now, just 2022
 
-wb_sheets <- readxl::excel_sheets(wb_2022)
+tryCatch(
+  {
+    wb_sheets <- map(
+      wb_list,
+      excel_sheets
+    )
+    logMessage("Sheets successfully extracted.")
+  },
+  error = function(cnd) {
+    logMessage("Failed to extract worksheets.")
+    errorMessage(cnd)
+  }
+)
 
-wb_appended <- appendPirSheets(wb_2022, wb_sheets)
-wb_appended <- mergePirReference(wb_appended, wb_2022)
+# wb_sheets <- readxl::excel_sheets(wb_2022)
+
+tryCatch(
+  {
+    wb_appended <- future_map2(
+      wb_list,
+      wb_sheets,
+      appendPirSections
+    )
+    logMessage("Successfully appended section sheets.")
+  },
+  error = function(cnd) {
+    logMessage("Failed to append PIR sections.")
+    errorMessage(cnd)
+  }
+)
+
+# wb_appended <- appendPirSections(wb_2022, wb_sheets)
+
+tryCatch(
+  {
+    wb_appended <- future_map2(
+      wb_appended,
+      wb_list,
+      mergePirReference
+    )
+    logMessage("Successfully merged reference sheet(s).")
+  },
+  error = function(cnd) {
+    logMessage("Failed to merge Reference sheet(s).")
+    errorMessage(cnd)
+  }
+)
+stop()
 program <- readxl::read_excel(wb_2022, sheet = "Program Details")
 wb_appended <- append(wb_appended, list("program" = program))
 
@@ -288,10 +363,11 @@ stop()
 
 # Write data - This method breaks the foreign key associations
 
-insertData <- function(conn, df) {
+insertData <- function(conn, df, table) {
   
   query <- paste(
-    "INSERT INTO question",
+    "INSERT INTO",
+    table,
     "(",
     paste(names(df), collapse = ","),
     ")",
@@ -308,17 +384,11 @@ insertData <- function(conn, df) {
   dbExecute(conn, query, params = unname(as.list(df)))
 }
 
-insertData(conn, wb_appended$question)
-
-walk(
+walk (
   c("response", "program", "question"),
   function(table) {
-    dbWriteTable(conn, table, wb_appended[[table]], overwrite = T)
+    insertData(conn, wb_appended[[table]], table)
   }
 )
 
-# Foreign key references are removed, add them back in here
-# Currently does not work because there are some cases where ID is null
-# dbSendQuery(conn, "ALTER TABLE `Response` ADD FOREIGN KEY (`uid`) REFERENCES `Program` (`uid`)")
-# dbSendQuery(conn, "ALTER TABLE `Response` ADD FOREIGN KEY (`question_id`) REFERENCES `Question` (`question_id`)")
 dbDisconnect(conn)
