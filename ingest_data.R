@@ -143,7 +143,7 @@ mergePirReference <- function(response, workbook) {
     assertr::verify(
       length(setdiff(response_vars, question_vars)) == 0
     ) %>%
-    # Merge to question_text
+    # Merge to question_name
     left_join(
       attr(response, "text_df"),
       by = c("variable"),
@@ -188,7 +188,7 @@ cleanPirData <- function(df_list, schema, yr) {
       year = yr,
       uid_hash = paste0(grant_number, program_number, program_type),
       uid = hashVector(uid_hash),
-      question_id_hash = paste0(variable, question_text),
+      question_id_hash = paste0(variable, question_name),
       question_id = hashVector(question_id_hash)
     ) %>%
     select(all_of(response_vars))
@@ -202,7 +202,7 @@ cleanPirData <- function(df_list, schema, yr) {
     ) %>%
     mutate(
       year = yr,
-      question_id_hash = paste0(question_number, question_text),
+      question_id_hash = paste0(question_number, question_name),
       question_id = hashVector(question_id_hash)
     ) %>%
     pipeExpr(
@@ -300,8 +300,7 @@ tryCatch(
 
 # Ingest each workbook
 
-# wb_list<- wb_list[grepl("2022.xlsx", wb_list)] # For now, just 2022
-
+# Get list of sheets in each workbook
 tryCatch(
   {
     wb_sheets <- map(
@@ -316,8 +315,7 @@ tryCatch(
   }
 )
 
-# wb_sheets <- readxl::excel_sheets(wb_2022)
-
+# Append section sheets
 tryCatch(
   {
     wb_appended <- future_map2(
@@ -333,8 +331,7 @@ tryCatch(
   }
 )
 
-# wb_appended <- appendPirSections(wb_2022, wb_sheets)
-
+# Merge reference sheet to section sheets
 tryCatch(
   {
     wb_appended <- future_map2(
@@ -349,16 +346,66 @@ tryCatch(
     errorMessage(cnd)
   }
 )
-stop()
-program <- readxl::read_excel(wb_2022, sheet = "Program Details")
-wb_appended <- append(wb_appended, list("program" = program))
 
-yr <- stringr::str_extract(wb_2022, "(\\d+).xlsx", group = 1)
-wb_appended <- cleanPirData(wb_appended, schema, yr)
+# Add program sheet to wb_appended lists
+tryCatch(
+  {
+    wb_appended <- future_map2(
+      wb_list,
+      wb_appended,
+      function(workbook, df_list) {
+        program <- readxl::read_excel(workbook, sheet = "Program Details")
+        df_list <- append(df_list, list("program" = program))
+        return(df_list)
+      }
+    )
+    logMessage("Successfully ingested program details.")
+  },
+  error = function(cnd) {
+    logMessage("Failed to ingest program details.")
+    errorMessage(cnd)
+  }
+)
+
+# Final cleaning
+tryCatch(
+  {
+    wb_appended <- future_map2(
+      wb_appended,
+      wb_list,
+      function(df_list, workbook) {
+        yr <- stringr::str_extract(workbook, "(\\d+).xlsx", group = 1)
+        df_list <- cleanPirData(df_list, schema, yr)
+        return(df_list)
+      }
+    )
+    logMessage("Successfully cleaned PIR data.")
+  },
+  error = function(cnd) {
+    logMessage("Failed to clean PIR data.")
+    errorMessage(cnd)
+  }
+)
+
+# Append like Files
+wb_appended <- future_map(
+  c("response", "question", "program"),
+  function(table) {
+    df <- map(
+      wb_appended,
+      function(df_list) {
+        df_list[[table]]
+      }
+    ) %>%
+      bind_rows()
+  }
+)
+names(wb_appended) <- c("response", "question", "program")
+
+# Clean up
 gc()
-
 print(doc, target = file.path(logdir, "automated_pipeline_logs", "ingestion.docx"))
-stop()
+
 # Load to DB ----
 
 # Write data - This method breaks the foreign key associations
@@ -384,8 +431,27 @@ insertData <- function(conn, df, table) {
   dbExecute(conn, query, params = unname(as.list(df)))
 }
 
-walk (
-  c("response", "program", "question"),
+wb_appended <- future_map(
+  c("response", "question", "program"),
+  function(table) {
+    if (table == "program") {
+      wb_appended[[table]] %>%
+        distinct(uid, .keep_all = T) %>%
+        return()
+    } else if (table == "question") {
+      wb_appended[[table]] %>%
+        distinct(question_id, .keep_all = T) %>%
+        return()
+    } else {
+      wb_appended[[table]] %>%
+        return()
+    }
+  }
+)
+names(wb_appended) <- c("response", "question", "program")
+
+walk(
+  c("program", "question", "response"),
   function(table) {
     insertData(conn, wb_appended[[table]], table)
   }
