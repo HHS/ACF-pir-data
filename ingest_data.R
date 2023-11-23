@@ -32,12 +32,11 @@ invisible(
 # Configuration (paths, db_name, etc.)
 source(here("config.R"))
 
-# Begin documenting
-doc <- read_docx()
-doc <- body_add_par(doc, "## Functions", style = "heading 2")
-
 # Set up parallelization
 future::plan(multisession, workers = 2)
+
+# Get file
+args <- commandArgs(TRUE)
 
 # Functions ----
 
@@ -45,207 +44,8 @@ walk(
   list.files(here("utils"), full.names = T),
   source
 )
-
-# Append sheets of the PIR data which include responses
-appendPirSections <- function(workbook, sheets) {
-  
-  to_append <- list()
-  func_env <- environment()
-  
-  # Extract the sheets of interest
-  walk(
-    sheets,
-    function(sheet) {
-      if (grepl("Section", sheet)) {
-        to_append <- append(to_append, sheet)
-        assign("to_append", to_append, envir = func_env)
-      }
-    }
-  )
-
-  # Reshape the data
-  to_append <- map(
-    to_append,
-    function(sheet) {
-      # Do not load colnames. Extract text and colnames below
-      df <- readxl::read_excel(workbook, sheet = sheet, col_names = F)
-      names(df) <- df[2, ] %>%
-        pivot_longer(
-          everything(),
-          names_to = "variable",
-          values_to = "question_number"
-        ) %>%
-        group_by(question_number) %>%
-        mutate(
-          num = row_number()
-        ) %>%
-        ungroup() %>%
-        mutate(
-          question_number = ifelse(num != 1, paste(question_number, num, sep = "_"), question_number)
-        ) %>%
-        {.[["question_number"]]}
-
-      text_df <- df[1,] %>%
-        pivot_longer(
-          cols = everything(),
-          names_to = "variable",
-          values_to = "question_name"
-        ) %>%
-        filter(!is.na(question_name))
-      df <- df[3:nrow(df),]
-        
-      df <- df %>% 
-        mutate(across(everything(), as.character)) %>%
-        pivot_longer(
-          cols = !c(
-            "Region", "State", "Grant Number", "Program Number", 
-            "Type", "Grantee", "Program", "City", "ZIP Code", "ZIP 4"
-          ),
-          names_to = "variable",
-          values_to = "answer"
-        ) %>%
-        filter(!is.na("Grant Number"))
-      
-      attr(df, "text_df") <- text_df
-      return(df)
-    }
-  )
-  
-  # Append the data
-  appended <- bind_rows(to_append)
-  text_list <- map(to_append, ~ attr(., "text_df"))
-  attr(appended, "text_df") <- bind_rows(text_list)
-  return(appended)
-}
-
-mergePirReference <- function(response, workbook) {
-  
-  yr <- stringr::str_extract(workbook, "(\\d+).xlsx", group = 1)
-  func_env <- environment()
-  
-  # Load reference sheet
-  question <- readxl::read_excel(workbook, sheet = "Reference") %>%
-    janitor::clean_names() %>%
-    assert_rows(col_concat, is_uniq, question_number, question_name)
-  
-  # Set of unique questions
-  question_vars <- unique(question$question_number)
-  
-  # Check that reference has all questions
-  response <- response %>%
-    # Remove numeric strings added to uniquely identify
-    mutate(
-      variable = gsub("_\\d+$", "", variable, perl = T)
-    ) %>%
-    pipeExpr(
-      assign("response_vars", unique(.$variable), envir = func_env)
-    ) %>%
-    assertr::verify(
-      length(setdiff(response_vars, question_vars)) == 0
-    ) %>%
-    # Merge to question_name
-    left_join(
-      attr(response, "text_df"),
-      by = c("variable"),
-      relationship = "many-to-one"
-    ) %>%
-    assertr::verify(!is.na(question_name)) %>%
-    # Merge to appended data
-    left_join(
-      question,
-      by = c("variable" = "question_number", "question_name"),
-      relationship = "many-to-one"
-    )
-  return(list("response" = response, "question" = question))
-}
-
-cleanPirData <- function(df_list, schema, yr) {
-  
-  addPirVars <- function(list_of_errors, data) {
-    for (v in mi_vars) {
-      data[v] <- NA_character_
-    }
-    return(data)
-  }
-  
-  func_env <- environment()
-  
-  walk(
-    names(schema),
-    function(table) {
-      assign(
-        paste0(tolower(table), "_vars"),
-        schema[[table]],
-        envir = func_env
-      )
-    }
-  )
-  
-  df_list$response <- df_list$response %>%
-    janitor::clean_names() %>%
-    rename(program_type = type) %>%
-    mutate(
-      year = yr,
-      uid_hash = paste0(grant_number, program_number, program_type),
-      uid = hashVector(uid_hash),
-      question_id_hash = paste0(variable, question_name),
-      question_id = hashVector(question_id_hash)
-    ) %>%
-    select(all_of(response_vars))
-  
-  df_list$question <- df_list$question %>%
-    mutate(
-      section = gsub("^(\\w).*", "\\1", question_number, perl = T)
-    ) %>%
-    rename(
-      question_type = type
-    ) %>%
-    mutate(
-      year = yr,
-      question_id_hash = paste0(question_number, question_name),
-      question_id = hashVector(question_id_hash)
-    ) %>%
-    pipeExpr(
-      assign(
-        "mi_vars",
-        setdiff(question_vars, names(.)),
-        envir = func_env
-      )
-    ) %>%
-    assertr::verify(
-      length(mi_vars) == 0,
-      error_fun = addPirVars
-    ) %>%
-    select(all_of(question_vars))
-  
-  df_list$program <- df_list$program %>%
-    janitor::clean_names() %>%
-    rename(
-      program_zip1 = program_zip_code,
-      program_zip2 = program_zip_4,
-      program_phone = program_main_phone_number,
-      program_email = program_main_email
-    ) %>%
-    mutate(
-      year = yr,
-      uid_hash = paste0(grant_number, program_number, program_type),
-      uid = hashVector(uid_hash)
-    ) %>%
-    pipeExpr(
-      assign(
-        "mi_vars",
-        setdiff(program_vars, names(.)),
-        envir = func_env
-      )
-    ) %>%
-    assertr::verify(
-      length(mi_vars) == 0,
-      error_fun = addPirVars
-    ) %>%
-    select(all_of(program_vars))
-  
-  return(df_list)
-}
+print(args)
+stop()
 
 # Establish DB connection ----
 
@@ -413,7 +213,7 @@ print(doc, target = file.path(logdir, "automated_pipeline_logs", "ingestion.docx
 insertData <- function(conn, df, table) {
   
   query <- paste(
-    "INSERT INTO",
+    "REPLACE INTO",
     table,
     "(",
     paste(names(df), collapse = ","),
