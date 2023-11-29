@@ -196,3 +196,33 @@ homeless_children_served
 
 foster_care_children_served
 : Total number of enrolled children who were in foster care at any point during the program year.
+
+advanced_degree_hs_prek_teachers 
+: The total number of Head Start preschool classroom teachers with an advanced degree. 
+
+baccalaureate_degree_hs_prek_teachers 
+: The total number of Head Start preschool classroom teachers with a baccalaureate degree.
+
+associate_degree_hs_prek_teachers 
+: The total number of Head Start preschool classroom teachers with an associate degree.
+
+cda_hs_prek_teachers
+: The total number of Head Start preschool classroom teachers with a Child Development Associate (CDA) credential.
+
+no_credential_hs_prek_teachers
+: The total number of Head Start preschool classroom teachers with no credentials.
+
+advanced_degree_ehs_it_teachers
+: The total number of Early Head Start infant and toddler classroom teachers with an advanced degree.
+
+baccalaureate_degree_ehs_it_teachers
+: The total number of Early Head Start infant and toddler classroom teachers with a baccalaureate degree.
+
+associate_degree_ehs_it_teachers
+: The total number of Early Head Start infant and toddler classroom teachers with an associate degree.
+
+cda_ehs_it_teachers
+: The total number of Early Head Start infant and toddler classroom teachers with a Child Development Associate (CDA) credential.
+
+no_credential_ehs_it_teachers
+: The total number of Early Head Start infant and toddler classroom teachers with no credentials.
