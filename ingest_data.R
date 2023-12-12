@@ -30,7 +30,7 @@ invisible(
 )
 
 # Configuration (paths, db_name, etc.)
-source(here("config.R"))
+source("C:\\OHS-Project-1\\ACF-pir-data\\config.R")
 
 # Set up parallelization
 future::plan(multisession, workers = 2)
@@ -41,11 +41,9 @@ args <- commandArgs(TRUE)
 # Functions ----
 
 walk(
-  list.files(here("utils"), full.names = T),
+  list.files(file.path(codedir, "utils"), full.names = T),
   source
 )
-print(args)
-stop()
 
 # Establish DB connection ----
 
@@ -82,22 +80,22 @@ tryCatch(
 # Ingestion ----
 
 # Get workbooks
-tryCatch(
-  {
-    wb_list <- list.files(
-      file.path(datadir),
-      pattern = "pir_export_.*.xlsx",
-      full.names = T
-    )
-    logMessage("PIR workbooks found.")
-  },
-  error = function(cnd) {
-    logMessage("Failed to find PIR workbooks.")
-    errorMessage(cnd)
-  }
-)
-
-
+# tryCatch(
+#   {
+#     wb_list <- list.files(
+#       file.path(datadir),
+#       pattern = "pir_export_.*.xlsx",
+#       full.names = T
+#     )
+#     logMessage("PIR workbooks found.")
+#   },
+#   error = function(cnd) {
+#     logMessage("Failed to find PIR workbooks.")
+#     errorMessage(cnd)
+#   }
+# )
+wb_list <- args
+wb_list <- "C:\\OHS-Project-1\\data_repository\\pir_export_2017.xlsx"
 # Ingest each workbook
 
 # Get list of sheets in each workbook
@@ -204,33 +202,11 @@ names(wb_appended) <- c("response", "question", "program")
 
 # Clean up
 gc()
-print(doc, target = file.path(logdir, "automated_pipeline_logs", "ingestion.docx"))
+# print(doc, target = file.path(logdir, "automated_pipeline_logs", "ingestion.docx"))
 
-# Load to DB ----
+# Write to DB ----
 
-# Write data - This method breaks the foreign key associations
-
-insertData <- function(conn, df, table) {
-  
-  query <- paste(
-    "REPLACE INTO",
-    table,
-    "(",
-    paste(names(df), collapse = ","),
-    ")",
-    "VALUES",
-    "(",
-    paste0(
-      "?",
-      vector(mode = "character", length = length(names(df))),
-      collapse = ","
-    ),
-    ")"
-  )
-  print(query)
-  dbExecute(conn, query, params = unname(as.list(df)))
-}
-
+# Write data
 wb_appended <- future_map(
   c("response", "question", "program"),
   function(table) {
@@ -250,10 +226,19 @@ wb_appended <- future_map(
 )
 names(wb_appended) <- c("response", "question", "program")
 
-walk(
-  c("program", "question", "response"),
-  function(table) {
-    insertData(conn, wb_appended[[table]], table)
+tryCatch(
+  {
+    walk(
+      c("program", "question", "response"),
+      function(table) {
+        replaceInto(conn, wb_appended[[table]], table)
+      }
+    )
+    logMessage("Successfully inserted data into DB.")
+  },
+  error = function(cnd) {
+    logMessage("Failed to insert data into DB.")
+    errorMessage(cnd)
   }
 )
 
