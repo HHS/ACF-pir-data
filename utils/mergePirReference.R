@@ -1,7 +1,37 @@
+#' Merge Reference sheet to appended Sections
+#' 
+#' Extract question metadata from the Reference sheet and
+#' create question data frame. Merge question data frame to
+#' appended Section sheets created with appendPirSections.
+#' 
+#' @param response The response data (appended Section sheets).
+#' @param workbook The workbook that the current data come from.
+#' @examples
+#' mergePirReference(response_df, "<path>/<to>/<workbook>.xlsx")
+
 mergePirReference <- function(response, workbook) {
   
+  # Extract year
   yr <- stringr::str_extract(workbook, "(\\d+).xlsx", group = 1)
+  
+  # Get the function environment
   func_env <- environment()
+  
+  # Handle questions appearing in Section.* but not in Reference
+  responseMergeError <- function(list_of_errors, data) {
+    
+    attr(wb_appended[[1]], "text_df") %>%
+      filter(variable %in% setdiff(response_vars, question_vars)) %>%
+      transmute(
+        question_number = variable,
+        question_text = "Variable not in Reference sheet.",
+        question_name
+      ) %>%
+      bind_rows(question) %>%
+      {assign("question", ., envir = func_env)}
+    
+    return(data)
+  }
   
   # Load reference sheet
   question <- readxl::read_excel(workbook, sheet = "Reference") %>%
@@ -21,7 +51,8 @@ mergePirReference <- function(response, workbook) {
       assign("response_vars", unique(.$variable), envir = func_env)
     ) %>%
     assertr::verify(
-      length(setdiff(response_vars, question_vars)) == 0
+      length(setdiff(response_vars, question_vars)) == 0,
+      error_fun = responseMergeError
     ) %>%
     # Merge to question_name
     left_join(
