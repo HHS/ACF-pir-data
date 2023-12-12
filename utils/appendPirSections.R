@@ -40,7 +40,7 @@ appendPirSections <- function(workbook, sheets) {
       text_df <- df[1,] %>%
         pivot_longer(
           cols = everything(),
-          names_to = "variable",
+          names_to = "question_number",
           values_to = "question_name"
         ) %>%
         filter(!is.na(question_name))
@@ -53,7 +53,7 @@ appendPirSections <- function(workbook, sheets) {
             "Region", "State", "Grant Number", "Program Number", 
             "Type", "Grantee", "Program", "City", "ZIP Code", "ZIP 4"
           ),
-          names_to = "variable",
+          names_to = "question_number",
           values_to = "answer"
         ) %>%
         filter(!is.na(`Grant Number`))

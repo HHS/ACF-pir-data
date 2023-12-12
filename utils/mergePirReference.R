@@ -19,13 +19,13 @@ mergePirReference <- function(response, workbook) {
   
   # Handle questions appearing in Section.* but not in Reference
   responseMergeError <- function(list_of_errors, data) {
-    
-    attr(wb_appended[[1]], "text_df") %>%
-      filter(variable %in% setdiff(response_vars, question_vars)) %>%
+
+    attr(data, "text_df") %>%
+      filter(question_number %in% setdiff(response_vars, question_vars)) %>%
       transmute(
-        question_number = variable,
         question_text = "Variable not in Reference sheet.",
-        question_name
+        question_name,
+        question_number
       ) %>%
       bind_rows(question) %>%
       {assign("question", ., envir = func_env)}
@@ -45,10 +45,10 @@ mergePirReference <- function(response, workbook) {
   response <- response %>%
     # Remove numeric strings added to uniquely identify
     mutate(
-      variable = gsub("_\\d+$", "", variable, perl = T)
+      question_number = gsub("_\\d+$", "", question_number, perl = T)
     ) %>%
     pipeExpr(
-      assign("response_vars", unique(.$variable), envir = func_env)
+      assign("response_vars", unique(.$question_number), envir = func_env)
     ) %>%
     assertr::verify(
       length(setdiff(response_vars, question_vars)) == 0,
@@ -57,14 +57,14 @@ mergePirReference <- function(response, workbook) {
     # Merge to question_name
     left_join(
       attr(response, "text_df"),
-      by = c("variable"),
+      by = c("question_number"),
       relationship = "many-to-one"
     ) %>%
     assertr::verify(!is.na(question_name)) %>%
     # Merge to appended data
     left_join(
       question,
-      by = c("variable" = "question_number", "question_name"),
+      by = c("question_number", "question_name"),
       relationship = "many-to-one"
     )
   return(list("response" = response, "question" = question))

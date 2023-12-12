@@ -22,17 +22,22 @@ cleanPirData <- function(df_list, schema, yr) {
   
   df_list$response <- df_list$response %>%
     janitor::clean_names() %>%
-    rename(program_type = type) %>%
+    rename(
+      program_type = type
+    ) %>%
+    assertr::assert(not_na, grant_number, program_number, program_type) %>%
+    assertr::assert(not_na, question_number, question_name) %>%
     mutate(
       year = yr,
       uid_hash = paste0(grant_number, program_number, program_type),
       uid = hashVector(uid_hash),
-      question_id_hash = paste0(variable, question_name),
+      question_id_hash = paste0(question_number, question_name),
       question_id = hashVector(question_id_hash)
     ) %>%
     select(all_of(response_vars))
   
   df_list$question <- df_list$question %>%
+    assertr::assert(not_na, question_number, question_name) %>%
     mutate(
       section = gsub("^(\\w).*", "\\1", question_number, perl = T)
     ) %>%
@@ -59,6 +64,7 @@ cleanPirData <- function(df_list, schema, yr) {
   
   df_list$program <- df_list$program %>%
     janitor::clean_names() %>%
+    assertr::assert(not_na, grant_number, program_number, program_type) %>%
     rename(
       program_zip1 = program_zip_code,
       program_zip2 = program_zip_4,

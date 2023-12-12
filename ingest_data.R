@@ -11,7 +11,7 @@ rm(list = ls())
 
 # Packages
 pkgs <- c(
-  "tidyr", "dplyr", "officer", "assertr", 
+  "tidyr", "dplyr", "roxygen2", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
   "furrr", "readxl"
 )
@@ -34,6 +34,7 @@ source("C:\\OHS-Project-1\\ACF-pir-data\\config.R")
 
 # Set up parallelization
 future::plan(multisession, workers = 2)
+options(future.globals.maxSize = 2000*1024^2)
 
 # Get file
 args <- commandArgs(TRUE)
@@ -79,12 +80,14 @@ tryCatch(
 
 # Ingestion ----
 
+# wb_list <- args
+wb_list <- "C:\\OHS-Project-1\\data_repository\\pir_export_2015.xlsx"
 # Get workbooks
 # tryCatch(
 #   {
 #     wb_list <- list.files(
 #       file.path(datadir),
-#       pattern = "pir_export_.*.xlsx",
+#       pattern = "pir_export_.*.xls$",
 #       full.names = T
 #     )
 #     logMessage("PIR workbooks found.")
@@ -94,8 +97,7 @@ tryCatch(
 #     errorMessage(cnd)
 #   }
 # )
-wb_list <- args
-wb_list <- "C:\\OHS-Project-1\\data_repository\\pir_export_2017.xlsx"
+  
 # Ingest each workbook
 
 # Get list of sheets in each workbook
@@ -128,6 +130,7 @@ tryCatch(
     errorMessage(cnd)
   }
 )
+gc()
 
 # Merge reference sheet to section sheets
 tryCatch(
@@ -144,6 +147,7 @@ tryCatch(
     errorMessage(cnd)
   }
 )
+gc()
 
 # Add program sheet to wb_appended lists
 tryCatch(
@@ -164,6 +168,7 @@ tryCatch(
     errorMessage(cnd)
   }
 )
+gc()
 
 # Final cleaning
 tryCatch(
@@ -184,6 +189,7 @@ tryCatch(
     errorMessage(cnd)
   }
 )
+gc()
 
 # Append like Files
 wb_appended <- future_map(
@@ -199,10 +205,7 @@ wb_appended <- future_map(
   }
 )
 names(wb_appended) <- c("response", "question", "program")
-
-# Clean up
 gc()
-# print(doc, target = file.path(logdir, "automated_pipeline_logs", "ingestion.docx"))
 
 # Write to DB ----
 
@@ -212,11 +215,11 @@ wb_appended <- future_map(
   function(table) {
     if (table == "program") {
       wb_appended[[table]] %>%
-        distinct(uid, .keep_all = T) %>%
+        distinct(uid, year, .keep_all = T) %>%
         return()
     } else if (table == "question") {
       wb_appended[[table]] %>%
-        distinct(question_id, .keep_all = T) %>%
+        distinct(question_id, year, .keep_all = T) %>%
         return()
     } else {
       wb_appended[[table]] %>%
