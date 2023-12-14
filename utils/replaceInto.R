@@ -17,4 +17,5 @@ replaceInto <- function(conn, df, table) {
   )
   # print(query)
   dbExecute(conn, query, params = unname(as.list(df)))
+  logMessage(paste("Successfully inserted data into", table))
 }
