@@ -20,47 +20,65 @@ cleanPirData <- function(df_list, schema, yr) {
     }
   )
   
-  df_list$response <- df_list$response %>%
-    janitor::clean_names() %>%
-    rename(
-      program_type = type
-    ) %>%
-    assertr::assert(not_na, grant_number, program_number, program_type) %>%
-    assertr::assert(not_na, question_number, question_name) %>%
-    mutate(
-      year = yr,
-      uid_hash = paste0(grant_number, program_number, program_type),
-      uid = hashVector(uid_hash),
-      question_id_hash = paste0(question_number, question_name),
-      question_id = hashVector(question_id_hash)
-    ) %>%
-    select(all_of(response_vars))
+  tables <- names(df_list)
   
-  df_list$question <- df_list$question %>%
-    assertr::assert(not_na, question_number, question_name) %>%
-    mutate(
-      section = gsub("^(\\w).*", "\\1", question_number, perl = T)
-    ) %>%
-    rename(
-      question_type = type
-    ) %>%
-    mutate(
-      year = yr,
-      question_id_hash = paste0(question_number, question_name),
-      question_id = hashVector(question_id_hash)
-    ) %>%
-    pipeExpr(
-      assign(
-        "mi_vars",
-        setdiff(question_vars, names(.)),
-        envir = func_env
-      )
-    ) %>%
-    assertr::verify(
-      length(mi_vars) == 0,
-      error_fun = addPirVars
-    ) %>%
-    select(all_of(question_vars))
+  # Clean response table data
+  response_tables <- tables[grepl("response", tables)]
+  walk(
+    response_tables,
+    function(table) {
+      df_list[[table]] <- df_list[[table]] %>%
+        janitor::clean_names() %>%
+        rename(
+          program_type = type
+        ) %>%
+        assertr::assert(not_na, grant_number, program_number, program_type) %>%
+        assertr::assert(not_na, question_number, question_name) %>%
+        mutate(
+          year = yr,
+          uid_hash = paste0(grant_number, program_number, program_type),
+          uid = hashVector(uid_hash),
+          question_id_hash = paste0(question_number, question_name),
+          question_id = hashVector(question_id_hash)
+        ) %>%
+        select(all_of(response_vars))
+      assign("df_list", df_list, envir = func_env)
+    }
+  )
+  
+  # Clean question table data
+  question_tables <- tables[grepl("question", tables)]
+  walk(
+    question_tables,
+    function(table) {
+      df_list[[table]] <- df_list[[table]] %>%
+        assertr::assert(not_na, question_number, question_name) %>%
+        mutate(
+          section = gsub("^(\\w).*", "\\1", question_number, perl = T)
+        ) %>%
+        rename(
+          question_type = type
+        ) %>%
+        mutate(
+          year = yr,
+          question_id_hash = paste0(question_number, question_name),
+          question_id = hashVector(question_id_hash)
+        ) %>%
+        pipeExpr(
+          assign(
+            "mi_vars",
+            setdiff(question_vars, names(.)),
+            envir = func_env
+          )
+        ) %>%
+        assertr::verify(
+          length(mi_vars) == 0,
+          error_fun = addPirVars
+        ) %>%
+        select(all_of(question_vars))
+      assign("df_list", df_list, envir = func_env)
+    }
+  )
   
   df_list$program <- df_list$program %>%
     janitor::clean_names() %>%
