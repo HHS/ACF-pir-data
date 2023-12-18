@@ -1,5 +1,7 @@
 replaceInto <- function(conn, df, table) {
   
+  dbExecute(conn, "SET foreign_key_checks = 0")
+  
   query <- paste(
     "REPLACE INTO",
     table,
@@ -18,4 +20,6 @@ replaceInto <- function(conn, df, table) {
   # print(query)
   dbExecute(conn, query, params = unname(as.list(df)))
   logMessage(paste("Successfully inserted data into", table))
+  
+  dbExecute(conn, "SET foreign_key_checks = 1")
 }
