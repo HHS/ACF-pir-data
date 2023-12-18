@@ -21,6 +21,8 @@ appendPirSections <- function(workbook, sheets) {
     function(sheet) {
       # Do not load colnames. Extract text and colnames below
       df <- readxl::read_excel(workbook, sheet = sheet, col_names = F)
+      
+      # Name columns using the second row of df
       names(df) <- df[2, ] %>%
         pivot_longer(
           everything(),
@@ -33,17 +35,33 @@ appendPirSections <- function(workbook, sheets) {
         ) %>%
         ungroup() %>%
         mutate(
+          na_number = grepl(
+            "^na$",
+            tolower(gsub("\\W", "", question_number, perl = T))
+          ),
           question_number = ifelse(num != 1, paste(question_number, num, sep = "_"), question_number)
+        ) %>%
+        pipeExpr(
+          assign("na_number", which(.$na_number == TRUE), envir = .GlobalEnv)
         ) %>%
         {.[["question_number"]]}
       
+      # First row contains question_name
       text_df <- df[1,] %>%
         pivot_longer(
           cols = everything(),
           names_to = "question_number",
           values_to = "question_name"
         ) %>%
-        filter(!is.na(question_name))
+        mutate(
+          q_num_lower = trimws(tolower(question_number)),
+          q_num_lower = gsub("\\W|_\\d+$", "", q_num_lower, perl = T)
+        ) %>%
+        filter(
+          !is.na(question_name)
+        ) %>%
+        select(-c(q_num_lower))
+      
       df <- df[3:nrow(df),]
       
       df <- df %>% 
@@ -56,16 +74,19 @@ appendPirSections <- function(workbook, sheets) {
           names_to = "question_number",
           values_to = "answer"
         ) %>%
-        filter(!is.na(`Grant Number`))
+        filter(!is.na(`Grant Number`)) %>%
+        left_join(
+          text_df,
+          by = c("question_number"),
+          relationship = "many-to-one"
+        ) %>%
+        assert(not_na, question_name)
       
-      attr(df, "text_df") <- text_df
       return(df)
     }
   )
   
   # Append the data
   appended <- bind_rows(to_append)
-  text_list <- map(to_append, ~ attr(., "text_df"))
-  attr(appended, "text_df") <- bind_rows(text_list)
-  return(appended)
+  return(list("response" = appended))
 }
