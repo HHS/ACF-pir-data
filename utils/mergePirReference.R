@@ -11,80 +11,17 @@
 
 mergePirReference <- function(df_list, workbook) {
   
-  response <- df_list$response
-  question <- df_list$question
-  
-  response_vars <- names(response)
-  
-  # Extract year
-  yr <- stringr::str_extract(workbook, "(\\d+).xlsx", group = 1)
-  
-  # Get the function environment
-  func_env <- environment()
-  
   addUnmatched <- function(data) {
     if ("unmatched" %notin% names(data)) {
-      data <- mutate(data, unmatched = NA_real_)
+      data <- mutate(data, unmatched = NA_character_)
     }
     return(data)
   }
   
-  # Update unmatched tables
-  # updateUnmatched <- function(envir) {
-  #   
-  #   uu_env <- environment()
-  #   tables <- c("unmatched_response", "unmatched_question")
-  #   df_list <- get("df_list")
-  #   
-  #   entry_condition <- all(
-  #     map_lgl(
-  #       tables,
-  #       function(table) {
-  #         is.null(df_list[[table]])
-  #       }
-  #     )
-  #   )
-  #   if (entry_condition) {
-  #     walk(
-  #       tables,
-  #       function(table) {
-  #         assign(table, envir[[table]], envir = uu_env)
-  #       }
-  #     )
-  #   } else {
-  #     walk(
-  #       tables,
-  #       function(table) {
-  #         if (!is.null(df_list[[table]])) {
-  #           df <- bind_rows(
-  #             df_list[["table"]],
-  #             envir[["table"]]
-  #           )
-  #           assign(table, df, envir = uu_env)
-  #         }
-  #       }
-  #     )
-  #   }
-  # 
-  #   walk(
-  #     tables,
-  #     function(table) {
-  #       df_list[[table]] <- uu_env[[table]]
-  #       assign("df_list", df_list, envir = uu_env)
-  #     }
-  #   )
-  #   
-  #   assign(
-  #     "df_list", 
-  #     df_list,
-  #     envir = func_env
-  #   )
-  # }
-  
   # Add questions appearing in Section.* but not in Reference
   responseMergeError <- function(list_of_errors, data) {
 
-    attr(data, "text_df") %>%
+    data %>%
       filter(question_number %in% setdiff(response_nums, question_nums)) %>%
       transmute(
         question_text = "Variable not in Reference sheet.",
@@ -120,29 +57,32 @@ mergePirReference <- function(df_list, workbook) {
       )
     
     question <- question %>%
-      addUnmatched() %>%
       full_join_check(
         select(diff_name, question_number),
         by = "question_number"
       ) %>%
       mutate(
-        unmatched = ifelse(merge == 2, 1, unmatched)
+        unmatched = ifelse(merge == 3, "Missing/mismatched question", unmatched)
       ) %>%
       select(-c(merge))
     
+    assign("question", question, envir = func_env)
+    
     logMessage(
       paste0(
-        "All data for the following variables has been omitted due to",
-        "conflicts in the question name. Please check table unmatched_response",
+        "All data for the following variables has been omitted due to ",
+        "conflicts in the question name. Please check table unmatched_response ",
         "and table unmatched_question for details about these records",
         "\n",
-        paste(
+        paste0(
           diff_name$question_number,
-          "-",
-          "Question name in the response table was",
+          " - ",
+          "Question name in the response table was ",
+          "'",
           diff_name$question_name_response,
-          ".",
-          "Question name in the question table was",
+          "'", 
+          ". ",
+          "Question name in the question table was ",
           diff_name$question_name_question,
           ".",
           collapse = "\n"
@@ -150,10 +90,8 @@ mergePirReference <- function(df_list, workbook) {
       )
     )
     
-    # updateUnmatched(mi_question_env)
-    
     data %>%
-      mutate(unmatched = ifelse(mi_q_cond == 0, 1, unmatched)) %>%
+      mutate(unmatched = ifelse(mi_q_cond == 0, "Missing/mismatched question", unmatched)) %>%
       return()
   }
   
@@ -162,7 +100,6 @@ mergePirReference <- function(df_list, workbook) {
     naNum_env <- environment()
 
     question %>%
-      addUnmatched() %>%
       mutate(
         q_num_lower = trimws(tolower(question_number)),
         q_num_lower = ifelse(
@@ -170,24 +107,34 @@ mergePirReference <- function(df_list, workbook) {
           "na",
           q_num_lower
         ),
-        unmatched = ifelse(q_num_lower == "na", 1, unmatched)
+        unmatched = ifelse(q_num_lower == "na", "NA question number", unmatched)
       ) %>%
       {assign("question", ., envir = func_env)}
     
-    # updateUnmatched(naNum_env)
-    
     data %>%
-      mutate(unmatched = ifelse(q_num_lower == "na", 1, unmatched)) %>%
+      mutate(unmatched = ifelse(q_num_lower == "na", "NA question number", unmatched)) %>%
       return()
   }
   
+  response <- df_list$response %>%
+    addUnmatched()
+  
+  question <- df_list$question %>%
+    addUnmatched()
+  
+  response_vars <- names(response)
+  
+  # Extract year
+  yr <- stringr::str_extract(workbook, "(\\d+).xlsx", group = 1)
+  
+  # Get the function environment
+  func_env <- environment()
   
   # Set of unique questions
   question_nums <- unique(question$question_number)
-  
+
   # Check that reference has all questions
   response <- response %>%
-    addUnmatched() %>%
     # Remove numeric strings added to uniquely identify
     mutate(
       question_number = gsub("_\\d+$", "", question_number, perl = T),
@@ -209,31 +156,16 @@ mergePirReference <- function(df_list, workbook) {
       length(setdiff(response_nums, question_nums)) == 0,
       error_fun = responseMergeError
     ) %>%
-    # Merge to get question_name
-    left_join(
-      attr(response, "text_df"),
-      by = c("question_number"),
-      relationship = "many-to-one"
-    ) %>%
-    mutate(
-      name_cond = case_when(
-        unmatched != 1 & is.na(question_name) ~ 0,
-        TRUE ~ 1
-      )
-    ) %>%
-    assertr::verify(
-      name_cond == 1
-    ) %>%
     # Merge to appended data
     left_join_check(
-      filter(question, unmatched != 1) %>%
+      question %>%
         select(-c(unmatched)),
       by = c("question_number", "question_name"),
       relationship = "many-to-one"
     ) %>%
     mutate(
       mi_q_cond = case_when(
-        unmatched != 1 & merge != 3 ~ 0,
+        is.na(unmatched) & merge != 3 ~ 0,
         TRUE ~ 1
       )
     ) %>%
@@ -241,19 +173,23 @@ mergePirReference <- function(df_list, workbook) {
       mi_q_cond == 1,
       error_fun = missingQuestion
     ) %>%
-    select(-c(merge)) 
+    select(-c(merge)) %>%
+    assertr::assert(not_na, question_name, question_number)
   
   unmatched_response <- response %>%
-    filter(unmatched == 1)
+    filter(!is.na(unmatched)) %>%
+    rename(reason = unmatched)
   
   response <- response %>%
-    filter(unmatched != 1 | is.na(unmatched))
+    filter(is.na(unmatched))
 
   # Remove unmatched questions
   unmatched_question <- question %>%
-    filter(unmatched == 1)
+    filter(!is.na(unmatched))  %>%
+    rename(reason = unmatched)
+  
   question <- question %>%
-    filter(unmatched != 1 | is.na(unmatched))
+    filter(is.na(unmatched))
   
   for (table in c("response", "question", "unmatched_question", "unmatched_response")) {
     df_list[[table]] <- get(table)
