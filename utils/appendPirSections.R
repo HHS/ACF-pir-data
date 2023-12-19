@@ -1,8 +1,21 @@
-# Append sheets of the PIR data which include responses
-appendPirSections <- function(workbook, sheets) {
+#' Append all "Section" sheets of PIR workbook
+#' 
+#' `appendPirSections` loads all sheets of a PIR data workbook
+#' which contain the word "Section" and appends them. The resultant
+#' data frame is returned in a list with name "response".
+#' 
+#' @param workbook Path to the workbook to load sheets from
+#' @returns List of 1 element, response, containing the appended sheets.
+#' @examples
+#' # example code
+#' appendPirSections(test_wb.xlsx)
+
+appendPirSections <- function(workbook) {
   
   to_append <- list()
   func_env <- environment()
+  
+  sheets <- readxl::excel_sheets(workbook)
   
   # Extract the sheets of interest
   walk(
