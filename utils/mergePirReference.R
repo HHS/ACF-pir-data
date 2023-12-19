@@ -12,8 +12,6 @@
 
 mergePirReference <- function(df_list, workbook) {
   
-  # print(workbook)
-  
   addUnmatched <- function(data) {
     if ("unmatched" %notin% names(data)) {
       data <- mutate(data, unmatched = NA_character_)
@@ -74,7 +72,9 @@ mergePirReference <- function(df_list, workbook) {
     
     logMessage(
       paste0(
-        "All data for the following variables has been omitted due to ",
+        "All data for the following variables, in workbook ",
+        gsub(".*(?<=\\W)(\\w+.xlsx?)$", "\\1", workbook, perl = T),
+        ", have been omitted due to ",
         "conflicts in the question name. Please check table unmatched_response ",
         "and table unmatched_question for details about these records",
         "\n",
