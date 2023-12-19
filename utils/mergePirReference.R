@@ -8,7 +8,7 @@
 #' @param workbook The workbook that the current data come from.
 #' @examples
 #' # example code
-#' mergePirReference(response_df, "<path>/<to>/<workbook>.xlsx")
+#' mergePirReference(response_df, "test_wb.xlsx")
 
 mergePirReference <- function(df_list, workbook) {
   

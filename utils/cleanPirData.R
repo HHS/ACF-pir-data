@@ -1,3 +1,16 @@
+#' Perform cleaning to prepare data for MySQL database
+#' 
+#' `cleanPirData` performs several cleaning steps, such as hashing values,
+#' checking for NAs, and removing extraneous variables, to prepare the data
+#' for insertion into the MySQL database.
+#' 
+#' @param df_list A list of data frames.
+#' @param schema A list of character vectors defining the columns that should
+#' kept (or added) to the corresponding df in `df_list`.
+#' @param yr Year from which the data in `df_list` come.
+#' @examples
+#' # example code
+#' cleanPirData(test_df_list, test_schema, test_yr)
 cleanPirData <- function(df_list, schema, yr) {
   
   addPirVars <- function(list_of_errors, data) {
