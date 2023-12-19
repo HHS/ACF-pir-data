@@ -1,7 +1,10 @@
 #' Log status messages
 #'
-#' @param message The message to be logged.
-#' @param log The log to which to write the message.
+#' `logMessage` logs status messages within the ingestion pipeline.
+#' 
+#' @param message The message to be logged as a character string.
+#' @param log String file path of the log to which to write the message.
+#' @returns NULL
 #' @examples
 #' # example code
 #' logMessage("Hello world", "hello_world.txt")
