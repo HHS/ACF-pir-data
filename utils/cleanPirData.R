@@ -20,6 +20,8 @@ cleanPirData <- function(df_list, schema, yr) {
     }
   )
   
+  # Remove data frames with 0 observations
+  df_list <- df_list[map_lgl(df_list, function(x) nrow(x) > 0)]
   tables <- names(df_list)
   
   # Clean response table data
@@ -27,6 +29,7 @@ cleanPirData <- function(df_list, schema, yr) {
   walk(
     response_tables,
     function(table) {
+      vars <- get(paste0(tolower(table), "_vars"), envir = func_env)
       df_list[[table]] <- df_list[[table]] %>%
         janitor::clean_names() %>%
         rename(
@@ -41,8 +44,9 @@ cleanPirData <- function(df_list, schema, yr) {
           question_id_hash = paste0(question_number, question_name),
           question_id = hashVector(question_id_hash)
         ) %>%
-        select(all_of(response_vars))
+        select(all_of(vars))
       assign("df_list", df_list, envir = func_env)
+      gc()
     }
   )
   
@@ -51,6 +55,7 @@ cleanPirData <- function(df_list, schema, yr) {
   walk(
     question_tables,
     function(table) {
+      vars <- get(paste0(tolower(table), "_vars"), envir = func_env)
       df_list[[table]] <- df_list[[table]] %>%
         assertr::assert(not_na, question_number, question_name) %>%
         mutate(
@@ -75,8 +80,9 @@ cleanPirData <- function(df_list, schema, yr) {
           length(mi_vars) == 0,
           error_fun = addPirVars
         ) %>%
-        select(all_of(question_vars))
+        select(all_of(vars))
       assign("df_list", df_list, envir = func_env)
+      gc()
     }
   )
   
