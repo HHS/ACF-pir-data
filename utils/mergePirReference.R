@@ -7,9 +7,12 @@
 #' @param df_list A list of data frames.
 #' @param workbook The workbook that the current data come from.
 #' @examples
+#' # example code
 #' mergePirReference(response_df, "<path>/<to>/<workbook>.xlsx")
 
 mergePirReference <- function(df_list, workbook) {
+  
+  # print(workbook)
   
   addUnmatched <- function(data) {
     if ("unmatched" %notin% names(data)) {
@@ -24,10 +27,11 @@ mergePirReference <- function(df_list, workbook) {
     data %>%
       filter(question_number %in% setdiff(response_nums, question_nums)) %>%
       transmute(
-        question_text = "Variable not in Reference sheet.",
         question_name,
-        question_number
+        question_number,
+        unmatched = "Variable not in Reference sheet."
       ) %>%
+      distinct() %>%
       bind_rows(question) %>%
       {assign("question", ., envir = func_env)}
     
@@ -87,7 +91,8 @@ mergePirReference <- function(df_list, workbook) {
           ".",
           collapse = "\n"
         )
-      )
+      ), 
+      log_file
     )
     
     data %>%
