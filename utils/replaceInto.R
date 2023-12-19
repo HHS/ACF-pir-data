@@ -1,3 +1,20 @@
+#' Generate and execute "REPLACE INTO" MySQL query
+#' 
+#' `replaceInto` generates a "REPLACE INTO" query for `table` using data `df`.
+#' 
+#' @param conn Database connection.
+#' @param df Data frame.
+#' @param table Name of the table that data from `df` should be inserted into.
+#' @returns NULL
+#' @examples
+#' # example code
+#' conn <- DBI::dbConnect(
+#'   RMariaDB::MariaDB(), 
+#'   dbname = "test_db", 
+#'   username = test_username, 
+#'   password = test_password
+#' )
+#' replaceInto(conn, test_df, "test")
 replaceInto <- function(conn, df, table) {
   
   dbExecute(conn, "SET foreign_key_checks = 0")
@@ -19,7 +36,7 @@ replaceInto <- function(conn, df, table) {
   )
   # print(query)
   dbExecute(conn, query, params = unname(as.list(df)))
-  logMessage(paste("Successfully inserted data into", table))
+  logMessage(paste("Successfully inserted data into", table), log_file)
   
   dbExecute(conn, "SET foreign_key_checks = 1")
 }
