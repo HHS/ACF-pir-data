@@ -109,23 +109,6 @@ wb_list <- c(
 #   }
 # )
 
-# Ingest each workbook
-
-# Get list of sheets in each workbook
-# tryCatch(
-#   {
-#     wb_sheets <- map(
-#       wb_list,
-#       excel_sheets
-#     )
-#     logMessage("Sheets successfully extracted.", log_file)
-#   },
-#   error = function(cnd) {
-#     logMessage("Failed to extract worksheets.", log_file)
-#     errorMessage(cnd)
-#   }
-# )
-
 # Append section sheets
 tryCatch(
   {
