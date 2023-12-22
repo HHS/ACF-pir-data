@@ -156,9 +156,35 @@ q2021 <- dbGetQuery(
   )
 
 linked_questions <- linkQuestions(q2022, q2023)
-temp <- cleanQuestions(linked_questions)
+linked_questions <- cleanQuestions(linked_questions)
 
 replaceInto(link_conn, linked_questions$linked, "linked")
-replaceInto(link_conn, temp$unlinked, "unlinked")
+replaceInto(link_conn, linked_questions$unlinked, "unlinked")
 
 lq2 <- linkQuestions(q2021, q2022)
+
+lq2$linked %>%
+  left_join(
+    filter(linked, year == 2022) %>%
+      select(uqid, question_id),
+    by = c("question_id2021" = "question_id"),
+    relationship = "one-to-one"
+  ) %>%
+  mutate(
+    uqid = case_when(
+      is.na(uqid) ~ UUIDgenerate(n = nrow(.)),
+      TRUE ~ uqid
+    )
+  ) %>%
+  assert(is_uniq, uqid) %>%
+  select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+  pivot_longer(
+    !c(uqid),
+    names_to = c(".value", "year"),
+    names_pattern = "^(\\w+)(\\d{4})$"
+  ) %>%
+  mutate(year = as.numeric(year))
+
+#' Working on ingesting an additional year when data is already present
+#' Idea is to get unique question IDs from the database to keep them consistent
+#' Over time
