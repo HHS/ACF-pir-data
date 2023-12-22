@@ -12,10 +12,16 @@
 logMessage <- function(message, log) {
   timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
   
-  log_entry <- paste(timestamp, message, "\n")
+  log_entry <- paste(
+    paste0('"', timestamp, '"'), 
+    paste0('"', message, '"'),
+    sep = ";"
+  )
+  log_entry <- gsub(";$", "", log_entry)
   cat(
     log_entry,
     file = log, 
+    sep = "\n",
     append = TRUE
   )
 }
