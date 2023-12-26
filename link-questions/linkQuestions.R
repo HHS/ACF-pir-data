@@ -102,89 +102,49 @@ tryCatch(
   }
 )
 
-linked <- dbGetQuery(
-  link_conn,
+# Extract years from question table
+all_years <- dbGetQuery(
+  conn,
   "
-    SELECT *
-    FROM linked
+    SELECT distinct year
+    from question
   "
+)$year
+all_years <- sort(all_years, decreasing = T)
+
+# Loop over all years and match questions
+walk(
+  1:(length(all_years)-1),
+  function(index) {
+    conn <- get("conn", envir = .GlobalEnv)
+    y1 <- all_years[index + 1]
+    y2 <- all_years[index]
+    question_frames <- map(
+      c(y1, y2),
+      function(yr) {
+        dbGetQuery(
+          conn,
+          paste(
+            "SELECT *",
+            "FROM question",
+            "WHERE year =", yr
+          )
+        ) %>%
+          mutate(
+            across(
+              starts_with("question"),
+              ~ ifelse(is.na(.), "", .)
+            )
+          ) %>%
+          return()
+      }
+    )
+
+    linked_questions <- linkQuestions(question_frames[[1]], question_frames[[2]])
+    linked_questions <- cleanQuestions(linked_questions, link_conn)
+
+    replaceInto(link_conn, linked_questions$linked, "linked")
+    replaceInto(link_conn, linked_questions$unlinked, "unlinked")
+    
+  }
 )
-
-q2023 <- dbGetQuery(
-  conn,
-  "
-    SELECT * 
-    FROM question
-    WHERE YEAR = 2023
-  "
-) %>%
-  mutate(
-    across(
-      starts_with("question"),
-      ~ ifelse(is.na(.), "", .)
-    )
-  )
-
-q2022 <- dbGetQuery(
-  conn,
-  "
-    SELECT * 
-    FROM question
-    WHERE YEAR = 2022
-  "
-) %>%
-  mutate(
-    across(
-      starts_with("question"),
-      ~ ifelse(is.na(.), "", .)
-    )
-  )
-
-q2021 <- dbGetQuery(
-  conn,
-  "
-    SELECT * 
-    FROM question
-    WHERE YEAR = 2021
-  "
-) %>%
-  mutate(
-    across(
-      starts_with("question"),
-      ~ ifelse(is.na(.), "", .)
-    )
-  )
-
-linked_questions <- linkQuestions(q2022, q2023)
-linked_questions <- cleanQuestions(linked_questions)
-
-replaceInto(link_conn, linked_questions$linked, "linked")
-replaceInto(link_conn, linked_questions$unlinked, "unlinked")
-
-lq2 <- linkQuestions(q2021, q2022)
-
-lq2$linked %>%
-  left_join(
-    filter(linked, year == 2022) %>%
-      select(uqid, question_id),
-    by = c("question_id2021" = "question_id"),
-    relationship = "one-to-one"
-  ) %>%
-  mutate(
-    uqid = case_when(
-      is.na(uqid) ~ UUIDgenerate(n = nrow(.)),
-      TRUE ~ uqid
-    )
-  ) %>%
-  assert(is_uniq, uqid) %>%
-  select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
-  pivot_longer(
-    !c(uqid),
-    names_to = c(".value", "year"),
-    names_pattern = "^(\\w+)(\\d{4})$"
-  ) %>%
-  mutate(year = as.numeric(year))
-
-#' Working on ingesting an additional year when data is already present
-#' Idea is to get unique question IDs from the database to keep them consistent
-#' Over time
