@@ -1,23 +1,82 @@
-cleanQuestions <- function(qlist) {
+cleanQuestions <- function(df_list, conn = NULL) {
   require(uuid)
   require(assertr)
   require(stringr)
+  require(rlang)
+  require(jsonlite)
   
-  linked <- qlist$linked %>%
-    mutate(uqid = uuid::UUIDgenerate(n = nrow(.))) %>%
-    assert(is_uniq, uqid) %>%
-    select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
-    pivot_longer(
-      !c(uqid),
-      names_to = c(".value", "year"),
-      names_pattern = "^(\\w+)(\\d{4})$"
-    ) %>%
-    mutate(year = as.numeric(year))
+  # Query extant linked db
+  stopifnot(!is.null(conn))
   
-  years <- attr(qlist$unlinked, "years")
+  min_yr <- min(attr(df_list$linked, "years"))
+  max_yr <- max(attr(df_list$linked, "years"))
   
-  unlinked <- qlist$unlinked %>%
-    select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+  linked_db <- dbGetQuery(
+    conn,
+    paste(
+      "SELECT DISTINCT uqid, question_id",
+      "FROM linked"
+    )
+  ) %>%
+    rename(id_matching = question_id)
+  
+  if (nrow(linked_db) == 0) {
+
+    linked <- df_list$linked %>%
+      mutate(uqid = uuid::UUIDgenerate(n = nrow(.))) %>%
+      assert(is_uniq, uqid) %>%
+      select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+      pivot_longer(
+        !c(uqid),
+        names_to = c(".value", "year"),
+        names_pattern = "^(\\w+)(\\d{4})$"
+      ) %>%
+      mutate(year = as.numeric(year))
+    
+  } else {
+    
+    min_yr_id <- paste0("question_id", min_yr)
+    max_yr_id <- paste0("question_id", max_yr)
+
+    linked <- df_list$linked %>%
+      # Merge to upper year first
+      mutate(id_matching = !!sym(max_yr_id)) %>%
+      left_join(
+        linked_db,
+        by = "id_matching",
+        relationship = "one-to-one"
+      ) %>%
+      # Update with lower year if uqid is missing
+      mutate(id_matching = !!sym(min_yr_id)) %>%
+      left_join(
+        linked_db %>%
+          rename(update_id = uqid),
+        by = "id_matching",
+        relationship = "one-to-one"
+      ) %>%
+      mutate(
+        uqid = ifelse(is.na(uqid) & !is.na(update_id), update_id, uqid),
+        uqid = case_when(
+          is.na(uqid) ~ UUIDgenerate(n = nrow(.)),
+          TRUE ~ uqid
+        )
+      ) %>%
+      assert(is_uniq, uqid) %>%
+      select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+      pivot_longer(
+        !c(uqid),
+        names_to = c(".value", "year"),
+        names_pattern = "^(\\w+)(\\d{4})$"
+      ) %>%
+      mutate(year = as.numeric(year)) %>%
+      assert(not_na, question_id)
+
+  }
+  
+  years <- attr(df_list$unlinked, "years")
+  
+  unlinked <- df_list$unlinked %>%
+    nest(distances = ends_with("dist")) %>%
     {
       bind_cols(
         .,
@@ -31,28 +90,29 @@ cleanQuestions <- function(qlist) {
                 paste0("question_id", years[2]),
                 paste0("question_id", years[1])
               )
-              mutate(., !!proposed_var := !!sym(paste(id_var))) %>%
+              mutate(
+                ., 
+                !!proposed_var := !!sym(paste(id_var)),
+                !!proposed_var := paste0('"', !!sym(proposed_var), '"'),
+                !!proposed_var := setNames(distances, !!sym(proposed_var))
+              ) %>%
                 select(all_of(proposed_var))
             }
           )
         )
       )
     } %>%
+    select(matches(attr(linked_questions$unlinked, "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
     pivot_longer(
       everything(),
       names_to = c(".value", "year"),
       names_pattern = "^(\\w+)(\\d{4})$"
     ) %>%
     mutate(year = as.numeric(year)) %>%
-    group_by(
-      year, question_id, question_name, question_text, question_number, category, section
-    ) %>%
-    summarize(proposed_link = paste0(proposed_link, collapse = ",")) %>%
+    group_by(question_id, year) %>%
+    mutate(proposed_link = jsonlite::toJSON(proposed_link)) %>%
     ungroup() %>%
-    # mutate(
-    #   proposed_link = as.character(proposed_link),
-    #   proposed_link = str_replace_all(proposed_link, c("^c\\(" = "[", "\\)$" = "]", "\\\"" = "'"))
-    # ) %>%
+    distinct(year, question_id, .keep_all = T) %>%
     assert_rows(
       col_concat,
       is_uniq,

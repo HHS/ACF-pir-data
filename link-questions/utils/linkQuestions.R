@@ -43,8 +43,12 @@ linkQuestions <- function(x, y) {
       dist_sum == min(dist_sum)
     ) %>%
     ungroup() %>%
+    group_by(question_id.y) %>%
+    mutate(num_matches = n()) %>%
+    ungroup() %>%
     mutate(
       confirmed = case_when(
+        num_matches > 1 ~ 0,
         section_dist != 0 ~ 0,
         dist_sum == 0 ~ 1,
         (question_name_dist == 0 & question_text_dist == 0) |
