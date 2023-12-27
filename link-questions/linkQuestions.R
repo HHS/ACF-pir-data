@@ -119,6 +119,9 @@ walk(
     conn <- get("conn", envir = .GlobalEnv)
     y1 <- all_years[index + 1]
     y2 <- all_years[index]
+    
+    cat(y1, y2, "\n")
+    
     question_frames <- map(
       c(y1, y2),
       function(yr) {
@@ -148,3 +151,7 @@ walk(
     
   }
 )
+
+#' Need a step in linkquestions where a link is first attempted between the db
+#' and the data, then we can have the steps which follow. THis will also probably require
+#' moving the uqid code.
