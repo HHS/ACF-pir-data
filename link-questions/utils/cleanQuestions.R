@@ -1,4 +1,4 @@
-cleanQuestions <- function(df_list, conn = NULL) {
+cleanQuestions <- function(df_list, conn) {
   require(uuid)
   require(assertr)
   require(stringr)
@@ -6,10 +6,9 @@ cleanQuestions <- function(df_list, conn = NULL) {
   require(jsonlite)
   
   # Query extant linked db
-  stopifnot(!is.null(conn))
-  
-  min_yr <- min(attr(df_list$linked, "years"))
-  max_yr <- max(attr(df_list$linked, "years"))
+  years <- attr(df_list$unlinked, "years")
+  min_yr <- min(years)
+  max_yr <- max(years)
   
   linked_db <- dbGetQuery(
     conn,
@@ -40,14 +39,14 @@ cleanQuestions <- function(df_list, conn = NULL) {
 
     linked <- df_list$linked %>%
       # Merge to upper year first
-      mutate(id_matching = !!sym(max_yr_id)) %>%
+      mutate(id_matching = !!sym(min_yr_id)) %>%
       left_join(
         linked_db,
         by = "id_matching",
         relationship = "one-to-one"
       ) %>%
       # Update with lower year if uqid is missing
-      mutate(id_matching = !!sym(min_yr_id)) %>%
+      mutate(id_matching = !!sym(max_yr_id)) %>%
       left_join(
         linked_db %>%
           rename(update_id = uqid),
@@ -73,8 +72,6 @@ cleanQuestions <- function(df_list, conn = NULL) {
 
   }
   
-  years <- attr(df_list$unlinked, "years")
-  
   unlinked <- df_list$unlinked %>%
     nest(distances = ends_with("dist")) %>%
     {
@@ -93,7 +90,6 @@ cleanQuestions <- function(df_list, conn = NULL) {
               mutate(
                 ., 
                 !!proposed_var := !!sym(paste(id_var)),
-                !!proposed_var := paste0('"', !!sym(proposed_var), '"'),
                 !!proposed_var := setNames(distances, !!sym(proposed_var))
               ) %>%
                 select(all_of(proposed_var))
