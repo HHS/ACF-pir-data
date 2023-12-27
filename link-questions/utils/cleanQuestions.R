@@ -1,27 +1,32 @@
-cleanQuestions <- function(df_list, conn) {
-  require(uuid)
-  require(assertr)
-  require(stringr)
-  require(rlang)
-  require(jsonlite)
+cleanQuestions <- function(df_list) {
+  pkgs <- c("uuid", "assertr", "stringr", "rlang", "jsonlite", "tidyr", "dplyr")
+  invisible(sapply(pkgs, require, character.only = T))
+  
+  # Separate data
+  if (!is.null(df_list$linked)) {
+    linked <- df_list$linked %>%
+      select(
+        matches(attr(., "db_vars")), -matches(c("dist", "subsection"))
+      )
+  } else {
+    linked <- NULL
+  }
+  confirmed <- df_list$confirmed
+  unconfirmed <- df_list$unconfirmed
+  linked_db <- df_list$linked_db %>%
+    rename(id_matching = question_id) %>%
+    distinct(uqid, id_matching)
   
   # Query extant linked db
-  years <- attr(df_list$unlinked, "years")
+  years <- attr(unconfirmed, "years")
   min_yr <- min(years)
   max_yr <- max(years)
   
-  linked_db <- dbGetQuery(
-    conn,
-    paste(
-      "SELECT DISTINCT uqid, question_id",
-      "FROM linked"
-    )
-  ) %>%
-    rename(id_matching = question_id)
-  
   if (nrow(linked_db) == 0) {
 
-    linked <- df_list$linked %>%
+    stopifnot(is.null(linked))
+    
+    linked <- confirmed %>%
       mutate(uqid = uuid::UUIDgenerate(n = nrow(.))) %>%
       assert(is_uniq, uqid) %>%
       select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
@@ -31,21 +36,28 @@ cleanQuestions <- function(df_list, conn) {
         names_pattern = "^(\\w+)(\\d{4})$"
       ) %>%
       mutate(year = as.numeric(year))
+      
+    
+  } else if (nrow(confirmed) == 0) {
+    
+    linked %>%
+      assert_rows(col_concat, is_uniq, uqid, year) %>%
+      assert_rows(col_concat, is_uniq, question_id, year)
     
   } else {
     
     min_yr_id <- paste0("question_id", min_yr)
     max_yr_id <- paste0("question_id", max_yr)
 
-    linked <- df_list$linked %>%
-      # Merge to upper year first
+    linked <- confirmed %>%
+      # Merge to lower year first
       mutate(id_matching = !!sym(min_yr_id)) %>%
       left_join(
         linked_db,
         by = "id_matching",
         relationship = "one-to-one"
       ) %>%
-      # Update with lower year if uqid is missing
+      # Update with upper year if uqid is missing
       mutate(id_matching = !!sym(max_yr_id)) %>%
       left_join(
         linked_db %>%
@@ -68,11 +80,14 @@ cleanQuestions <- function(df_list, conn) {
         names_pattern = "^(\\w+)(\\d{4})$"
       ) %>%
       mutate(year = as.numeric(year)) %>%
-      assert(not_na, question_id)
+      assert(not_na, question_id) %>%
+      bind_rows(linked) %>%
+      assert_rows(col_concat, is_uniq, uqid, year) %>%
+      assert_rows(col_concat, is_uniq, question_id, year)
 
   }
   
-  unlinked <- df_list$unlinked %>%
+  unlinked <- unconfirmed %>%
     nest(distances = ends_with("dist")) %>%
     {
       bind_cols(
@@ -98,7 +113,7 @@ cleanQuestions <- function(df_list, conn) {
         )
       )
     } %>%
-    select(matches(attr(linked_questions$unlinked, "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+    select(matches(attr(unconfirmed, "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
     pivot_longer(
       everything(),
       names_to = c(".value", "year"),
