@@ -116,39 +116,21 @@ all_years <- sort(all_years, decreasing = T)
 walk(
   1:(length(all_years)-1),
   function(index) {
-    conn <- get("conn", envir = .GlobalEnv)
-    y1 <- all_years[index + 1]
-    y2 <- all_years[index]
+    lower_year <- all_years[index + 1]
+    upper_year <- all_years[index]
     
-    cat(y1, y2, "\n")
+    cat(lower_year, upper_year, "\n")
     
-    question_frames <- map(
-      c(y1, y2),
-      function(yr) {
-        dbGetQuery(
-          conn,
-          paste(
-            "SELECT *",
-            "FROM question",
-            "WHERE year =", yr
-          )
-        ) %>%
-          mutate(
-            across(
-              starts_with("question"),
-              ~ ifelse(is.na(.), "", .)
-            )
-          ) %>%
-          return()
-      }
-    )
-
-    linked_questions <- linkQuestions(question_frames[[1]], question_frames[[2]])
-    linked_questions <- cleanQuestions(linked_questions, link_conn)
-
-    replaceInto(link_conn, linked_questions$linked, "linked")
-    replaceInto(link_conn, linked_questions$unlinked, "unlinked")
+    linked_questions <- getTables(conn, link_conn, lower_year, upper_year)
+    linked_questions <- linkQuestions(linked_questions)
+    linked_questions <- cleanQuestions(linked_questions)
     
+    if (!is.null(linked_questions$linked)) {
+      replaceInto(link_conn, linked_questions$linked, "linked")
+    }
+    if (!is.null(linked_questions$unlinked)) {
+      replaceInto(link_conn, linked_questions$unlinked, "unlinked")
+    }
   }
 )
 

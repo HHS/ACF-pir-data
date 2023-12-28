@@ -22,11 +22,10 @@ linkQuestions <- function(df_list) {
       ) %>%
       ungroup() %>%
       group_by(question_id.y) %>%
-      mutate(num_matches = n()) %>%
+      mutate(id_y_appearances = n()) %>%
       ungroup() %>%
       mutate(
         confirmed = case_when(
-          # num_matches > 1 ~ 0,
           section_dist != 0 ~ 0,
           dist_sum == 0 ~ 1,
           (question_name_dist == 0 & question_text_dist == 0) |
@@ -37,10 +36,13 @@ linkQuestions <- function(df_list) {
       ) %>%
       group_by(question_id.x) %>%
       mutate(
+        index = row_number(),
+        id_x_appearances = n(),
         confirmed_sum = sum(confirmed),
         confirmed = case_when(
-          num_matches > 1 & confirmed_sum == 1 & confirmed == 1 ~ 1,
-          num_matches > 1 ~ 0,
+          id_y_appearances > 1 & confirmed_sum == 1 & confirmed == 1 ~ 1,
+          id_x_appearances == confirmed_sum & index == 1 ~ 1,
+          id_y_appearances > 1 ~ 0,
           TRUE ~ confirmed
         )
       ) %>%
@@ -59,7 +61,10 @@ linkQuestions <- function(df_list) {
                 max_confirmed = max(confirmed)
               ) %>%
               ungroup() %>%
-              filter(!(confirmed == 0 & max_confirmed == 1)) %>%
+              filter(
+                !(confirmed == 0 & max_confirmed == 1),
+                !(confirmed_sum == max_confirmed & index != 1)
+              ) %>%
               return()
           },
           error = function(cnd) {
@@ -131,34 +136,39 @@ linkQuestions <- function(df_list) {
     linked <- NULL
   }
   
-  combined <- cross_join(unlinked, upper_year) %>%
-    determineLink() %>%
-    rename_with(
-      ~ str_replace_all(., c("\\.x$" = lower_chr, "\\.y$" = upper_chr)),
-      everything()
-    ) %>%
-    assert(
-      is_uniq,
-      !!paste0("question_id", lower),
-      error_fun = unconfirmed
-    ) %>%
-    assert(
-      is_uniq,
-      !!paste0("question_id", upper),
-      error_fun = unconfirmed
-    )
+  if (nrow(unlinked) > 0) {
+    combined <- cross_join(unlinked, upper_year) %>%
+      determineLink() %>%
+      rename_with(
+        ~ str_replace_all(., c("\\.x$" = lower_chr, "\\.y$" = upper_chr)),
+        everything()
+      ) %>%
+      assert(
+        is_uniq,
+        !!paste0("question_id", lower),
+        error_fun = unconfirmed
+      ) %>%
+      assert(
+        is_uniq,
+        !!paste0("question_id", upper),
+        error_fun = unconfirmed
+      )
   
-  attr(combined, "years") <- years
-  
-  confirmed <- combined %>%
-    filter(confirmed == 1)
-  
-  attr(confirmed, "db_vars") <- schema$linked
-  
-  unconfirmed <- combined %>%
-    filter(confirmed == 0)
-  
-  attr(unconfirmed, "db_vars") <- schema$unlinked
+    attr(combined, "years") <- years
+    
+    confirmed <- combined %>%
+      filter(confirmed == 1)
+    
+    attr(confirmed, "db_vars") <- schema$linked
+    
+    unconfirmed <- combined %>%
+      filter(confirmed == 0)
+    
+    attr(unconfirmed, "db_vars") <- schema$unlinked
+  } else {
+    confirmed <- NULL
+    unconfirmed <- NULL
+  }
   
   return(
     list(
