@@ -10,8 +10,20 @@ getTables <- function(question_conn, link_conn, lower_year, upper_year) {
       "WHERE Field like 'question%' OR Field = 'section'"
     )
   )
-  
   matching_vars <- paste(matching_vars$Field, collapse = ",")
+  
+  table_vars <- map(
+    c("linked", "unlinked"),
+    function(table) {
+      dbGetQuery(
+        link_conn,
+        paste(
+          "SHOW COLUMNS",
+          "FROM", table
+        )
+      )
+    }
+  )
   
   linked_db <- dbGetQuery(
     link_conn,
@@ -20,6 +32,15 @@ getTables <- function(question_conn, link_conn, lower_year, upper_year) {
       "FROM linked"
     )
   )
+  
+  unlinked_db <- dbGetQuery(
+    link_conn,
+    paste(
+      "SELECT DISTINCT *",
+      "FROM unlinked"
+    )
+  ) %>%
+    select(-proposed_link)
   
   question_frames <- map(
     c(lower_year, upper_year),
@@ -45,8 +66,12 @@ getTables <- function(question_conn, link_conn, lower_year, upper_year) {
   return(
     list(
       "linked_db" = linked_db, 
+      "unlinked_db" = unlinked_db,
       "lower_year" = question_frames[[1]], 
-      "upper_year" = question_frames[[2]]
+      "upper_year" = question_frames[[2]],
+      "question_vars" = names(question_frames[[1]]),
+      "linked_vars" = table_vars[[1]]$Field,
+      "unlinked_vars" = table_vars[[2]]$Field
     )
   )
 }

@@ -2,11 +2,14 @@ cleanQuestions <- function(df_list) {
   pkgs <- c("uuid", "assertr", "stringr", "rlang", "jsonlite", "tidyr", "dplyr")
   invisible(sapply(pkgs, require, character.only = T))
   
+  linked_vars <- df_list$linked_vars
+  unlinked_vars <- df_list$unlinked_vars
+  
   # Separate data
   if (!is.null(df_list$linked)) {
     linked <- df_list$linked %>%
       select(
-        matches(attr(., "db_vars")), -matches(c("dist", "subsection"))
+        matches(linked_vars), -matches(c("dist", "subsection"))
       )
   } else {
     linked <- NULL
@@ -18,13 +21,13 @@ cleanQuestions <- function(df_list) {
     distinct(uqid, id_matching)
   
   # Query extant linked db
-  years <- list(
-    attr(df_list$unconfirmed, "years"), 
-    attr(df_list$linked, "years"), 
-    attr(df_list$confirmed, "years")
-  )
-  years <- years[map_lgl(years, ~ !is.null(.x))]
-  years <- first(years)
+  lower_year <- df_list$lower_year
+  upper_year <- df_list$upper_year
+  
+  lower <- unique(lower_year$year)
+  upper <- unique(upper_year$year)
+  years <- c(lower, upper)
+
   min_yr <- min(years)
   max_yr <- max(years)
   
@@ -35,7 +38,7 @@ cleanQuestions <- function(df_list) {
     linked <- confirmed %>%
       mutate(uqid = uuid::UUIDgenerate(n = nrow(.))) %>%
       assert(is_uniq, uqid) %>%
-      select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+      select(matches(linked_vars), -matches(c("year", "dist", "subsection"))) %>%
       pivot_longer(
         !c(uqid),
         names_to = c(".value", "year"),
@@ -79,7 +82,7 @@ cleanQuestions <- function(df_list) {
         )
       ) %>%
       assert(is_uniq, uqid) %>%
-      select(matches(attr(., "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+      select(matches(linked_vars), -matches(c("year", "dist", "subsection"))) %>%
       pivot_longer(
         !c(uqid),
         names_to = c(".value", "year"),
@@ -120,7 +123,7 @@ cleanQuestions <- function(df_list) {
           )
         )
       } %>%
-      select(matches(attr(unconfirmed, "db_vars")), -matches(c("year", "dist", "subsection"))) %>%
+      select(matches(unlinked_vars), -matches(c("year", "dist", "subsection"))) %>%
       pivot_longer(
         everything(),
         names_to = c(".value", "year"),
