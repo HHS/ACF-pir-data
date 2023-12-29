@@ -1,44 +1,43 @@
 separateCombined <- function(df, varnames, caller) {
   
+  pkgs <- c("dplyr", "stringr", "assertr")
+  invisible(sapply(pkgs, require, character.only = T))
+  
   func_env <- environment()
   separated <- list()
   
   if (caller == "unlinked") {
-    remove_unlinked <- df %>%
-      filter(confirmed == 1)
-    
-    if (nrow(remove_unlinked > 0)) {
-      remove_unlinked <- remove_unlinked %>%
-        select(-ends_with(".x")) %>%
-        rename_with(
-          ~ gsub("\\.y", "", ., perl = T),
-          ends_with(".y")
-        ) %>%
-        select(all_of(varnames))
-    } else {
-      remove_unlinked <- NULL
-    }
     
     combined <- df %>%
+      # Extract years from unlinked_db records
+      pivot_longer(c(ends_with(".y"), -year.y)) %>%
+      mutate(name = gsub("\\.y", "", name, perl = T)) %>%
+      pivot_wider(
+        id_cols = c(ends_with(".x"), confirmed),
+        names_from = c(name, year.y),
+        values_from = value,
+        names_glue = "{name}{year.y}"
+      ) %>%
+      # Extract years from the unlinked records
       pipeExpr(
         assign("x_year", as.character(unique(.[["year.x"]])), envir = func_env)
       ) %>%
-        pipeExpr(
-          assign("y_year", as.character(unique(.[["year.y"]])), envir = func_env)
-        ) %>%
-        rename_with(
-          ~ str_replace_all(., c("\\.x$" = x_year, "\\.y$" = y_year)),
-          everything()
-        ) %>%
-        select(matches("\\d+$"), confirmed)
+      select(-year.x) %>%
+      rename_with(
+        ~ str_replace_all(., c("\\.x$" = x_year)),
+        everything()
+      ) %>%
+      genUQID() %>%
+      pivot_longer(
+        -confirmed,
+        names_to = c(".value", "year"),
+        names_pattern = "^(\\w+)(\\d{4})$"
+      ) %>%
+      # Subset to relevant cases
+      filter(!is.na(question_id))
     
-    separated$confirmed <- combined %>%
+    separated$linked <- combined %>%
       filter(confirmed == 1)
-    
-    separated$unconfirmed <- combined %>%
-      filter(confirmed == 0)
-    
-    separated$remove_unlinked <- remove_unlinked
     
   } else if (caller == "linked") {
     

@@ -53,47 +53,6 @@ cleanQuestions <- function(df_list) {
       assert_rows(col_concat, is_uniq, uqid, year) %>%
       assert_rows(col_concat, is_uniq, question_id, year)
     
-  } else {
-    
-    min_yr_id <- paste0("question_id", min_yr)
-    max_yr_id <- paste0("question_id", max_yr)
-
-    linked <- confirmed %>%
-      # Merge to lower year first
-      mutate(id_matching = !!sym(min_yr_id)) %>%
-      left_join(
-        linked_db,
-        by = "id_matching",
-        relationship = "one-to-one"
-      ) %>%
-      # Update with upper year if uqid is missing
-      mutate(id_matching = !!sym(max_yr_id)) %>%
-      left_join(
-        linked_db %>%
-          rename(update_id = uqid),
-        by = "id_matching",
-        relationship = "one-to-one"
-      ) %>%
-      mutate(
-        uqid = ifelse(is.na(uqid) & !is.na(update_id), update_id, uqid),
-        uqid = case_when(
-          is.na(uqid) ~ UUIDgenerate(n = nrow(.)),
-          TRUE ~ uqid
-        )
-      ) %>%
-      assert(is_uniq, uqid) %>%
-      select(matches(linked_vars), -matches(c("year", "dist", "subsection"))) %>%
-      pivot_longer(
-        !c(uqid),
-        names_to = c(".value", "year"),
-        names_pattern = "^(\\w+)(\\d{4})$"
-      ) %>%
-      mutate(year = as.numeric(year)) %>%
-      assert(not_na, question_id) %>%
-      bind_rows(linked) %>%
-      assert_rows(col_concat, is_uniq, uqid, year) %>%
-      assert_rows(col_concat, is_uniq, question_id, year)
-
   }
   
   if (!is.null(unconfirmed)) {
