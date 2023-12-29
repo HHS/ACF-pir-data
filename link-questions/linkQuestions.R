@@ -47,21 +47,18 @@ args <- commandArgs(TRUE)
 
 # Common functions
 walk(
-  list.files(file.path(codedir, "utils"), full.names = T, pattern = "R$"),
+  list.files(here("_common", "R"), full.names = T, pattern = "R$"),
   source
 )
 
 # Question Linking functions
 walk(
-  list.files(
-    file.path(codedir, "link-questions", "utils"), 
-    pattern = "\\.R$", full.names = T
-  ),
+  list.files(here("link-questions", "utils"), full.names = T, pattern = "R$"),
   source
 )
 
 # Begin logging
-log_file <- startLog(file.path(logdir, "automated_pipeline_logs"))
+log_file <- startLog()
 
 # Establish DB connection ----
 
@@ -76,7 +73,7 @@ tryCatch(
     logMessage("Connection established question linking database successfully.", log_file)
   },
   error = function(cnd) {
-    errorMessage(cnd)
+    errorMessage(cnd, log_file)
   }
 )
 
@@ -97,7 +94,7 @@ tryCatch(
     logMessage("Table schemas obtained.", log_file)
   },
   error = function(cnd) {
-    errorMessage(cnd)
+    errorMessage(cnd, log_file)
     logMessage("Failed to obtain list of tables/table schemas.", log_file)
   }
 )
@@ -122,8 +119,10 @@ walk(
     cat(lower_year, upper_year, "\n")
     
     linked_questions <- getTables(conn, link_conn, lower_year, upper_year)
-    linked_questions <- linkQuestions(linked_questions)
-    linked_questions <- cleanQuestions(linked_questions)
+    linked_questions <- checkLinked(linked_questions)
+    linked_questions <- checkUnlinked(linked_questions)
+    linked_questions <- checkNextYear(linked_questions)
+    linked_questions <- cleanQuestions(linked_questions)  
     
     if (!is.null(linked_questions$linked)) {
       replaceInto(link_conn, linked_questions$linked, "linked")
@@ -131,9 +130,6 @@ walk(
     if (!is.null(linked_questions$unlinked)) {
       replaceInto(link_conn, linked_questions$unlinked, "unlinked")
     }
+    updateUnlinked(link_conn)
   }
 )
-
-#' Need a step in linkquestions where a link is first attempted between the db
-#' and the data, then we can have the steps which follow. THis will also probably require
-#' moving the uqid code.
