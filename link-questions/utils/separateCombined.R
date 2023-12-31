@@ -1,6 +1,6 @@
 separateCombined <- function(df, varnames, caller) {
   
-  pkgs <- c("dplyr", "stringr", "assertr")
+  pkgs <- c("dplyr", "stringr", "assertr", "jsonlite")
   invisible(sapply(pkgs, require, character.only = T))
   
   func_env <- environment()
@@ -8,9 +8,10 @@ separateCombined <- function(df, varnames, caller) {
   
   if (caller == "unlinked") {
     
-    combined <- df %>%
+    combined <- df %>% 
+      mutate(across(ends_with("_dist"), as.character)) %>%
       # Extract years from unlinked_db records
-      pivot_longer(c(ends_with(".y"), -year.y)) %>%
+      pivot_longer(c(ends_with(".y"), -year.y, ends_with("dist"))) %>%
       mutate(name = gsub("\\.y", "", name, perl = T)) %>%
       pivot_wider(
         id_cols = c(ends_with(".x"), confirmed),
@@ -29,15 +30,35 @@ separateCombined <- function(df, varnames, caller) {
       ) %>%
       genUQID() %>%
       pivot_longer(
-        -confirmed,
+        -c("confirmed", "uqid"),
         names_to = c(".value", "year"),
         names_pattern = "^(\\w+)(\\d{4})$"
       ) %>%
       # Subset to relevant cases
-      filter(!is.na(question_id))
+      filter(!is.na(question_id)) %>%
+      mutate(
+        across(c(ends_with("_dist"), year), as.numeric)
+      )
     
     separated$linked <- combined %>%
       filter(confirmed == 1)
+    
+    separated$unlinked <- combined  %>%
+      filter(confirmed == 0) %>%
+      # Create proposed match column
+      group_by(uqid) %>%
+      mutate(
+        across(ends_with("dist"), as.numeric),
+        across(ends_with("dist"), ~ max(., na.rm = T)),
+        distances = pmap(across(ends_with("dist")), c)
+      ) %>%
+      mutate(
+        ids = c(question_id), 
+        proposed_link = setNames(distances, ids),
+        proposed_link = toJSON(proposed_link)
+      ) %>%
+      ungroup() %>%
+      select(question_id, year, proposed_link)
     
   } else if (caller == "linked") {
     

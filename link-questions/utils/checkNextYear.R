@@ -5,6 +5,7 @@ checkNextYear <- function(df_list) {
   unlinked <- df_list$unlinked
   upper_year <- df_list$upper_year
   linked <- df_list$linked
+  unlinked_db <- df_list$unlinked_db
   
   lower <- unique(unlinked$year)
   upper <- unique(upper_year$year)
@@ -13,7 +14,10 @@ checkNextYear <- function(df_list) {
   
   years <- c(lower, upper)
   
-  if (nrow(unlinked) > 0) {
+  #' Should only run if unlinked has records and the unlinked database has no
+  #' records. Otherwise, all options should have been checked when checking
+  #' the linked and unlinked databases
+  if (nrow(unlinked) > 0 && nrow(unlinked_db) == 0) {
     combined <- cross_join(unlinked, upper_year) %>%
       determineLink() %>%
       rename_with(
@@ -33,7 +37,7 @@ checkNextYear <- function(df_list) {
       select(-starts_with("year")) %>%
       genUQID() %>%
       pivot_longer(
-        -confirmed,
+        -c("confirmed", "uqid", ends_with("dist")),
         names_to = c(".value", "year"),
         names_pattern = "^(\\w+)(\\d{4})$"
       ) %>%
@@ -41,6 +45,10 @@ checkNextYear <- function(df_list) {
     
     confirmed <- combined %>%
       filter(confirmed == 1)
+    
+    unconfirmed <- combined %>%
+      filter(confirmed == 0) %>%
+      genProposedLink()
     
     if (nrow(confirmed) > 0) {
       df_list$linked <- bind_rows(confirmed, linked)
@@ -51,11 +59,15 @@ checkNextYear <- function(df_list) {
         df_list$linked %>%
           select(question_id),
         by = "question_id"
+      ) %>%
+      left_join(
+        unconfirmed,
+        by = c("question_id", "year")
       )
 
     return(df_list)
     
   } else {
-    return()
+    return(df_list)
   }
 }

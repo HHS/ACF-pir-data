@@ -11,15 +11,20 @@ checkUnlinked <- function(df_list) {
       determineLink() %>%
       separateCombined(df_list$question_vars, "unlinked")
     
-    df_list$linked <- separated$linked %>%
-      mutate(across(year, as.numeric)) %>%
-      bind_rows(linked)
+    if (nrow(separated$linked) > 0) {
+      df_list$linked <- separated$linked %>%
+        bind_rows(linked)
+    }
     
     df_list$unlinked <- df_list$unlinked %>%
       anti_join(
         df_list$linked %>%
           select(question_id),
         by = "question_id"
+      ) %>%
+      left_join(
+        separated$unlinked,
+        by = c("question_id", "year")
       )
     
     return(df_list)

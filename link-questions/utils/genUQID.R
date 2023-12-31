@@ -1,4 +1,7 @@
 genUQID <- function(df) {
+  pkgs <- c("dplyr", "uuid", "assertr")
+  invisible(sapply(pkgs, require, character.only = T))
+  
   df %>%
     {
       if (is.null(.$uqid)) {

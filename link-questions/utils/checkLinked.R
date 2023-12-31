@@ -11,7 +11,7 @@ checkLinked <- function(df_list) {
     
     unlinked <- separated$unlinked
     linked <- separated$linked %>%
-      distinct(uqid, .keep_all = T)
+      distinct(uqid, question_id, .keep_all = T)
     
     df_list <- append(df_list, list("linked" = linked, "unlinked" = unlinked))
     
