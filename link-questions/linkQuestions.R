@@ -111,17 +111,14 @@ all_years <- sort(all_years, decreasing = T)
 
 # Loop over all years and match questions
 walk(
-  1:(length(all_years)-1),
-  function(index) {
-    lower_year <- all_years[index + 1]
-    upper_year <- all_years[index]
+  all_years,
+  function(year) {
     
-    cat(lower_year, upper_year, "\n")
+    cat(year, "\n")
     
-    linked_questions <- getTables(conn, link_conn, lower_year, upper_year)
+    linked_questions <- getTables(conn, link_conn, year)
     linked_questions <- checkLinked(linked_questions)
     linked_questions <- checkUnlinked(linked_questions)
-    linked_questions <- checkNextYear(linked_questions)
     linked_questions <- cleanQuestions(linked_questions)  
     
     if (!is.null(linked_questions$linked)) {

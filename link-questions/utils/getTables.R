@@ -1,4 +1,4 @@
-getTables <- function(question_conn, link_conn, lower_year, upper_year) {
+getTables <- function(question_conn, link_conn, lower_year) {
   pkgs <- c("dplyr", "purrr")
   invisible(sapply(pkgs, require, character.only = T))
   
@@ -43,7 +43,7 @@ getTables <- function(question_conn, link_conn, lower_year, upper_year) {
     select(-proposed_link)
   
   question_frames <- map(
-    c(lower_year, upper_year),
+    c(lower_year),
     function(yr) {
       dbGetQuery(
         question_conn,
@@ -68,7 +68,7 @@ getTables <- function(question_conn, link_conn, lower_year, upper_year) {
       "linked_db" = linked_db, 
       "unlinked_db" = unlinked_db,
       "lower_year" = question_frames[[1]], 
-      "upper_year" = question_frames[[2]],
+      # "upper_year" = question_frames[[2]],
       "question_vars" = names(question_frames[[1]]),
       "linked_vars" = table_vars[[1]]$Field,
       "unlinked_vars" = table_vars[[2]]$Field

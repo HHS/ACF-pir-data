@@ -23,4 +23,4 @@ CREATE TABLE `unlinked` (
 	section varchar(2),
 	proposed_link TEXT,
 	PRIMARY KEY (question_id, `year`)
-)
+);

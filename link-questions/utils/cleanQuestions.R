@@ -8,7 +8,7 @@ cleanQuestions <- function(df_list) {
   linked <- df_list$linked
   
   # Separate data
-  if (nrow(linked) > 0) {
+  if (!is.null(linked)) {
     linked <- linked %>%
       select(
         matches(linked_vars), -matches(c("dist", "subsection"))
@@ -16,7 +16,7 @@ cleanQuestions <- function(df_list) {
     df_list$linked <- linked
   }
   
-  if (nrow(unlinked) > 0) {
+  if (!is.null(unlinked)) {
     unlinked <- unlinked %>%
       select(
         matches(unlinked_vars), -matches(c("dist", "subsection"))
@@ -26,20 +26,12 @@ cleanQuestions <- function(df_list) {
     
   }
   
-  # if (nrow(df_list$linked_db) > 0) {
-  # 
-  #   new_row_count <- sum(nrow(linked), nrow(unlinked), na.rm = T)
-  #   orig_row_count <- nrow(df_list$lower_year)
-  #   
-  #   if (new_row_count != orig_row_count) {
-  #     if (new_row_count > orig_row_count) {
-  #       stop("Too many variables")
-  #     } else {
-  #       stop("Too few variables")
-  #     }
-  #   }
-  # 
-  # }
+  new_row_count <- sum(nrow(linked), nrow(unlinked), na.rm = T)
+  orig_row_count <- sum(nrow(df_list$lower_year), nrow(df_list$unlinked_db))
+
+  if (new_row_count > orig_row_count) {
+    stop("Too many variables")
+  }
   
   return(df_list)
 }
