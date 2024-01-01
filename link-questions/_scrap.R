@@ -1,7 +1,6 @@
-temp <- getTables(conn, link_conn, 2019, 2021)
+temp <- getTables(conn, link_conn, 2023)
 temp <- checkLinked(temp)
 temp <- checkUnlinked(temp)
-temp <- checkNextYear(temp)
 temp <- cleanQuestions(temp)  
 
 if (!is.null(temp$linked)) {
@@ -13,17 +12,14 @@ if (!is.null(temp$unlinked)) {
 updateUnlinked(link_conn)
 
 walk(
-  1:2,
-  function(index) {
-    lower_year <- all_years[index + 1]
-    upper_year <- all_years[index]
+  all_years,
+  function(year) {
     
-    cat(lower_year, upper_year, "\n")
+    cat(year, "\n")
     
-    linked_questions <- getTables(conn, link_conn, lower_year, upper_year)
+    linked_questions <- getTables(conn, link_conn, year)
     linked_questions <- checkLinked(linked_questions)
     linked_questions <- checkUnlinked(linked_questions)
-    linked_questions <- checkNextYear(linked_questions)
     linked_questions <- cleanQuestions(linked_questions)  
     
     if (!is.null(linked_questions$linked)) {
@@ -36,6 +32,21 @@ walk(
   }
 )
 
-#' Question cleaning needs to be updated and need to come up with a way to
-#' handle proposed linkages now that pivots are happening before
-#' cleaning phase
+# Checks on matches
+linked <- dbGetQuery(
+  link_conn,
+  paste(
+    "SELECT *",
+    "FROM linked"
+  )
+)
+
+# Should a user check cases where question_id and uqid are not unique?
+linked %>% 
+  distinct(question_id, uqid) %>%
+  assert(is_uniq, question_id)
+
+linked %>%
+  group_by(uqid) %>%
+  mutate(num = n()) %>%
+  verify(num >= 2)
