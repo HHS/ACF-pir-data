@@ -60,43 +60,19 @@ walk(
 # Begin logging
 log_file <- startLog()
 
-# Establish DB connection ----
-
-tryCatch(
-  {
-    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data_2", username = dbusername, password = dbpassword)
-    logMessage("Connection established to PIR database successfully.", log_file)
-    link_conn <- dbConnect(
-      RMariaDB::MariaDB(), dbname = "question_links", 
-      username = dbusername, password = dbpassword
-    )
-    logMessage("Connection established question linking database successfully.", log_file)
-  },
-  error = function(cnd) {
-    errorMessage(cnd, log_file)
-  }
+connections <- connectDB(
+  list("pir_data_2", "question_links"), 
+  dbusername, 
+  dbpassword, 
+  log_file
 )
+conn <- connections[[1]]
+link_conn <- connections[[2]]
 
 # Get tables and schemas
-tryCatch(
-  {
-    tables <- dbGetQuery(link_conn, "SHOW TABLES FROM question_links")[[1]]
-    logMessage("List of tables obtained.", log_file)
-    schema <- map(
-      tables,
-      function(table) {
-        vars <- dbGetQuery(link_conn, paste("SHOW COLUMNS FROM", table))
-        vars <- vars$Field
-        return(vars)
-      }
-    ) %>%
-      setNames(tables)
-    logMessage("Table schemas obtained.", log_file)
-  },
-  error = function(cnd) {
-    errorMessage(cnd, log_file)
-    logMessage("Failed to obtain list of tables/table schemas.", log_file)
-  }
+schemas <- getSchemas(
+  list(conn, link_conn), 
+  list("pir_data_2", "question_links")
 )
 
 # Extract years from question table
@@ -116,17 +92,128 @@ walk(
     
     cat(year, "\n")
     
-    linked_questions <- getTables(conn, link_conn, year)
-    linked_questions <- checkLinked(linked_questions)
-    linked_questions <- checkUnlinked(linked_questions)
-    linked_questions <- cleanQuestions(linked_questions)  
+    tryCatch(
+      {
+        linked_questions <- getTables(conn, link_conn, year)
+        logMessage(
+          "Successfully extracted tables needed for linking.",
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          "Failed to extract tables needed for linking",
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
     
-    if (!is.null(linked_questions$linked)) {
-      replaceInto(link_conn, linked_questions$linked, "linked")
-    }
-    if (!is.null(linked_questions$unlinked)) {
-      replaceInto(link_conn, linked_questions$unlinked, "unlinked")
-    }
-    updateUnlinked(link_conn)
+    tryCatch(
+      {
+        linked_questions <- checkLinked(linked_questions)
+        logMessage(
+          paste(year, "matched with linked questions table."),
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          paste("Failed to match", year, "with linked questions table."),
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
+    
+    tryCatch(
+      {
+        linked_questions <- checkUnlinked(linked_questions)
+        logMessage(
+          paste(year, "matched with unlinked questions table."),
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          paste("Failed to match", year, "with unlinked questions table."),
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
+    
+    tryCatch(
+      {
+        linked_questions <- cleanQuestions(linked_questions)
+        logMessage(
+          "Newly linked questions prepared for insertion.",
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          paste("Failed to prepare newly linked questions for insertion."),
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
+    
+    tryCatch(
+      {
+        if (!is.null(linked_questions$linked)) {
+          replaceInto(link_conn, linked_questions$linked, "linked")
+        }
+        logMessage(
+          "Inserted questions into linked table.",
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          paste("Failed to insert questions into linked table."),
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
+    
+    tryCatch(
+      {
+        if (!is.null(linked_questions$unlinked)) {
+          replaceInto(link_conn, linked_questions$unlinked, "unlinked")
+        }
+        logMessage(
+          "Inserted questions into unlinked table.",
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          paste("Failed to insert questions into unlinked table."),
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
+    
+    tryCatch(
+      {
+        updateUnlinked(link_conn)
+        logMessage(
+          "Successfully removed any linked questions from unlinked table.",
+          log_file
+        )
+      },
+      error = function(cnd) {
+        logMessage(
+          "Failed to remove linked questions from unlinked table.",
+          log_file
+        )
+        errorMessage(cnd, log_file)
+      }
+    )
   }
 )
+writeLog(log_file)

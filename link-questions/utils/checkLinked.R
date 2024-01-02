@@ -18,16 +18,21 @@ checkLinked <- function(df_list) {
       by = "question_id"
     )
   
-    separated <- cross_join(lower_year, linked_db) %>%
-      determineLink() %>%
-      separateCombined(df_list$question_vars, "linked")
+    if (!is.null(lower_year) && nrow(lower_year) > 0) {
+      separated <- cross_join(lower_year, linked_db) %>%
+        determineLink() %>%
+        separateCombined(df_list$question_vars, "linked")
+      
+      unlinked <- separated$unlinked
+      linked <- separated$linked %>%
+        distinct(uqid, question_id, .keep_all = T) %>%
+        bind_rows(linked)
+    }
     
-    unlinked <- separated$unlinked
-    linked <- separated$linked %>%
-      distinct(uqid, question_id, .keep_all = T) %>%
-      bind_rows(linked)
-    
-    df_list <- append(df_list, list("linked" = linked, "unlinked" = unlinked))
+    df_list$linked <- linked
+    if (exists("unlinked", envir = environment())) {
+      df_list$unlinked <- unlinked
+    }
     
     return(df_list)
   

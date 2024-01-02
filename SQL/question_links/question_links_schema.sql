@@ -10,7 +10,7 @@ CREATE TABLE `linked` (
 	question_number varchar(55), 
 	category varchar(255),
 	section varchar(2),
-	PRIMARY KEY (uqid, `year`)
+	PRIMARY KEY (uqid, `year`, `question_id`)
 );
 
 CREATE TABLE `unlinked` (

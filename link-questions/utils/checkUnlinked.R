@@ -5,7 +5,7 @@ checkUnlinked <- function(df_list) {
   
   lower <- unique(df_list$lower_year$year)
   
-  if (nrow(unlinked) > 0 && nrow(unlinked_db) > 0) {
+  if (!is.null(unlinked) && nrow(unlinked) > 0 && nrow(unlinked_db) > 0) {
   
     separated <- cross_join(unlinked, unlinked_db) %>%
       determineLink() %>%

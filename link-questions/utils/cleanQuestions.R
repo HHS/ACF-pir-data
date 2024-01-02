@@ -6,6 +6,7 @@ cleanQuestions <- function(df_list) {
   unlinked_vars <- df_list$unlinked_vars
   unlinked <- df_list$unlinked
   linked <- df_list$linked
+  lower <- df_list$lower_year
   
   # Separate data
   if (!is.null(linked)) {
@@ -24,6 +25,36 @@ cleanQuestions <- function(df_list) {
     
     df_list$unlinked <- unlinked
     
+  }
+  
+  if (!is.null(linked)) {
+    linked_rows <- filter(linked, year == unique(lower$year)) %>%
+      distinct(question_id) %>%
+      nrow()
+  } else {
+    linked_rows <- 0
+  }
+  
+  if (!is.null(unlinked)) {
+    unlinked_rows <- filter(unlinked, year == unique(lower$year)) %>%
+      distinct(question_id) %>%
+      nrow()
+  } else {
+    unlinked_rows <- 0
+  }
+  
+  new_row_count <- sum(
+    linked_rows,
+    unlinked_rows,
+    na.rm = T
+  )
+  orig_row_count <- nrow(df_list$lower_year)
+  if (new_row_count != orig_row_count) {
+    if (new_row_count > orig_row_count) {
+      stop("Too many variables")
+    } else {
+      stop("Too few variables")
+    }
   }
   
   new_row_count <- sum(nrow(linked), nrow(unlinked), na.rm = T)

@@ -1,4 +1,4 @@
-temp <- getTables(conn, link_conn, 2023)
+temp <- getTables(conn, link_conn, 2019)
 temp <- checkLinked(temp)
 temp <- checkUnlinked(temp)
 temp <- cleanQuestions(temp)  
@@ -41,6 +41,27 @@ linked <- dbGetQuery(
   )
 )
 
+unlinked <- dbGetQuery(
+  link_conn,
+  paste(
+    "SELECT *",
+    "FROM unlinked"
+  )
+)
+
+questions <- dbGetQuery(
+  conn,
+  paste(
+    "SELECT *",
+    "FROM question"
+  )
+)
+
+#' Four questions missing because the text and name are identical, 
+#' but number is different.
+mi_questions <- setdiff(questions$question_id, c(linked$question_id, unlinked$question_id))
+filter(questions, question_id %in% mi_questions)
+
 # Should a user check cases where question_id and uqid are not unique?
 linked %>% 
   distinct(question_id, uqid) %>%
@@ -50,3 +71,6 @@ linked %>%
   group_by(uqid) %>%
   mutate(num = n()) %>%
   verify(num >= 2)
+
+#' Data integrity checks and ensure that this can be rerun (w/o empty db)
+#' Logging
