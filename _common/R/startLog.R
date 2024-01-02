@@ -8,9 +8,10 @@
 #' # example code
 #' startLog("hello_world.txt")
 
-startLog <- function() {
+startLog <- function(path) {
   timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
   log <- data.frame("run" = NULL, "timestamp" = NULL, "message" = NULL)
   attr(log, "run") <- timestamp
+  attr(log, "path") <- path
   return(log)
 }

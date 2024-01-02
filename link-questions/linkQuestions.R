@@ -58,7 +58,9 @@ walk(
 )
 
 # Begin logging
-log_file <- startLog()
+log_file <- startLog(
+  file.path(logdir, "automated_pipeline_logs", "question_linkage")
+)
 
 connections <- connectDB(
   list("pir_data_2", "question_links"), 
@@ -84,7 +86,7 @@ all_years <- dbGetQuery(
   "
 )$year
 all_years <- sort(all_years, decreasing = T)
-
+stop()
 # Loop over all years and match questions
 walk(
   all_years,

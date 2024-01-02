@@ -1,6 +1,6 @@
-writeLog <- function(log_file) {
+writeLog <- function(log_file, ...) {
   # Make path and create folders if needed
-  ingestion_log_path <- file.path(logdir, "automated_pipeline_logs", "pir_ingestion_logs")
+  ingestion_log_path <- attr(log_file, "path")
   try(
     dir.create(
       ingestion_log_path,
