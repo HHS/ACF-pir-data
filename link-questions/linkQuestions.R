@@ -59,7 +59,8 @@ walk(
 
 # Begin logging
 log_file <- startLog(
-  file.path(logdir, "automated_pipeline_logs", "question_linkage")
+  file.path(logdir, "automated_pipeline_logs", "question_linkage"),
+  "pir_question_linkage_logs"
 )
 
 connections <- connectDB(
