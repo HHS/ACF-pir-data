@@ -13,7 +13,7 @@ rm(list = ls())
 pkgs <- c(
   "tidyr", "dplyr", "roxygen2", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
-  "furrr", "readxl"
+  "furrr", "readxl", "digest"
 )
 
 
@@ -56,14 +56,15 @@ walk(
 
 # Begin logging
 log_file <- startLog(
-  file.path(logdir, "automated_pipeline_logs", "pir_ingestion_logs")
+  file.path(logdir, "automated_pipeline_logs", "pir_ingestion_logs"),
+  "pir_ingestion_logs"
 )
 
 # Establish DB connection ----
 
 tryCatch(
   {
-    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data_2", username = dbusername, password = dbpassword)
+    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
     logMessage("Connection established successfully.", log_file)
   },
   error = function(cnd) {
@@ -96,17 +97,18 @@ tryCatch(
 
 # wb_list <- args
 wb_list <- c(
-  # "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2021.xlsx",
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2022.xlsx",
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2023.xlsx"
+  "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
+  "C:\\OHS-Project-1\\data_repository\\pir_export_2015.xlsx"
+  # "C:\\OHS-Project-1\\data_repository\\pir_export_2021.xlsx",
+  # "C:\\OHS-Project-1\\data_repository\\pir_export_2022.xlsx",
+  # "C:\\OHS-Project-1\\data_repository\\pir_export_2023.xlsx"
 )
 # Get workbooks
 # tryCatch(
 #   {
 #     wb_list <- list.files(
 #       file.path(datadir),
-#       pattern = "pir_export_.*.xlsx$",
+#       pattern = "pir_export_.*.xls$",
 #       full.names = T
 #     )
 #     logMessage("PIR workbooks found.", log_file)
@@ -243,12 +245,18 @@ tryCatch(
               replaceInto(
                 conn,
                 df,
-                paste0(table, yr)
+                paste0(table, yr),
+                log_file
               )
             }
           )
         } else {
-          replaceInto(conn, wb_appended[[table]], table)
+          df <- wb_appended[[table]]
+          if(nrow(df) > 0) {
+            replaceInto(conn, df, table, log_file)
+          } else {
+            logMessage(paste("Table", table, "has 0 rows."), log_file)
+          }
         }
       }
     )
