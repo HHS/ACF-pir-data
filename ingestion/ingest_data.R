@@ -55,7 +55,9 @@ walk(
 )
 
 # Begin logging
-log_file <- startLog()
+log_file <- startLog(
+  file.path(logdir, "automated_pipeline_logs", "pir_ingestion_logs")
+)
 
 # Establish DB connection ----
 
@@ -94,7 +96,9 @@ tryCatch(
 
 # wb_list <- args
 wb_list <- c(
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
+  # "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
+  "C:\\OHS-Project-1\\data_repository\\pir_export_2021.xlsx",
+  "C:\\OHS-Project-1\\data_repository\\pir_export_2022.xlsx",
   "C:\\OHS-Project-1\\data_repository\\pir_export_2023.xlsx"
 )
 # Get workbooks
@@ -183,7 +187,7 @@ tryCatch(
   }
 )
 gc()
-stop()
+
 # Append like Files
 wb_appended <- future_map(
   tables,
@@ -228,7 +232,24 @@ tryCatch(
     walk(
       tables,
       function(table) {
-        replaceInto(conn, wb_appended[[table]], table)
+        if (table == "response") {
+          df <- wb_appended[[table]]
+          years <- unique(df$year)
+          walk(
+            years,
+            function(yr) {
+              df <- filter(df, year == yr)
+              genResponseSchema(conn, yr)
+              replaceInto(
+                conn,
+                df,
+                paste0(table, yr)
+              )
+            }
+          )
+        } else {
+          replaceInto(conn, wb_appended[[table]], table)
+        }
       }
     )
     logMessage("Successfully inserted data into DB.", log_file)
@@ -239,5 +260,6 @@ tryCatch(
   }
 )
 
+writeLog(log_file)
 dbDisconnect(conn)
 gc()

@@ -1,4 +1,4 @@
-temp <- getTables(conn, link_conn, 2019)
+temp <- getTables(conn, link_conn, 2021)
 temp <- checkLinked(temp)
 temp <- checkUnlinked(temp)
 temp <- cleanQuestions(temp)  
@@ -61,6 +61,8 @@ questions <- dbGetQuery(
 #' but number is different.
 mi_questions <- setdiff(questions$question_id, c(linked$question_id, unlinked$question_id))
 filter(questions, question_id %in% mi_questions)
+
+anti_join(questions, linked, by = c("question_id", "year"))
 
 # Should a user check cases where question_id and uqid are not unique?
 linked %>% 

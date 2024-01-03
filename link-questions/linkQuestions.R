@@ -86,7 +86,7 @@ all_years <- dbGetQuery(
   "
 )$year
 all_years <- sort(all_years, decreasing = T)
-stop()
+
 # Loop over all years and match questions
 walk(
   all_years,
@@ -219,3 +219,4 @@ walk(
   }
 )
 writeLog(log_file)
+map(connections, dbDisconnect)
