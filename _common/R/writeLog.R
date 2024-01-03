@@ -1,4 +1,4 @@
-writeLog <- function(log_file, ...) {
+writeLog <- function(log_file) {
   # Make path and create folders if needed
   ingestion_log_path <- attr(log_file, "path")
   try(

@@ -7,6 +7,12 @@ CREATE TABLE `pir_ingestion_logs` (
     `message` TEXT
 );
 
+CREATE TABLE `pir_question_linkage_logs` (
+    `run` TIMESTAMP,
+    `timestamp` TIMESTAMP,
+    `message` TEXT
+)
+
 CREATE TABLE `mysql_logs` (
     `timestamp` TIMESTAMP,
     `message` TEXT
