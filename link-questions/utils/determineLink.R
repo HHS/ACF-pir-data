@@ -62,7 +62,7 @@ determineLink <- function(df) {
             ungroup() %>%
             filter(
               !(confirmed == 0 & max_confirmed == 1),
-              !(confirmed_sum == max_confirmed & index != 1)
+              !(confirmed_sum == max_confirmed & index != 1 & confirmed_sum != 1)
             ) %>%
             return()
         },

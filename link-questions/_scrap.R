@@ -1,4 +1,4 @@
-temp <- getTables(conn, link_conn, 2021)
+temp <- getTables(conn, link_conn, 2022)
 temp <- checkLinked(temp)
 temp <- checkUnlinked(temp)
 temp <- cleanQuestions(temp)  

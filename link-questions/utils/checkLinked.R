@@ -20,6 +20,7 @@ checkLinked <- function(df_list) {
   
     if (!is.null(lower_year) && nrow(lower_year) > 0) {
       separated <- cross_join(lower_year, linked_db) %>%
+        filter(year.x != year.y) %>%
         determineLink() %>%
         separateCombined(df_list$question_vars, "linked")
       
@@ -30,7 +31,7 @@ checkLinked <- function(df_list) {
     }
     
     df_list$linked <- linked
-    if (exists("unlinked", envir = environment())) {
+    if (exists("unlinked", envir = environment(), inherits = F)) {
       df_list$unlinked <- unlinked
     }
     

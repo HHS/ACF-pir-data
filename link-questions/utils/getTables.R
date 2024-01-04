@@ -7,7 +7,7 @@ getTables <- function(question_conn, link_conn, lower_year) {
     paste(
       "SHOW COLUMNS",
       "FROM linked",
-      "WHERE Field like 'question%' OR Field = 'section'"
+      "WHERE Field like 'question%' OR Field IN ('section', 'year')"
     )
   )
   matching_vars <- paste(matching_vars$Field, collapse = ",")

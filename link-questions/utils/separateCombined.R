@@ -46,44 +46,31 @@ separateCombined <- function(df, varnames, caller) {
     separated$unlinked <- combined  %>%
       filter(confirmed == 0) %>%
       # Create proposed match column
-      group_by(uqid) %>%
-      mutate(
-        across(ends_with("dist"), as.numeric),
-        across(ends_with("dist"), ~ max(., na.rm = T)),
-        distances = pmap(across(ends_with("dist")), c)
-      ) %>%
-      mutate(
-        ids = c(question_id), 
-        proposed_link = setNames(distances, ids),
-        proposed_link = toJSON(proposed_link)
-      ) %>%
-      ungroup() %>%
+      genProposedLink() %>%
       select(question_id, year, proposed_link)
     
   } else if (caller == "linked") {
     
-    separated <- map(
-      0:1,
-      function(bool) {
-        filter(df, confirmed == bool) %>%
-          select(-ends_with(".y")) %>%
-          rename_with(
-            ~ gsub("\\.x$", "", ., perl = T),
-            ends_with(".x")
-          ) %>%
-          {
-            if (bool == 0) {
-              select(., all_of(varnames))
-            } else {
-              .
-            }
-          } %>%
-          return()
-      }
-    )
+    separated$linked <- filter(df, confirmed == 1) %>%
+      select(-ends_with(".y")) %>%
+      rename_with(
+        ~ gsub("\\.x$", "", ., perl = T),
+        ends_with(".x")
+      )
     
-    separated$linked <- separated[[2]]
-    separated$unlinked <- separated[[1]]
+    separated$unlinked <- df %>%
+      filter(confirmed == 0) %>%
+      pivot_longer(
+        c(
+          ends_with(c(".x", ".y"))
+        ),
+        names_to = c(".value", "source"),
+        names_sep = "\\."
+      ) %>%
+      distinct(uqid, question_id, .keep_all = T) %>%
+      genProposedLink() %>%
+      filter(source == "x") %>%
+      select(all_of(varnames), proposed_link)
   }
   
   return(separated)

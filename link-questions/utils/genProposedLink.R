@@ -8,7 +8,7 @@ genProposedLink <- function(df) {
     mutate(
       across(ends_with("dist"), as.numeric),
       across(ends_with("dist"), ~ max(., na.rm = T)),
-      distances = pmap(across(ends_with("dist")), c)
+      distances = pmap(across(ends_with("dist")), list)
     ) %>%
     mutate(
       ids = c(question_id), 
@@ -17,6 +17,6 @@ genProposedLink <- function(df) {
       year = as.numeric(year)
     ) %>%
     ungroup() %>%
-    select(question_id, year, proposed_link) %>%
+    # select(question_id, year, proposed_link) %>%
     return()
 }
