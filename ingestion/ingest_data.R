@@ -97,8 +97,8 @@ tryCatch(
 
 # wb_list <- args
 wb_list <- c(
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2015.xlsx"
+  # "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
+  "C:\\OHS-Project-1\\data_repository\\pir_export_2012.xls"
   # "C:\\OHS-Project-1\\data_repository\\pir_export_2021.xlsx",
   # "C:\\OHS-Project-1\\data_repository\\pir_export_2022.xlsx",
   # "C:\\OHS-Project-1\\data_repository\\pir_export_2023.xlsx"
