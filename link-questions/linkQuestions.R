@@ -30,7 +30,7 @@ invisible(
 )
 
 # Configuration (paths, db_name, etc.)
-source("C:\\OHS-Project-1\\ACF-pir-data\\config.R")
+source(here("config.R"))
 
 # Set up parallelization
 operating_system <- Sys.info()['sysname']
