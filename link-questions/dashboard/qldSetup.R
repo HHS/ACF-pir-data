@@ -1,5 +1,5 @@
 # Packages
-pkgs <- c("shiny", "here", "dplyr", "kableExtra", "RMariaDB")
+pkgs <- c("shiny", "here", "dplyr", "kableExtra", "RMariaDB", "shinyjs")
 invisible(sapply(pkgs, library, character.only = T))
 
 # Configurations
@@ -26,3 +26,5 @@ connections <- connectDB(
 )
 conn <- connections[[1]]
 link_conn <- connections[[2]]
+
+jscode <- "shinyjs.refresh_page = function() { history.go(0); }"

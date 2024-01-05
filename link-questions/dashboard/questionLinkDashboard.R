@@ -11,16 +11,21 @@ library(here)
 source(here("link-questions", "dashboard", "qldSetup.R"))
 
 ui_scripts <- list.files(here("link-questions", "dashboard", "ui_scripts"), full.names = T)
+server_scripts <- list.files(here("link-questions", "dashboard", "server_scripts"), full.names = T)
 invisible(sapply(ui_scripts, source))
 
 ui <- fluidPage(
+  useShinyjs(),
+  extendShinyjs(text = jscode, functions = "refresh_page"),
   tabsetPanel(
-    link_tab 
+    review_unlinked 
   )
 )
 
 server <- function(input, output, session) {
-  source(here("link-questions", "dashboard", "server_scripts", "renderData.R"), local = TRUE)$value
+  for (script in server_scripts) {
+    source(script, local = T)$value
+  }
 }
 
 shinyApp(ui, server)
