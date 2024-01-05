@@ -29,8 +29,9 @@ separateCombined <- function(df, varnames, caller) {
         everything()
       ) %>%
       genUQID() %>%
+      mutate(match_group = row_number()) %>%
       pivot_longer(
-        -c("confirmed", "uqid"),
+        -c("confirmed", "uqid", "match_group"),
         names_to = c(".value", "year"),
         names_pattern = "^(\\w+)(\\d{4})$"
       ) %>%
@@ -60,6 +61,7 @@ separateCombined <- function(df, varnames, caller) {
     
     separated$unlinked <- df %>%
       filter(confirmed == 0) %>%
+      mutate(match_group = row_number()) %>%
       pivot_longer(
         c(
           ends_with(c(".x", ".y"))

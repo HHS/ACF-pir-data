@@ -4,7 +4,7 @@ genProposedLink <- function(df) {
   
   
   df %>%
-    group_by(uqid) %>%
+    group_by(match_group) %>%
     mutate(
       across(ends_with("dist"), as.numeric),
       across(ends_with("dist"), ~ max(., na.rm = T)),

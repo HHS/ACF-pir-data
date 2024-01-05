@@ -27,6 +27,27 @@ cleanQuestions <- function(df_list) {
     
   }
   
+  # Data Integrity checks
+  if (!is.null(unlinked) && nrow(unlinked) > 0) {
+    proposed_link_ids <- map(
+      map(
+        unlinked$proposed_link,
+        fromJSON
+      ),
+      names
+    )
+    proposed_link_ids <- unlist(proposed_link_ids)
+    problematic <- setdiff(
+      proposed_link_ids, 
+      c(linked$question_id, df_list$linked_db$question_id)
+    )
+    overlap <- intersect(unlinked$question_id, problematic)
+    if (length(overlap) != 0) {
+      stop("Proposed links within year!")
+    }
+  }
+  
+  
   if (!is.null(linked)) {
     linked_rows <- filter(linked, year == unique(lower$year)) %>%
       distinct(question_id) %>%
