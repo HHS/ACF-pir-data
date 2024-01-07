@@ -29,3 +29,10 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
+#' When link is clicked the following should happen
+#' 1) Linked/Unlinked checked to see which set of logic is needed
+#' 2) Record is linked accordingly
+#' 3) Record is prepared for insertion
+#' 4) Record is inserted and all dbs are updated
+#' 5) Tab is reset

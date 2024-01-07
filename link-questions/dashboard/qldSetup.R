@@ -28,3 +28,6 @@ conn <- connections[[1]]
 link_conn <- connections[[2]]
 
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"
+
+# Dashboard meta data
+dash_meta <- list()
