@@ -1,4 +1,4 @@
-temp <- getTables(conn, link_conn, 2022)
+temp <- getTables(conn, link_conn, 2019)
 temp <- checkLinked(temp)
 temp <- checkUnlinked(temp)
 temp <- cleanQuestions(temp)  
@@ -11,6 +11,10 @@ if (!is.null(temp$unlinked)) {
 }
 updateUnlinked(link_conn)
 
+walk(
+  list.files(here("link-questions", "utils"), full.names = T, pattern = "R$"),
+  source
+)
 walk(
   all_years,
   function(year) {
@@ -49,6 +53,8 @@ unlinked <- dbGetQuery(
   )
 )
 
+verify(NULL, length(intersect(linked$question_id, unlinked$question_id)) == 0)
+
 questions <- dbGetQuery(
   conn,
   paste(
@@ -74,5 +80,14 @@ linked %>%
   mutate(num = n()) %>%
   verify(num >= 2)
 
-#' Data integrity checks and ensure that this can be rerun (w/o empty db)
-#' Logging
+temp <- df_list$unlinked
+
+proposed_link_ids <- map(
+  map(
+    temp$proposed_link,
+    fromJSON
+  ),
+  names
+)
+proposed_link_ids <- unlist(proposed_link_ids)
+overlap <- intersect(unlinked$question_id, proposed_link_ids)

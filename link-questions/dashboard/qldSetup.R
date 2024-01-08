@@ -1,10 +1,17 @@
+#############################################
+## Written by: Reggie Gilliard
+## Date: 01/05/2023
+## Description: Question Linking Dashboard setup
+#############################################
+
 # Packages
-pkgs <- c("shiny", "here", "dplyr", "kableExtra", "RMariaDB", "shinyjs")
+pkgs <- c("shiny", "here", "dplyr", "kableExtra", "RMariaDB", "shinyjs", "purrr")
 invisible(sapply(pkgs, library, character.only = T))
 
 # Configurations
 source(here("config.R"))
-
+dbusername <- "analyst"
+dbpassword <- '7aZ98pz1z2'
 # Common functions
 walk(
   list.files(here("_common", "R"), full.names = T, pattern = "R$"),

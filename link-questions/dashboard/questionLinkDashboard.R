@@ -1,8 +1,7 @@
 #############################################
 ## Written by: Reggie Gilliard
 ## Date: 01/05/2023
-## Description: Data ingestion
-## ToDo: Error handling, credential management, move functions out
+## Description: Question Linking Dashboard
 #############################################
 
 rm(list = ls())
