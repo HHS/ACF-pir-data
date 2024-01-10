@@ -1,6 +1,6 @@
 DELIMITER //
 
-CREATE PROCEDURE questionKeywordSearch(
+CREATE PROCEDURE keywordSearch(
 	IN tab varchar(25), IN col VARCHAR(100), IN string TEXT, IN exact INT
 )
 BEGIN

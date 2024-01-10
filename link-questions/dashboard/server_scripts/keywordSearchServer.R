@@ -11,7 +11,7 @@ keyword_output <- eventReactive(
         dbGetQuery(
           link_conn,
           paste0(
-            "call questionKeywordSearch(",
+            "call keywordSearch(",
             "'", input$keyword_table, "',",
             "'", input$keyword_column, "',", 
             "'", input$keyword_text, "',",
