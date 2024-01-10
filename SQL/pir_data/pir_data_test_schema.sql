@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS pir_data_2;
-USE pir_data_2;
+CREATE DATABASE IF NOT EXISTS pir_data_test;
+USE pir_data_test;
 
 CREATE TABLE `Response` (
   `uid` varchar(255),
