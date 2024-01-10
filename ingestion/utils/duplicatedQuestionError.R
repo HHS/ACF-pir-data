@@ -1,3 +1,13 @@
+#' Handle duplicated questions
+#' 
+#' `duplicatedQuestionError` is a function intended for use with assertr.
+#' If the data being imported from a "Reference" sheet have duplicated
+#' questions, this function removes them returning only unique questions.
+#' 
+#' @param list_of_errors Assertr list of errors.
+#' @param data Data frame
+#' @returns Data frame, unique by columns in assert call.
+
 duplicatedQuestionError <- function(list_of_errors, data) {
   
   output <- list()

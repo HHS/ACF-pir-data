@@ -4,13 +4,12 @@
 #' checking for NAs, and removing extraneous variables, to prepare the data
 #' for insertion into the MySQL database.
 #' 
-#' @param df_list A list of data frames.
+#' @param workbooks A single workbook path, or list of workbook paths, returned
+#' from `loadPirData` (i.e. one that has data frame attributes).
+#' @param log_file A data frame containing the log data. 
 #' @param schema A list of character vectors defining the columns that should
-#' kept (or added) to the corresponding df in `df_list`.
-#' @param yr Year from which the data in `df_list` come.
-#' @examples
-#' # example code
-#' cleanPirData(test_df_list, test_schema, test_yr)
+#' be kept (or added) to the corresponding data frame.
+
 cleanPirData <- function(workbooks, schema, log_file) {
   
   workbooks <- future_map(
@@ -139,6 +138,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
         }
       )
       
+      # Remove data frames with 0 rows again
       workbook_attr <- attributes(workbook)
       attributes(workbook) <- workbook_attr[
         map_lgl(workbook_attr, function(df) !is.data.frame(df) || nrow(df) > 0)
@@ -146,6 +146,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
       return(workbook)
     }
   )
+  
   gc()
   logMessage("Successfully cleaned PIR data.", log_file)
   return(workbooks)

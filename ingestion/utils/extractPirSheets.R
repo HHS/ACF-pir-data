@@ -1,4 +1,15 @@
-# Extract sheets, add year and sheets as attributes
+#' Extract sheets from a PIR workbook
+#' 
+#' `extractPirSheets` extracts the names of worksheets contained in a PIR
+#' workbook. These names, along with the year embedded in the workbook
+#' path are stored as attributes of the object passed.
+#' 
+#' @param workbooks A single workbook path, or list of workbook paths, returned
+#' from `loadPirData` (i.e. one that has data frame attributes).
+#' @param log_file A data frame containing the log data.
+#' @returns Workbook object(s) with "year" and "sheets" attributes containing
+#' the year the data pertain to and the sheets in the workbook respectively.
+
 extractPirSheets <- function(workbooks, log_file) {
   pkgs <- c("furrr", "stringr")
   invisible(sapply(pkgs, require, character.only = T))

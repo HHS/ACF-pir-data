@@ -1,3 +1,13 @@
+#' Extract questions with missing question_number
+#' 
+#' `naNumberError` is a function intended for use with assertr.
+#' It identifies questions with NA numbers.
+#' 
+#' @param list_of_errors Assertr list of errors.
+#' @param data Data frame
+#' @returns question and response data frames with updated values for 
+#' `unmatched`.
+
 naNumberError <- function(list_of_errors, data) {
   
   naNum_env <- environment()

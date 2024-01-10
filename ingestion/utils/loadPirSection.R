@@ -1,3 +1,11 @@
+#' Load "Section [A-D]" worksheets from PIR workbooks.
+#' 
+#' `loadPirSection` loads section worksheets from PIR workbooks,
+#' transforming the data so that question names are retained.
+#' @param workbook A single workbook path.
+#' @param sheet The sheet to be ingested.
+#' @returns A data frame.
+
 loadPirSection <- function(workbook, sheet) {
   
   # Do not load colnames. Extract text and colnames below

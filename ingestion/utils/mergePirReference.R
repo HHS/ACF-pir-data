@@ -4,11 +4,12 @@
 #' create question data frame. Merge question data frame to
 #' appended Section sheets created with appendPirSections.
 #' 
-#' @param df_list A list of data frames.
-#' @param workbook The workbook that the current data come from.
-#' @examples
-#' # example code
-#' mergePirReference(response_df, "test_wb.xlsx")
+#' @param workbooks A single workbook path, or list of workbook paths, returned
+#' from `appendPirSections` (i.e. one that has data frame attributes).
+#' @param log_file A data frame containing the log data. 
+#' @returns A single workbook path, or list of workbook paths, with updated
+#' "response", "unmatched_response", "question", and "unmatched_question" 
+#' attributes.
 
 mergePirReference <- function(workbooks, log_file) {
   
@@ -16,6 +17,7 @@ mergePirReference <- function(workbooks, log_file) {
     workbooks,
     function(workbook) {
       
+      # Source the error functions
       rm(list = ls(pattern = "Error"))
       error_funs <- list.files(
         here("ingestion", "utils"), 
@@ -26,6 +28,7 @@ mergePirReference <- function(workbooks, log_file) {
         source(error_funs[i], local = T)
       }
       
+      # Extract data
       response <- attr(workbook, "response") %>%
         addUnmatched()
       
@@ -42,7 +45,7 @@ mergePirReference <- function(workbooks, log_file) {
       
       # Check that reference has all questions
       response <- response %>%
-        # Remove numeric strings added to uniquely identify
+        # Remove numeric strings added to uniquely identify questions
         mutate(
           question_number = gsub("_\\d+$", "", question_number, perl = T),
           q_num_lower = trimws(tolower(question_number)),

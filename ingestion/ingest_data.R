@@ -30,7 +30,7 @@ invisible(
 )
 
 # Configuration (paths, db_name, etc.)
-source("C:\\OHS-Project-1\\ACF-pir-data\\config.R")
+source(here("config.R"))
 
 # Set up parallelization
 operating_system <- Sys.info()['sysname']
@@ -58,7 +58,7 @@ log_file <- startLog(
 )
 
 # Establish DB connection ----
-conn <- connectDB("pir_data_test", dbusername, dbpassword, log_file)[[1]]
+conn <- connectDB("pir_data", dbusername, dbpassword, log_file)[[1]]
 tables <- c("response", "question", "program", "unmatched_response", "unmatched_question")
 schema <- getSchemas(conn, tables)
 

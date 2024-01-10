@@ -1,3 +1,15 @@
+#' Load all data from PIR workbook
+#' 
+#' `loadPirData` loads data from all worksheets of a given PIR workbook, or
+#' list of workbooks. The configuration sheet is never used in the PIR
+#' ingestion pipeline and is therefore dropped here.
+#' 
+#' @param workbooks A single workbook path, or list of workbook paths, returned
+#' from `loadPirData` (i.e. one that has data frame attributes).
+#' @param log_file A data frame containing the log data.
+#' @returns A list of string objects with attributes corresponding for each
+#' worksheet in the workbook identified by the object.
+
 loadPirData <- function(workbooks, log_file) {
   pkgs <- c("readxl", "dplyr", "janitor", "assertr")
   invisible(sapply(pkgs, require, character.only = T))
@@ -14,6 +26,7 @@ loadPirData <- function(workbooks, log_file) {
           df <- loadPirSection(workbook, sheet)
         } else {
           df <- read_excel(workbook, sheet)
+          # Remove duplicated questions in Reference sheets
           if (sheet == "Reference") {
             df <- df %>%
               clean_names() %>%
@@ -23,9 +36,11 @@ loadPirData <- function(workbooks, log_file) {
               )
           }
         }
+        # Adjust name of Program Details sheets
         if (grepl("Program", sheet)) {
           sheet <- "program"
         }
+        # Clean up sheet names for storage as attribute
         attr(workbook, make_clean_names(sheet)) <- df
       }
       attr(workbook, "configuration") <- NULL
