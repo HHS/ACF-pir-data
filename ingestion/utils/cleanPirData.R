@@ -17,6 +17,8 @@ cleanPirData <- function(workbooks, schema, log_file) {
     workbooks,
     function(workbook) {
       
+      source(here("ingestion", "utils", "addPirVars.R"), local = T)
+      
       func_env <- environment()
       
       # Create vectors of variables
@@ -89,6 +91,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                 length(mi_vars) == 0,
                 error_fun = addPirVars
               ) %>%
+              distinct(question_id, year, .keep_all = T) %>%
               select(all_of(vars))
             
             attr(workbook, table) <- df
@@ -121,6 +124,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                 length(mi_vars) == 0,
                 error_fun = addPirVars
               ) %>%
+              distinct(uid, year, .keep_all = T) %>%
               select(all_of(program_vars))
             
             attr(workbook, table) <- df
@@ -137,7 +141,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
       
       workbook_attr <- attributes(workbook)
       attributes(workbook) <- workbook_attr[
-        map_lgl(workbook_attr, function(df) !is.null(nrow(df)) && nrow(df) > 0)
+        map_lgl(workbook_attr, function(df) !is.data.frame(df) || nrow(df) > 0)
       ]
       return(workbook)
     }

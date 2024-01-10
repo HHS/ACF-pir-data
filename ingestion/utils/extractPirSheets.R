@@ -14,5 +14,8 @@ extractPirSheets <- function(workbooks, log_file) {
     }
   )
   
+  
+  gc()
+  logMessage("Successfully extracted PIR sheets.", log_file)
   return(sheets)
 }

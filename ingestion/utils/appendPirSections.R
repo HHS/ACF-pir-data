@@ -12,7 +12,7 @@
 
 appendPirSections <- function(workbooks, log_file) {
   
-  workbooks <- future_map(
+  workbooks <- map(
     workbooks,
     function(workbook) {
       sections <- grep("section", names(attributes(workbook)), value = T)
@@ -24,5 +24,5 @@ appendPirSections <- function(workbooks, log_file) {
   gc()
   logMessage("Successfully appended Section sheet(s).", log_file)
   return(workbooks)
+  
 }
-

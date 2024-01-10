@@ -34,5 +34,6 @@ loadPirData <- function(workbooks, log_file) {
   )
   
   gc()
+  logMessage("Successfully loaded PIR data.", log_file)
   return(workbooks)
 }

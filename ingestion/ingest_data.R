@@ -40,9 +40,6 @@ if (operating_system == "Windows") {
 future::plan(multisession, workers = processors)
 options(future.globals.maxSize = 2000*1024^2)
 
-# Get file
-args <- commandArgs(TRUE)
-
 # Functions ----
 
 walk(
@@ -61,205 +58,100 @@ log_file <- startLog(
 )
 
 # Establish DB connection ----
-
-tryCatch(
-  {
-    conn <- dbConnect(RMariaDB::MariaDB(), dbname = "pir_data", username = dbusername, password = dbpassword)
-    logMessage("Connection established successfully.", log_file)
-  },
-  error = function(cnd) {
-    errorMessage(cnd, log_file)
-  }
-)
+conn <- connectDB("pir_data_test", dbusername, dbpassword, log_file)[[1]]
 tables <- c("response", "question", "program", "unmatched_response", "unmatched_question")
+schema <- getSchemas(conn, tables)
 
+# Get file(s) ----
+args <- commandArgs(TRUE)
+# wb_list <- args
+
+# wb_list <- c(
+#   "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
+#   "C:\\OHS-Project-1\\data_repository\\pir_export_2012.xls"
+#   # "C:\\OHS-Project-1\\data_repository\\pir_export_2021.xlsx",
+#   # "C:\\OHS-Project-1\\data_repository\\pir_export_2022.xlsx",
+#   # "C:\\OHS-Project-1\\data_repository\\pir_export_2023.xlsx"
+# )
+# Get workbooks
 tryCatch(
   {
-    schema <- list()
-    walk(
-      tables,
-      function(table) {
-        vars <- dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
-        vars <- vars$Field
-        schema[[table]] <- vars
-        assign("schema", schema, envir = .GlobalEnv)
-      }
+    wb_list <- list.files(
+      file.path(datadir),
+      pattern = "pir_export_.*.xlsx$",
+      full.names = T
     )
-    logMessage("Schemas read from database.", log_file)
+    logMessage("PIR workbooks found.", log_file)
   },
   error = function(cnd) {
-    logMessage("Failed to read schemas from database.", log_file)
+    logMessage("Failed to find PIR workbooks.", log_file)
     errorMessage(cnd, log_file)
   }
 )
 
 # Ingestion ----
 
-# wb_list <- args
-wb_list <- c(
-  # "C:\\OHS-Project-1\\data_repository\\pir_export_2008.xls",
-  "C:\\OHS-Project-1\\data_repository\\pir_export_2012.xls"
-  # "C:\\OHS-Project-1\\data_repository\\pir_export_2021.xlsx",
-  # "C:\\OHS-Project-1\\data_repository\\pir_export_2022.xlsx",
-  # "C:\\OHS-Project-1\\data_repository\\pir_export_2023.xlsx"
-)
-# Get workbooks
-# tryCatch(
-#   {
-#     wb_list <- list.files(
-#       file.path(datadir),
-#       pattern = "pir_export_.*.xls$",
-#       full.names = T
-#     )
-#     logMessage("PIR workbooks found.", log_file)
-#   },
-#   error = function(cnd) {
-#     logMessage("Failed to find PIR workbooks.", log_file)
-#     errorMessage(cnd, log_file)
-#   }
-# )
-
-# Append section sheets
+# Extract all sheets from PIR workbooks
 tryCatch(
   {
-    wb_appended <- future_map(
-      wb_list,
-      appendPirSections
-    )
-    logMessage("Successfully appended section sheets.", log_file)
+    wb_appended <- extractPirSheets(wb_list, log_file)
   },
   error = function(cnd) {
-    logMessage("Failed to append PIR sections.", log_file)
+    logMessage("Failed to extract PIR data sheets.", log_file)
     errorMessage(cnd, log_file)
   }
 )
-gc()
 
-# Load reference and program sheets
+# Load all data
 tryCatch(
   {
-    wb_appended <- future_map2(
-      wb_appended,
-      wb_list,
-      loadQuestionProgram
-    )
-    logMessage("Successfully loaded reference and program sheets.", log_file)
+    wb_appended <- loadPirData(wb_appended, log_file)
   },
   error = function(cnd) {
-    logMessage("Failed to load reference and/or program sheet.", log_file)
+    logMessage("Failed to load PIR data.", log_file)
     errorMessage(cnd, log_file)
   }
 )
-gc()
+
+# Append sections into response data
+tryCatch(
+  {
+    wb_appended <- appendPirSections(wb_appended, log_file)
+  },
+  error = function(cnd) {
+    logMessage("Failed to append Section sheet(s).", log_file)
+    errorMessage(cnd, log_file)
+  }
+)
 
 # Merge reference sheet to section sheets
 tryCatch(
   {
-    wb_appended <- future_map2(
-      wb_appended,
-      wb_list,
-      mergePirReference
-    )
-    logMessage("Successfully merged reference sheet(s).", log_file)
+    wb_appended <- mergePirReference(wb_appended, log_file)
   },
   error = function(cnd) {
     logMessage("Failed to merge Reference sheet(s).", log_file)
     errorMessage(cnd, log_file)
   }
 )
-gc()
 
 # Final cleaning
 tryCatch(
   {
-    wb_appended <- future_map2(
-      wb_appended,
-      wb_list,
-      function(df_list, workbook) {
-        yr <- stringr::str_extract(workbook, "(\\d+).xls.?", group = 1)
-        df_list <- cleanPirData(df_list, schema, yr)
-        return(df_list)
-      }
-    )
-    logMessage("Successfully cleaned PIR data.", log_file)
+    wb_appended <- cleanPirData(wb_appended, schema, log_file)
   },
   error = function(cnd) {
     logMessage("Failed to clean PIR data.", log_file)
     errorMessage(cnd, log_file)
   }
 )
-gc()
-
-# Append like Files
-wb_appended <- future_map(
-  tables,
-  function(table) {
-    df <- map(
-      wb_appended,
-      function(df_list) {
-        df_list[[table]]
-      }
-    ) %>%
-      bind_rows()
-  }
-)
-names(wb_appended) <- tables
-gc()
 
 # Write to DB ----
 
 # Write data
-
-wb_appended <- future_map(
-  tables,
-  function(table) {
-    if (table == "program") {
-      wb_appended[[table]] %>%
-        distinct(uid, year, .keep_all = T) %>%
-        return()
-    } else if (table == "question") {
-      wb_appended[[table]] %>%
-        distinct(question_id, year, .keep_all = T) %>%
-        return()
-    } else {
-      wb_appended[[table]] %>%
-        return()
-    }
-  }
-)
-names(wb_appended) <- tables
-
 tryCatch(
   {
-    walk(
-      tables,
-      function(table) {
-        if (table == "response") {
-          df <- wb_appended[[table]]
-          years <- unique(df$year)
-          walk(
-            years,
-            function(yr) {
-              df <- filter(df, year == yr)
-              genResponseSchema(conn, yr)
-              replaceInto(
-                conn,
-                df,
-                paste0(table, yr),
-                log_file
-              )
-            }
-          )
-        } else {
-          df <- wb_appended[[table]]
-          if(nrow(df) > 0) {
-            replaceInto(conn, df, table, log_file)
-          } else {
-            logMessage(paste("Table", table, "has 0 rows."), log_file)
-          }
-        }
-      }
-    )
+    insertPirData(conn, wb_appended, schema, log_file)
     logMessage("Successfully inserted data into DB.", log_file)
   },
   error = function(cnd) {
@@ -268,6 +160,7 @@ tryCatch(
   }
 )
 
+# Write log and connect to DB
 writeLog(log_file)
 dbDisconnect(conn)
 gc()
