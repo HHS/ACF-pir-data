@@ -4,13 +4,15 @@ use `pir_logs`;
 CREATE TABLE `pir_ingestion_logs` (
     `run` TIMESTAMP,
     `timestamp` TIMESTAMP,
-    `message` TEXT
+    `message` TEXT,
+    PRIMARY KEY (`run`, `timestamp`)
 );
 
 CREATE TABLE `pir_question_linkage_logs` (
     `run` TIMESTAMP,
     `timestamp` TIMESTAMP,
-    `message` TEXT
+    `message` TEXT,
+    PRIMARY KEY (`run`, `timestamp`)
 )
 
 CREATE TABLE `mysql_logs` (
