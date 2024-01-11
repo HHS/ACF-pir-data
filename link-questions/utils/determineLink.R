@@ -19,6 +19,7 @@ determineLink <- function(df) {
   invisible(sapply(pkgs, require, character.only = T))
   
   df <- df %>%
+    # Calculate string distances and sum
     mutate(
       question_number_dist = stringdist(question_number.x, question_number.y),
       question_name_dist = stringdist(question_name.x, question_name.y),
@@ -34,6 +35,7 @@ determineLink <- function(df) {
     )
   
   df %>%
+    # Keep record(s) with min sum of string distance
     filter(
       dist_sum == min_dist_sum
     ) %>%
@@ -41,6 +43,7 @@ determineLink <- function(df) {
     group_by(question_id.y) %>%
     mutate(id_y_appearances = n()) %>%
     ungroup() %>%
+    # Create indicator for confirmed matches
     mutate(
       confirmed = case_when(
         section_dist != 0 ~ 0,
@@ -52,6 +55,7 @@ determineLink <- function(df) {
       )
     ) %>%
     group_by(question_id.x) %>%
+    # Update confirmed matches
     mutate(
       index = row_number(),
       id_x_appearances = n(),
@@ -65,11 +69,13 @@ determineLink <- function(df) {
     ) %>%
     ungroup() %>%
     assert(not_na, question_id.x) %>%
+    # Confirm that newly matched records are only confirmed once
     pipeExpr(
       . %>%
         filter(confirmed == 1) %>%
         assert(is_uniq, question_id.x)
     ) %>%
+    # Return confirmed records
     {
       tryCatch(
         {

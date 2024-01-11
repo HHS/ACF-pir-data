@@ -1,3 +1,11 @@
+#' Generate a link between two questions
+#' 
+#' `genLink` generates a link between two questions. It is primarily
+#' for interactive in conjunction with Shiny.
+#' @param base_id An unlinked question_id.
+#' @param link_id A question_id to link `base_id` to.
+#' @param conn A database connection.
+
 genLink <- function(base_id, link_id, conn) {
   pkgs <- c("RMariaDB", "dplyr", "uuid")
   invisible(sapply(pkgs, require, character.only = T))
@@ -29,6 +37,7 @@ genLink <- function(base_id, link_id, conn) {
     )
   )
   
+  # If neither question was linked
   if (link_id %in% unlinked_ids) {
     
     unlinked <- unlinked %>%
