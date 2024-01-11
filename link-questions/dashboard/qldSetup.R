@@ -12,13 +12,17 @@ invisible(sapply(pkgs, library, character.only = T))
 
 # Configurations
 source(here("config.R"))
-dbusername <- "analyst"
-dbpassword <- '7aZ98pz1z2'
+
 # Common functions
 walk(
   list.files(here("_common", "R"), full.names = T, pattern = "R$"),
   source
 )
+walk(
+  list.files(here("link-questions", "utils"), full.names = T, pattern = "R$"),
+  source
+)
+
 
 # Logging
 log_file <- startLog(

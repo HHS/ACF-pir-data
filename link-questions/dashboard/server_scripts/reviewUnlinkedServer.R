@@ -40,5 +40,6 @@ observeEvent(
       choices = dash_meta$review_question_id_choices[-which(dash_meta$review_question_id_choices == input$review_question_id)],
       selected = "None"
     )
+    js$refresh_page()
   }
 )
