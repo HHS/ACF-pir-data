@@ -17,6 +17,7 @@ ui <- fluidPage(
   useShinyjs(),
   extendShinyjs(text = jscode, functions = "refresh_page"),
   tabsetPanel(
+    home,
     keyword_search,
     review_unlinked 
   )

@@ -4,6 +4,8 @@
 ## Description: Question Linking Dashboard setup
 #############################################
 
+rm(list = ls())
+
 # Packages
 pkgs <- c("shiny", "here", "dplyr", "kableExtra", "RMariaDB", "shinyjs", "purrr")
 invisible(sapply(pkgs, library, character.only = T))
