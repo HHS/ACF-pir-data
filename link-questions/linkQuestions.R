@@ -40,9 +40,6 @@ if (operating_system == "Windows") {
 future::plan(multisession, workers = processors)
 options(future.globals.maxSize = 2000*1024^2)
 
-# Get file
-args <- commandArgs(TRUE)
-
 # Functions ----
 
 # Common functions
@@ -63,6 +60,7 @@ log_file <- startLog(
   "pir_question_linkage_logs"
 )
 
+# Establish DB Connections
 connections <- connectDB(
   list("pir_data", "question_links"), 
   dbusername, 
