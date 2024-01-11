@@ -1,12 +1,23 @@
+#' Check linked table for question matches
+#' 
+#' `checkLinked` checks the linked table for question links
+#' with the current year's data.
+#' 
+#' @param df_list List of data frames returned by `getTables()`
+#' @returns List of data frames including linked and unlinked records.
+
 checkLinked <- function(df_list) {
   
+  # Extract data of interest
   lower_year <- df_list$lower_year
   linked_db <- df_list$linked_db
   unlinked_db <- df_list$unlinked_db
   func_env <- environment()
   
+  # Check for data in linked_db
   if (nrow(linked_db) > 0) {
     
+    # Attempt to merge directly to linked
     linked <- inner_join(
       lower_year, 
       linked_db %>%
@@ -14,22 +25,27 @@ checkLinked <- function(df_list) {
       by = "question_id"
     )
     
+    # Filter out any records that merged directly from the current year
     lower_year <- anti_join(
       lower_year,
       linked,
       by = "question_id"
     )
     
+    # Attempt to merge directly to unlinked
     unlinked_match <- inner_join(
       lower_year,
       unlinked_db,
       by = "question_id"
     )
     
+    # If successful bind these matched records to linked
     if (nrow(unlinked_match) > 0) {
       
       linked <- unlinked_match %>%
+        # Cannot match to same year
         filter(year.x != year.y) %>%
+        # Pivot to get columns with matches by year
         pivot_longer(c(ends_with(".y"), -year.y)) %>%
         mutate(name = gsub("\\.y", "", name, perl = T)) %>%
         pivot_wider(
@@ -47,7 +63,9 @@ checkLinked <- function(df_list) {
           ~ str_replace_all(., c("\\.x$" = x_year)),
           everything()
         ) %>%
+        # Generate unique question id
         genUQID() %>%
+        # Pivot from one row per uqid to one row per uqid/year
         pivot_longer(
           -c("uqid", "question_id"),
           names_to = c(".value", "year"),
@@ -57,6 +75,7 @@ checkLinked <- function(df_list) {
         mutate(year = as.numeric(year)) %>%
         bind_rows(linked)
       
+        # Update current year, removing linked records
         lower_year <- anti_join(
           lower_year,
           linked,
@@ -66,6 +85,8 @@ checkLinked <- function(df_list) {
     }
       
   
+    # If there are still records in the current year, string distance check
+    # against the linked database
     if (!is.null(lower_year) && nrow(lower_year) > 0) {
       separated <- cross_join(lower_year, linked_db) %>%
         filter(year.x != year.y) %>%
@@ -85,6 +106,8 @@ checkLinked <- function(df_list) {
     
     return(df_list)
   
+  # If no records in the current year, the list of unlinked records is equal
+  # to the current year's data
   } else {
     
     df_list$unlinked <- lower_year

@@ -1,7 +1,15 @@
+#' Prepare questions for insertion into question_links database
+#' 
+#' `cleanQuestions` performs cleaning and data integrity checks on linked and
+#' unlinked records.
+#' @param df_list A list returned from `checkUnlinked()`.
+#' @returns A list of data frames ready for insertion.
+
 cleanQuestions <- function(df_list) {
   pkgs <- c("uuid", "assertr", "stringr", "rlang", "jsonlite", "tidyr", "dplyr")
   invisible(sapply(pkgs, require, character.only = T))
   
+  # Extract data
   linked_vars <- df_list$linked_vars
   unlinked_vars <- df_list$unlinked_vars
   unlinked <- df_list$unlinked
@@ -27,7 +35,11 @@ cleanQuestions <- function(df_list) {
     
   }
   
-  # Data Integrity checks
+  # Data Integrity checks ----
+  
+  # Ensure that there are no proposed links within a given year.
+  # i.e. question A.1 from 2023 cannot be proposed to link with question
+  # A.2 from 2023.
   if (!is.null(unlinked) && nrow(unlinked) > 0) {
     proposed_link_ids <- map(
       map(
@@ -47,7 +59,8 @@ cleanQuestions <- function(df_list) {
     }
   }
   
-  
+  # The number of rows in linked and unlinked from the current year
+  # must sum to the number of rows in the current year's question data
   if (!is.null(linked)) {
     linked_rows <- filter(linked, year == unique(lower$year)) %>%
       distinct(question_id) %>%
@@ -69,7 +82,9 @@ cleanQuestions <- function(df_list) {
     unlinked_rows,
     na.rm = T
   )
+  
   orig_row_count <- nrow(df_list$lower_year)
+  
   if (new_row_count != orig_row_count) {
     if (new_row_count > orig_row_count) {
       stop("Too many variables")
@@ -78,6 +93,9 @@ cleanQuestions <- function(df_list) {
     }
   }
   
+  # The sum of the records in the linked and unlinked data must be
+  # less than or equal to the sum of the number of rows in the current
+  # year's question data and the number of rows in the unlinked database.
   new_row_count <- sum(nrow(linked), nrow(unlinked), na.rm = T)
   orig_row_count <- sum(nrow(df_list$lower_year), nrow(df_list$unlinked_db))
 
