@@ -24,3 +24,14 @@ CREATE TABLE `unlinked` (
 	proposed_link TEXT,
 	PRIMARY KEY (question_id, `year`)
 );
+
+CREATE TABLE `new_questions` (
+	`year` year, 
+	question_id varchar(255), 
+	question_name TEXT, 
+	question_text TEXT, 
+	question_number varchar(55), 
+	category varchar(255),
+	section varchar(2),
+	PRIMARY KEY (question_id, `year`)
+);
