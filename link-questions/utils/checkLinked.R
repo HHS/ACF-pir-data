@@ -8,6 +8,9 @@
 
 checkLinked <- function(df_list) {
   
+  pkgs <- c("dplyr", "stringr", "assertr")
+  invisible(sapply(pkgs, require, character.only = T))
+  
   # Extract data of interest
   lower_year <- df_list$lower_year
   linked_db <- df_list$linked_db

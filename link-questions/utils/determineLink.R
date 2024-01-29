@@ -35,14 +35,6 @@ determineLink <- function(df) {
     )
   
   df %>%
-    # Keep record(s) with min sum of string distance
-    filter(
-      dist_sum == min_dist_sum
-    ) %>%
-    ungroup() %>%
-    group_by(question_id.y) %>%
-    mutate(id_y_appearances = n()) %>%
-    ungroup() %>%
     # Create indicator for confirmed matches
     mutate(
       confirmed = case_when(
@@ -54,6 +46,14 @@ determineLink <- function(df) {
         TRUE ~ 0
       )
     ) %>%
+    # Keep record(s) with min sum of string distance
+    filter(
+      dist_sum == min_dist_sum | confirmed == 1
+    ) %>%
+    ungroup() %>%
+    group_by(question_id.y) %>%
+    mutate(id_y_appearances = n()) %>%
+    ungroup() %>%
     group_by(question_id.x) %>%
     # Update confirmed matches
     mutate(
