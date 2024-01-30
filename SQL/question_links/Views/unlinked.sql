@@ -9,7 +9,7 @@ FROM unlinked
 ;
 
 CREATE OR REPLACE VIEW unlinked_v AS 
-SELECT b.*, a.`year`
+SELECT b.*, a.`year`, c.question_name, c.question_text, c.question_number, c.section
 FROM proposed_link a
 JOIN JSON_TABLE(
 	a.proposed_link,
@@ -25,4 +25,9 @@ JOIN JSON_TABLE(
     )
 ) b
 ON a.question_id = b.question_id
+LEFT JOIN (
+	SELECT DISTINCT question_id, question_name, question_text, question_number, section
+    FROM unlinked
+) c
+ON a.question_id = c.question_id
 ;
