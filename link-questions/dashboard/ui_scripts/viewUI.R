@@ -1,14 +1,7 @@
-db_names <- dbGetQuery(
-  conn,
-  "
-  SHOW SCHEMAS
-  "
-)$Database
-
-dash_meta$views <- dbGetQuery(
+dash_meta$view_choices <- dbGetQuery(
   conn,
   paste(
-  "show full tables in", "pir_data", "where table_type like 'VIEW'"
+  "SHOW FULL TABLES IN", "pir_data", "WHERE table_type LIKE 'VIEW'"
   )
 )[[1]]
 
@@ -18,11 +11,12 @@ view_search <- tabPanel(
   "Search for View by Database",
   sidebarPanel(
     selectInput(
-      inputId = "show_schema", label = "Database", choices = db_names, selected = "pir_data"
+      inputId = "show_schema", label = "Database", 
+      choices = dash_meta$dbnames, selected = "pir_data"
     ),
     selectInput(
       inputId = "show_views", label = "Select View", 
-      choices = dash_meta$views
+      choices = dash_meta$view_choices
     ),
     actionButton(
       inputId = "view_search", label = "Search"

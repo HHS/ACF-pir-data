@@ -30,22 +30,29 @@ log_file <- startLog(
   "pir_question_linkage_logs"
 )
 
+# Dashboard meta data
+dash_meta <- list()
+
 # Database connection
+info_conn <- connectDB("information_schema", dbusername, dbpassword, log_file)[[1]]
+dash_meta$dbnames <- dbGetQuery(
+  info_conn,
+  "
+  SHOW SCHEMAS
+  "
+)$Database
+dash_meta$dbnames <- grep("pir|question", dash_meta$dbnames, value = TRUE)
+
 connections <- connectDB(
-  list("pir_data", "question_links"), 
+  dash_meta$dbnames, 
   dbusername, 
   dbpassword, 
   log_file
 )
 connections <- set_names(
-  connections, list("pir_data", "question_links")
+  connections, dash_meta$dbnames
 )
 conn <- connections$pir_data
 link_conn <- connections$question_links
 
-
-
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"
-
-# Dashboard meta data
-dash_meta <- list()
