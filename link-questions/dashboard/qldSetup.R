@@ -37,8 +37,13 @@ connections <- connectDB(
   dbpassword, 
   log_file
 )
-conn <- connections[[1]]
-link_conn <- connections[[2]]
+connections <- set_names(
+  connections, list("pir_data", "question_links")
+)
+conn <- connections$pir_data
+link_conn <- connections$question_links
+
+
 
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"
 

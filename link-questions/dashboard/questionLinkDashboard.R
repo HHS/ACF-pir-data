@@ -13,13 +13,16 @@ ui_scripts <- list.files(here("link-questions", "dashboard", "ui_scripts"), full
 server_scripts <- list.files(here("link-questions", "dashboard", "server_scripts"), full.names = T)
 invisible(sapply(ui_scripts, source))
 
+
 ui <- fluidPage(
   useShinyjs(),
   extendShinyjs(text = jscode, functions = "refresh_page"),
   tabsetPanel(
     home,
     keyword_search,
-    review_unlinked 
+    review_unlinked,
+    review_unlinked_2,
+    view_search
   )
 )
 
@@ -30,3 +33,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
