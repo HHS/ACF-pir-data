@@ -86,22 +86,12 @@ mergePirReference <- function(workbooks, log_file) {
         select(-c(merge)) %>%
         assertr::assert(not_na, question_name, question_number)
       
-      unmatched_response <- response %>%
-        filter(!is.na(unmatched)) %>%
-        rename(reason = unmatched)
-      
-      response <- response %>%
-        filter(is.na(unmatched))
-      
       # Remove unmatched questions
       unmatched_question <- question %>%
         filter(!is.na(unmatched))  %>%
         rename(reason = unmatched)
-      
-      question <- question %>%
-        filter(is.na(unmatched))
-      
-      for (table in c("response", "question", "unmatched_question", "unmatched_response")) {
+
+      for (table in c("response", "question", "unmatched_question")) {
         attr(workbook, table) <- get(table)
       }
       

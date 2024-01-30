@@ -58,7 +58,7 @@ log_file <- startLog(
 )
 
 # Establish DB connection ----
-conn <- connectDB("pir_data", dbusername, dbpassword, log_file)[[1]]
+conn <- connectDB("pir_data_test", dbusername, dbpassword, log_file)[[1]]
 tables <- c("response", "question", "program", "unmatched_response", "unmatched_question")
 schema <- getSchemas(conn, tables)
 
@@ -78,7 +78,7 @@ tryCatch(
   {
     wb_list <- list.files(
       file.path(datadir),
-      pattern = "pir_export_.*.xlsx$",
+      pattern = "pir_export_.*.xls$",
       full.names = T
     )
     logMessage("PIR workbooks found.", log_file)
