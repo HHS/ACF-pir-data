@@ -21,7 +21,7 @@ observeEvent(
       )
     )
     id <- input$review_question_id2
-    choices <- unique(unlinked$question_id[-which(unlinked$question_id == id)])
+    choices <- unique(unlinked$proposed_id)
     updateSelectInput(
       session,
       "review_proposed_link2",

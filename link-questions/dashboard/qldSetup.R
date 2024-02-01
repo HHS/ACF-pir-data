@@ -53,6 +53,6 @@ connections <- set_names(
   connections, dash_meta$dbnames
 )
 conn <- connections$pir_data
-link_conn <- connections$question_links
+link_conn <- connections$question_links_test
 
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"

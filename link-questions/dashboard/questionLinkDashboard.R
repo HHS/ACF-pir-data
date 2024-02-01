@@ -22,6 +22,7 @@ ui <- fluidPage(
     keyword_search,
     review_unlinked,
     review_unlinked_2,
+    intermittent_id,
     view_search
   )
 )
