@@ -13,6 +13,15 @@ ui_scripts <- list.files(here("link-questions", "dashboard", "ui_scripts"), full
 server_scripts <- list.files(here("link-questions", "dashboard", "server_scripts"), full.names = T)
 invisible(sapply(ui_scripts, source))
 
+question_review <- tabPanel(
+  "Review Links",
+  navlistPanel (
+    "Review Links",
+    review_unlinked,
+    review_unlinked_2,
+    intermittent_id
+  )
+)
 
 ui <- fluidPage(
   useShinyjs(),
@@ -20,9 +29,10 @@ ui <- fluidPage(
   tabsetPanel(
     home,
     keyword_search,
-    review_unlinked,
-    review_unlinked_2,
-    intermittent_id,
+    question_review,
+    # review_unlinked,
+    # review_unlinked_2,
+    # intermittent_id,
     view_search
   )
 )
