@@ -37,5 +37,3 @@ ON a.question_id = d.question_id
 
 END //
 DELIMITER ;
-
-call reviewUnlinkedV('00651687997bac132e7162c24894e8f6');
