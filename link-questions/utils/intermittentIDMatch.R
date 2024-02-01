@@ -1,5 +1,21 @@
-intermittentIDMatch <- function(id) {
+intermittentIDMatch <- function(conn, id) {
   func_env <- environment()
+  
+  linked <- dbGetQuery(
+    conn,
+    paste(
+      "SELECT *",
+      "FROM linked"
+    )
+  )
+  
+  unlinked <- dbGetQuery(
+    conn,
+    "
+    SELECT *
+    FROM unlinked
+    "
+  )
   
   sample <- linked %>%
     filter(uqid == id) %>%
