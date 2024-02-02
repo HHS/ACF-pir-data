@@ -15,11 +15,11 @@ invisible(sapply(ui_scripts, source))
 
 question_review <- tabPanel(
   "Review Links",
-  navlistPanel (
+  navbarPage (
     "Review Links",
-    review_unlinked,
     review_unlinked_2,
-    intermittent_id
+    intermittent_id,
+    inconsistent_id
   )
 )
 
@@ -30,9 +30,6 @@ ui <- fluidPage(
     home,
     keyword_search,
     question_review,
-    # review_unlinked,
-    # review_unlinked_2,
-    # intermittent_id,
     view_search
   )
 )

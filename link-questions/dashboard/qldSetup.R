@@ -7,7 +7,10 @@
 rm(list = ls())
 
 # Packages
-pkgs <- c("shiny", "here", "dplyr", "kableExtra", "RMariaDB", "shinyjs", "purrr")
+pkgs <- c(
+  "shiny", "here", "dplyr", "kableExtra", "RMariaDB", 
+  "shinyjs", "purrr", "tidyr", "stringr"
+)
 invisible(sapply(pkgs, library, character.only = T))
 
 # Configurations

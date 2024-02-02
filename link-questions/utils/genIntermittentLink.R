@@ -20,4 +20,7 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
   
   replaceInto(link_conn, new_links, "linked")
   updateUnlinked(link_conn)
+  #' IF A UQID ALREADY EXISTS, IN LINKED,
+  #' SPREAD THAT UQID THROUGHOUT ALL YEARS. WANT TO
+  #' PROBABLY TAKE THE MOST PREVALENT UQID
 }

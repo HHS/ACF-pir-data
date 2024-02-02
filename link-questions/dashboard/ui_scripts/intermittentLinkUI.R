@@ -5,7 +5,7 @@ dash_meta$intermittent_uqid_choices <- dbGetQuery(
   FROM imperfect_link_v
   WHERE intermittent_link = 1
   "
-)
+)$uqid
 
 intermittent_id <- tabPanel(
   "Review Intermittent Links",
