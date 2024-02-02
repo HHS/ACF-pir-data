@@ -2,6 +2,32 @@ output$intermittent_link <- function() {
   
   intermittent <- intermittentIDMatch(link_conn, input$intermittent_uqid)$matches
   
+  uqids <- dbGetQuery(
+    link_conn,
+    paste(
+      "SELECT DISTINCT question_id, uqid",
+      "FROM linked",
+      "WHERE question_id IN (", 
+        paste0("'", c(intermittent$question_id_base, intermittent$question_id_proposed), "'", collapse = ","),
+      ")"
+    )
+  )
+  
+  year_range <- dbGetQuery(
+    link_conn,
+    paste(
+      "SELECT DISTINCT question_id, uqid, year AS year_range",
+      "FROM linked",
+      "WHERE uqid IN (", 
+        paste0("'", uqids$uqid, "'", collapse = ","),
+      ")",
+      "ORDER BY uqid, year"
+    )
+  ) %>%
+    group_by(uqid) %>%
+    summarize(year_range = paste0(year_range, collapse = ", ")) %>%
+    ungroup()
+  
   intermittent <- intermittent %>%
     mutate(
       id = row_number(),
@@ -13,6 +39,14 @@ output$intermittent_link <- function() {
       names_to = c(".value", "name"),
       names_pattern = "(\\w+)_(\\w+)$"
     ) %>%
+    left_join(
+      uqids,
+      by = "question_id"
+    ) %>%
+    left_join(
+      year_range,
+      by = "uqid"
+    ) %>%
     pivot_longer(
       -c(id, name),
       names_to = "column"
@@ -22,7 +56,6 @@ output$intermittent_link <- function() {
       values_from = value,
       names_glue = "{name}_{id}"
     ) 
-  
   
   intermittent %>%
     kableExtra::kable() %>%
