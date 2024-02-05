@@ -65,4 +65,5 @@ genLink <- function(base_id, link_id, conn) {
   
   replaceInto(conn, unlinked, "linked")
   updateUnlinked(conn)
+  logLink(base_id, link_id, "linked")
 }

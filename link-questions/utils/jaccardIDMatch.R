@@ -1,4 +1,7 @@
-intermittentIDMatch <- function(conn, id) {
+jaccardIDMatch <- function(conn, id, type) {
+  pkgs <- c("fedmatch")
+  invisible(sapply(pkgs, require, character.only = TRUE))
+  
   func_env <- environment()
   
   linked <- dbGetQuery(
@@ -17,10 +20,26 @@ intermittentIDMatch <- function(conn, id) {
     "
   )
   
-  sample <- linked %>%
-    filter(uqid == id) %>%
+  if (type == "unlinked") {
+    
+    sample <- unlinked %>%
+      filter(question_id == id)
+    
+  } else if (type == "intermittent") {
+    
+    sample <- linked %>%
+      filter(uqid == id)
+    
+  }
+
+  sample <- sample %>%
     pipeExpr(assign("sample_years", unique(.$year), func_env)) %>%
-    mutate(across(c("question_name", "question_text", "question_number"), fedmatch::clean_strings)) %>%
+    mutate(
+      across(
+        c("question_name", "question_text", "question_number"), 
+        fedmatch::clean_strings
+      )
+    ) %>%
     distinct(question_id, .keep_all = T) %>%
     select(-c(category)) %>%
     rename(question_id_base = question_id)
@@ -30,7 +49,10 @@ intermittentIDMatch <- function(conn, id) {
     select(starts_with("question"), section, year) %>%
     rbind(
       unlinked %>%
-        filter(year %notin% sample_years) %>%
+        filter(
+          year %notin% sample_years,
+          question_id != id
+        ) %>%
         select(starts_with("question"), section, year)
     ) %>%
     mutate(across(c("question_name", "question_text", "question_number"), fedmatch::clean_strings)) %>%

@@ -66,4 +66,5 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
 
   replaceInto(link_conn, new_links, "linked")
   updateUnlinked(link_conn)
+  logLink(base_id, link_id, "linked")
 }

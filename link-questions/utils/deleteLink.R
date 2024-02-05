@@ -22,4 +22,10 @@ deleteLink <- function(conn, uqid, question_id_list) {
   dbExecute(conn, delete_query)
   # Remove any records in unlinked that are actually still present in the linked table
   updateUnlinked(conn)
+  map(
+    question_id_list,
+    function(id) {
+      logLink(uqid, id, "unlinked")
+    }
+  )
 }

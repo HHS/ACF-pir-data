@@ -1,6 +1,6 @@
 output$intermittent_link <- function() {
   
-  intermittent <- intermittentIDMatch(link_conn, input$intermittent_uqid)$matches
+  intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches
   
   uqids <- dbGetQuery(
     link_conn,
@@ -65,7 +65,7 @@ output$intermittent_link <- function() {
 observeEvent(
   input$intermittent_uqid,
   {
-    intermittent <- intermittentIDMatch(link_conn, input$intermittent_uqid)$matches
+    intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches
     
     choices <- unique(intermittent$question_id_proposed)
     updateSelectInput(
