@@ -7,6 +7,52 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
     )
   )$Field
   
+  link_unique <- dbGetQuery(
+    link_conn,
+    paste(
+      "SELECT COUNT(DISTINCT UQID)",
+      "FROM linked",
+      "WHERE question_id = ", paste0("'", link_id, "'")
+    )
+  )[[1]]
+  
+  count_link <- dbGetQuery(
+    link_conn,
+    paste(
+      "SELECT COUNT(year)",
+      "FROM linked",
+      "WHERE uqid IN (", 
+        paste(
+          "SELECT DISTINCT uqid",
+          "FROM linked",
+          "WHERE question_id = ", paste0("'", link_id, "'")
+        ),
+      ")"
+    )
+  )[[1]]
+  
+  count_base <- dbGetQuery(
+    link_conn,
+    paste(
+      "SELECT COUNT(YEAR)",
+      "FROM linked",
+      "WHERE uqid = ", paste0("'", base_id, "'")
+    )
+  )[[1]]
+  
+  if (link_unique == 1 & count_link > count_base) {
+    new_id <- dbGetQuery(
+      link_conn,
+      paste(
+        "SELECT DISTINCT uqid",
+        "FROM linked",
+        "WHERE question_id = ", paste0("'", link_id, "'")
+      )
+    )
+  } else {
+    new_id <- base_id
+  }
+  
   new_links <- dbGetQuery(
     data_conn,
     paste(
@@ -15,12 +61,9 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
       "WHERE question_id IN (", paste0("'", link_id, "'", collapse = ","), ")"
     )
   ) %>%
-    mutate(uqid = base_id) %>%
+    mutate(uqid = new_id) %>%
     select(all_of(link_vars))
-  
+
   replaceInto(link_conn, new_links, "linked")
   updateUnlinked(link_conn)
-  #' IF A UQID ALREADY EXISTS, IN LINKED,
-  #' SPREAD THAT UQID THROUGHOUT ALL YEARS. WANT TO
-  #' PROBABLY TAKE THE MOST PREVALENT UQID
 }
