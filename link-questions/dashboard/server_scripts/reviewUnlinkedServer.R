@@ -32,6 +32,10 @@ output$unlinked <- function() {
       ),
       ends_with("compare")
     ) %>%
+    mutate(
+      algorithm = "Weighted Jaccard",
+      across(matches("year"), as.character)
+    ) %>%
     select(any_of(names(unlinked))) %>%
     mutate(algorithm_dist = "Weighted Jaccard")
   
@@ -39,6 +43,7 @@ output$unlinked <- function() {
     unlinked,
     jaccard
   ) %>%
+    # Replace observations in Jaccard with stored procedure results for base 
     fill(
       question_name, question_text, question_number, section,
       starts_with("base"),
