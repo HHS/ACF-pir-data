@@ -4,7 +4,46 @@ output$unlinked <- function() {
     paste0(
       "call reviewUnlinkedV('", input$review_question_id, "')"
     )
-  )
+  ) %>%
+    mutate(algorithm_dist = "Base")
+  
+  jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
+  
+  jaccard <- jaccard %>%
+    rename(
+      question_id = question_id_base,
+      proposed_id = question_id_proposed
+    ) %>%
+    rename_with(
+      ~ gsub(
+        "(\\w+)_proposed",
+        "comparison_\\1",
+        .,
+        perl = TRUE
+      ),
+      ends_with("proposed")
+    ) %>%
+    rename_with(
+      ~ gsub(
+        "compare",
+        "dist",
+        .,
+        perl = TRUE
+      ),
+      ends_with("compare")
+    ) %>%
+    select(any_of(names(unlinked))) %>%
+    mutate(algorithm_dist = "Weighted Jaccard")
+  
+  unlinked <- bind_rows(
+    unlinked,
+    jaccard
+  ) %>%
+    fill(
+      question_name, question_text, question_number, section,
+      starts_with("base"),
+      .direction = "down"
+    )
   
   base <- unlinked %>%
     mutate(
@@ -13,7 +52,7 @@ output$unlinked <- function() {
     ) %>%
     select(question_id, starts_with("base")) %>%
     pivot_longer(
-      c(question_id, starts_with("base")),
+      everything(),
       names_to = "Variable",
       values_to = "Base"
     ) %>%
@@ -63,7 +102,7 @@ output$unlinked <- function() {
     comparison,
     by = "Variable"
   ) %>%
-    left_join(
+    full_join(
       distances,
       by = "Variable"
     )
@@ -82,8 +121,8 @@ observeEvent(
         "call reviewUnlinkedV('", input$review_question_id, "')"
       )
     )
-    id <- input$review_question_id
-    choices <- unique(unlinked$proposed_id)
+    jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
+    choices <- unique(c(unlinked$proposed_id, jaccard$question_id_proposed))
     updateSelectInput(
       session,
       "review_proposed_link",
