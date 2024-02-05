@@ -8,19 +8,30 @@ dash_meta$review_question_id_choices <- dbGetQuery(
 
 review_unlinked <- tabPanel(
   "Review Unlinked Questions",
-  sidebarPanel(
-    selectInput(
-      inputId = "review_question_id", label = "Question ID", 
-      choices = dash_meta$review_question_id_choices
+  fluidPage(
+    fluidRow(
+      column(
+        selectInput(
+          inputId = "review_question_id", label = "Question ID", 
+          choices = dash_meta$review_question_id_choices
+        ),
+        width = 5
+      ),
+      column(
+        selectInput(
+          inputId = "review_proposed_link", label = "Proposed Link", choices = "None"
+        ),
+        width = 5
+      ),
+      column(
+        actionButton(
+          inputId = "review_create_link", label = "Link"
+        ),
+        width = 2
+      )
     ),
-    selectInput(
-      inputId = "review_proposed_link", label = "Proposed Link", choices = "None"
-    ),
-    actionButton(
-      inputId = "review_create_link", label = "Link"
+    fluidRow(
+      tableOutput("unlinked")
     )
-  ),
-  mainPanel(
-    tableOutput("unlinked")
   )
 )
