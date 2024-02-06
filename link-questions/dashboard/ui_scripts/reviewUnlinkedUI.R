@@ -15,19 +15,26 @@ review_unlinked <- tabPanel(
           inputId = "review_question_id", label = "Question ID", 
           choices = dash_meta$review_question_id_choices
         ),
-        width = 5
+        width = 3
+      ),
+      column(
+        selectInput(
+          inputId = "review_algorithm", label = "Algorithm",
+          choices = c("Base", "Jaccard"), selected = "Base"
+        ),
+        width = 3
       ),
       column(
         selectInput(
           inputId = "review_proposed_link", label = "Proposed Link", choices = "None"
         ),
-        width = 5
+        width = 3
       ),
       column(
         actionButton(
           inputId = "review_create_link", label = "Link"
         ),
-        width = 2
+        width = 3
       )
     ),
     fluidRow(
