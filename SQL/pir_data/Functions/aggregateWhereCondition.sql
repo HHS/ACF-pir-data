@@ -21,6 +21,7 @@ BEGIN
         SET cols = TRIM(SUBSTR(cols, ind));
     END WHILE;
 	RETURN where_cond;
+
 END //
 
 DELIMITER ;
