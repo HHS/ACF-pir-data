@@ -38,16 +38,22 @@ BEGIN
     ELSE
 		SET @agg_query = CONCAT(
 			'CREATE TABLE response', suffix, ' AS '
-			'SELECT ', agg_level, ', `year`, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+			'SELECT ', agg_level, ', resp.year, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			'FROM response resp ',
 			'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid ',
+			'ON resp.uid = prg.uid AND resp.year = prg.year ',
 			'WHERE ', where_cond, ' ',
-			'GROUP BY ', agg_level, ' `year`, question_id '
-			'ORDER BY ', agg_level, ' `year`, quesiton_id '
+			'GROUP BY ', agg_level, ', resp.year, question_id '
+			'ORDER BY ', agg_level, ', resp.year, question_id '
 		);
 	END IF;
+    SET @index_qid = CONCAT(
+		'CREATE INDEX question_id ON response', suffix, ' (question_id)'
+    );
+    SET @index_yr = CONCAT(
+		'CREATE INDEX `year` ON response', suffix, ' (`year`)'
+    );
     
     -- select @agg_query;
     PREPARE drop_statement FROM @drop_query;
@@ -57,6 +63,10 @@ BEGIN
     PREPARE create_statement FROM @agg_query;
     EXECUTE create_statement;
     DEALLOCATE PREPARE create_statement;
+    
+    PREPARE index_statement FROM @index_query;
+    EXECUTE index_statement;
+    DEALLOCATE PREPARE index_statement;
 
 END //
 

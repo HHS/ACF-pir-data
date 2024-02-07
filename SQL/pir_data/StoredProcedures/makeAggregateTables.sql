@@ -1,8 +1,8 @@
-DROP PROCEDURE IF EXISTS makeAggregateViews;
+DROP PROCEDURE IF EXISTS makeAggregateTables;
 
 DELIMITER //
 
-CREATE PROCEDURE makeAggregateViews()
+CREATE PROCEDURE makeAggregateTables()
 BEGIN
 
 	DECLARE levels JSON DEFAULT '["national", "program_state", "region", "grant_number", "grant_number, program_type"]';
