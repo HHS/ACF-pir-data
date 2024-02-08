@@ -62,7 +62,7 @@ log_file <- startLog(
 
 # Establish DB Connections
 connections <- connectDB(
-  list("pir_data", "question_links"), 
+  list("pir_data_test", "question_links_test"), 
   dbusername, 
   dbpassword, 
   log_file
@@ -73,7 +73,7 @@ link_conn <- connections[[2]]
 # Get tables and schemas
 schemas <- getSchemas(
   list(conn, link_conn), 
-  list("pir_data", "question_links")
+  list("pir_data_test", "question_links_test")
 )
 
 # Extract years from question table
@@ -217,5 +217,23 @@ walk(
     )
   }
 )
+
+# Ad-hoc links
+tryCatch(
+  {
+    adHocLinks(link_conn)
+    logMessage(
+      "Manual 2011 linkages made",
+      log_file
+    )
+  },
+  error = function(cnd) {
+    logMessage(
+      "No manual 2011 linkages made",
+      log_file
+    )
+  }
+)
+
 writeLog(log_file)
 map(connections, dbDisconnect)
