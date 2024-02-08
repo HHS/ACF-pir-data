@@ -15,7 +15,7 @@ adHocLinks <- function(conn) {
     "
     SELECT DISTINCT uqid, question_number
     FROM linked
-    WHERE question_number LIKE 'B.5.%' AND year < 2011 and year >= 2008
+    WHERE question_number LIKE 'B.5%' AND year < 2011 and year >= 2008
     "
   )
   
@@ -36,7 +36,8 @@ adHocLinks <- function(conn) {
           grepl("^B\\.8\\.d\\.3", question_number) ~ gsub("^(B\\.8\\.d\\.3)(.*)", "B\\.5\\.d\\.2\\2", question_number, perl = TRUE),
           grepl("^B\\.5\\.d\\.3", question_number) ~ gsub("^(B\\.5\\.d\\.3)(.*)", "B\\.5\\.d\\.2\\2", question_number, perl = TRUE),
           grepl("^B\\.[85]\\.d\\.\\d\\-", question_number) ~ question_number,
-          grepl("^B\\.8\\.b\\.3", question_number) ~ gsub("^(B\\.8\\.b\\.3)(.*)", "B\\.5\\.b\\.4\\2", question_number),
+          grepl("^B\\.8\\.b\\.3", question_number) ~ gsub("^(B\\.8\\.b\\.3)(.*)", "B\\.5\\.b\\.4\\2", question_number, perl = TRUE),
+          grepl("^B\\.8\\-\\d$", question_number) ~ gsub("^(B\\.8)(\\-\\d)$", "B\\.5\\2", question_number, perl = TRUE),
           grepl("^(B\\.8\\.)(.*)", question_number) ~ gsub("^(B\\.8\\.)(.*)$", "B\\.5\\.\\2", question_number, perl = TRUE),
           TRUE ~ question_number
         )
@@ -45,7 +46,8 @@ adHocLinks <- function(conn) {
     linked <- inner_join(
       unlinked,
       linked,
-      by = c("question_number_revised" = "question_number")
+      by = c("question_number_revised" = "question_number"),
+      relationship = "many-to-one"
     ) %>%
       select(all_of(link_vars))
     
@@ -99,6 +101,71 @@ adHocLinks <- function(conn) {
           grepl("^B\\.13\\.h\\.\\d$", question_number) ~ "B.13.h",
           TRUE ~ question_number
         )
-      )
+      ) %>%
+      select(-c(question_number))
+    
+    linked <- inner_join(
+      unlinked,
+      linked,
+      by = c("question_number_revised" = "question_number_revised"),
+      relationship = "one-to-many"
+    ) %>%
+      select(all_of(link_vars))
+    
+    pmap(
+      linked[, c("uqid", "question_id")],
+      function(uqid, question_id) {
+        logLink(question_id, uqid, "linked")
+      }
+    )
+    
+    replaceInto(conn, linked, "linked")
+    updateUnlinked(conn)
   }
+  
+  # Other Ad-hoc links
+  unlinked <- dbGetQuery(
+    conn,
+    "
+    SELECT * 
+    FROM unlinked
+    "
+  )
+  
+  linked <- dbGetQuery(
+    conn,
+    "
+    SELECT DISTINCT uqid, question_id
+    FROM linked
+    "
+  )
+  
+  if (nrow(unlinked) > 0 && nrow(linked) > 0) {
+    
+    ad_hoc_links <- readRDS(here("link-questions", "utils", "ad_hoc_links.RDS"))
+    
+    unlinked <- inner_join(
+      unlinked,
+      ad_hoc_links,
+      by = "question_id"
+    )
+    
+    linked <- inner_join(
+      unlinked,
+      linked,
+      by = c("link_id" = "question_id")
+    ) %>%
+      select(all_of(link_vars))
+    
+    pmap(
+      linked[, c("uqid", "question_id")],
+      function(uqid, question_id) {
+        logLink(question_id, uqid, "linked")
+      }
+    )
+    
+    replaceInto(conn, linked, "linked")
+    updateUnlinked(conn)
+  }
+  
 }

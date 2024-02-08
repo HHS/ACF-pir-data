@@ -223,15 +223,16 @@ tryCatch(
   {
     adHocLinks(link_conn)
     logMessage(
-      "Manual 2011 linkages made",
+      "Ad-hoc linkages made",
       log_file
     )
   },
   error = function(cnd) {
     logMessage(
-      "No manual 2011 linkages made",
+      "No ad-hoc linkages made",
       log_file
     )
+    errorMessage(cnd, log_file)
   }
 )
 
