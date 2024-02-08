@@ -63,6 +63,7 @@ determineLink <- function(df) {
       confirmed = case_when(
         id_y_appearances > 1 & confirmed_sum == 1 & confirmed == 1 ~ 1,
         id_x_appearances == confirmed_sum & index == 1 ~ 1,
+        id_x_appearances == confirmed_sum & index != 1 ~ 0,
         id_y_appearances > 1 ~ 0,
         TRUE ~ confirmed
       )

@@ -16,24 +16,10 @@ checkLinked <- function(df_list) {
   linked_db <- df_list$linked_db
   unlinked_db <- df_list$unlinked_db
   func_env <- environment()
+  linked <- data.frame()
   
   # Check for data in linked_db
-  if (nrow(linked_db) > 0) {
-    
-    # Attempt to merge directly to linked
-    linked <- inner_join(
-      lower_year, 
-      linked_db %>%
-        distinct(question_id, uqid),
-      by = "question_id"
-    )
-    
-    # Filter out any records that merged directly from the current year
-    lower_year <- anti_join(
-      lower_year,
-      linked,
-      by = "question_id"
-    )
+  if (nrow(unlinked_db) > 0) {
     
     # Attempt to merge directly to unlinked
     unlinked_match <- inner_join(
@@ -78,16 +64,33 @@ checkLinked <- function(df_list) {
         mutate(year = as.numeric(year)) %>%
         bind_rows(linked)
       
-        # Update current year, removing linked records
-        lower_year <- anti_join(
-          lower_year,
-          linked,
-          by = "question_id"
-        )
-        
-    }
+      # Update current year, removing linked records
+      lower_year <- anti_join(
+        lower_year,
+        linked,
+        by = "question_id"
+      )
       
-  
+    }
+  } 
+  if (nrow(linked_db) > 0) {
+    
+    # Attempt to merge directly to linked
+    linked <- inner_join(
+      lower_year, 
+      linked_db %>%
+        distinct(question_id, uqid),
+      by = "question_id"
+    ) %>%
+      bind_rows(linked)
+    
+    # Filter out any records that merged directly from the current year
+    lower_year <- anti_join(
+      lower_year,
+      linked,
+      by = "question_id"
+    )
+      
     # If there are still records in the current year, string distance check
     # against the linked database
     if (!is.null(lower_year) && nrow(lower_year) > 0) {
@@ -101,20 +104,17 @@ checkLinked <- function(df_list) {
         distinct(uqid, question_id, .keep_all = T) %>%
         bind_rows(linked)
     }
-    
-    df_list$linked <- linked
-    if (exists("unlinked", envir = environment(), inherits = F)) {
-      df_list$unlinked <- unlinked
-    }
-    
-    return(df_list)
-  
-  # If no records in the current year, the list of unlinked records is equal
-  # to the current year's data
-  } else {
-    
-    df_list$unlinked <- lower_year
-    return(df_list)
-    
   }
+    
+  if (nrow(linked) > 0) {
+    df_list$linked <- linked
+  }
+  
+  if (exists("unlinked", envir = environment(), inherits = F)) {
+    df_list$unlinked <- unlinked
+  } else {
+    df_list$unlinked <- lower_year
+  }
+  
+  return(df_list)
 }
