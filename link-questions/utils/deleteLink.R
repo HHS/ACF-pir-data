@@ -1,4 +1,7 @@
 deleteLink <- function(conn, uqid, question_id_list) {
+  #' ADD ASSERTION HERE THAT THE NUMBER OF UNIQUE QUESTIONS IN newly_unlinked
+  #' IS THE SAME AS THE NUMBER OF QUESTIONS IN question_id_list
+  
   delete_query <- paste(
     "DELETE FROM linked",
     "WHERE uqid =", paste0("'", uqid, "'"), "AND", "question_id IN (",

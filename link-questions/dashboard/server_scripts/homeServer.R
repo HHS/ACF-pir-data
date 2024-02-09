@@ -44,12 +44,30 @@ home_tot_obs <- dbGetQuery(
 
 output$home_tot_obs <- renderTable(home_tot_obs)
 
-ingestion_query <- dbGetQuery(log_conn, "select * from pir_ingestion_logs")
+# ONLY GET THE MOST RECENT SET OF RESULTS
+ingestion_query <- dbGetQuery(
+  log_conn, 
+  "
+  SELECT *
+  FROM pir_ingestion_logs
+  WHERE run = (
+  	SELECT max(run)
+  	FROM pir_ingestion_logs
+  )
+  "
+)
 
-ingestion_count <- dbGetQuery(log_conn, "select count(*) from pir_ingestion_logs")
-
-question_query <- dbGetQuery(log_conn, "select * from pir_question_linkage_logs")
-
+question_query <- dbGetQuery(
+  log_conn, 
+  "
+  SELECT *
+  FROM pir_question_linkage_logs
+  WHERE run = (
+  	SELECT max(run)
+  	FROM pir_question_linkage_logs
+  )
+  "
+)
 
 # Check if there is any data after reading files
 if (nrow(ingestion_query) == 0) {
@@ -58,24 +76,26 @@ if (nrow(ingestion_query) == 0) {
 
 
 # Use DT to create an interactive table
-dtTable <- datatable(ingestion_query, 
-                     options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
-                     rownames = FALSE,
-                     class = 'cell-border compact stripe',
-                     colnames = c('Run', 'Date', 'Message'))
+ingestion_logs <- datatable(
+  ingestion_query, 
+  options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
+  rownames = FALSE,
+  class = 'cell-border compact stripe',
+  colnames = c('Run', 'Date', 'Message')
+)
 
-dtTable2 <- datatable(question_query, 
-                      options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
-                      rownames = FALSE,
-                      class = 'cell-border compact stripe',
-                      colnames = c('Run', 'Timestamp', 'Message'))
+question_logs <- datatable(
+  question_query, 
+  options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
+  rownames = FALSE,
+  class = 'cell-border compact stripe',
+  colnames = c('Run', 'Timestamp', 'Message')
+)
 
 output$ingestion_logs <- renderDT({
-  dtTable
+  ingestion_logs
 })
 
 output$question_logs <- renderDT({
-  dtTable2
+  question_logs
 })
-
-output$ingestion_count <- renderPrint(ingestion_count[[1]])
