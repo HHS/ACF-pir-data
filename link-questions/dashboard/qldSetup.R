@@ -9,7 +9,7 @@ rm(list = ls())
 # Packages
 pkgs <- c(
   "shiny", "here", "dplyr", "kableExtra", "RMariaDB", 
-  "shinyjs", "purrr", "tidyr", "stringr"
+  "shinyjs", "purrr", "tidyr", "stringr", "DT"
 )
 invisible(sapply(pkgs, library, character.only = T))
 
@@ -57,5 +57,6 @@ connections <- set_names(
 )
 conn <- connections$pir_data
 link_conn <- connections$question_links_test
+log_conn <- connections$pir_logs
 
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"

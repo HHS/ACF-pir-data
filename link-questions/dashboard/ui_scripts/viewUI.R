@@ -1,7 +1,7 @@
 dash_meta$view_choices <- dbGetQuery(
   conn,
   paste(
-  "SHOW FULL TABLES IN", "pir_data", "WHERE table_type LIKE 'VIEW'"
+    "SHOW FULL TABLES IN", "pir_data", "WHERE table_type LIKE 'VIEW'"
   )
 )[[1]]
 
@@ -9,20 +9,40 @@ dash_meta$view_choices <- dbGetQuery(
 
 view_search <- tabPanel(
   "Search for View by Database",
-  sidebarPanel(
-    selectInput(
-      inputId = "show_schema", label = "Database", 
-      choices = dash_meta$dbnames, selected = "pir_data"
-    ),
-    selectInput(
-      inputId = "show_views", label = "Select View", 
-      choices = dash_meta$view_choices
-    ),
-    actionButton(
-      inputId = "view_search", label = "Search"
+  tags$head(
+    tags$style(
+      "
+        #view_search {
+          margin: 10px;
+        }
+      "
     )
   ),
-  mainPanel(
-    tableOutput("view_output")
+  fluidPage(
+    fluidRow(
+      column(
+        selectInput(
+          inputId = "show_schema", label = "Database", 
+          choices = dash_meta$dbnames, selected = "pir_data"
+        ),
+        width = 5
+      ),
+      column(
+        selectInput(
+          inputId = "show_views", label = "Select View", 
+          choices = dash_meta$view_choices
+        ),
+        width = 5
+      ),
+      column(
+        actionButton(
+          inputId = "view_search", label = "Search"
+        ),
+        width = 2
+      )
+    ),
+    fluidRow(
+      tableOutput("view_output")
+    )
   )
 )

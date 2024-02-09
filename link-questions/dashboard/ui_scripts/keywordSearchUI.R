@@ -17,25 +17,53 @@ dash_meta$keyword_choices <- varnames[-which(varnames %in% c("uqid", "year", "qu
 
 keyword_search <- tabPanel(
   "Search for Questions By Keyword",
-  sidebarPanel(
-    selectInput(
-      inputId = "keyword_table", label = "Table", choices = dash_meta$tables
+  fluidPage(
+    tags$head(
+      tags$style(
+        "
+          #keyword_search {
+            margin: 10px;
+          }
+        "
+      )
     ),
-    selectInput(
-      inputId = "keyword_column", label = "Search Column", 
-      choices = dash_meta$keyword_choices
+    fluidRow(
+      column(
+        selectInput(
+          inputId = "keyword_table", label = "Table", choices = dash_meta$tables
+        ),
+        width = 3
+      ),
+      column(
+        selectInput(
+          inputId = "keyword_column", label = "Search Column", 
+          choices = dash_meta$keyword_choices
+        ),
+        width = 3
+      ),
+      column(
+        textInput(
+          inputId = "keyword_text", label = "Keyword(s)"
+        ),
+        width = 4
+      ),
+      column(
+        checkboxInput(
+          inputId = "keyword_exact", label = "Exact Match"
+        ),
+        width = 1,
+        align = "center"
+      ),
+      column(
+        actionButton(
+          inputId = "keyword_search", label = "Search"
+        ),
+        width = 1
+        # style = "margin:10px;"
+      )
     ),
-    textInput(
-      inputId = "keyword_text", label = "Keyword(s)"
-    ),
-    checkboxInput(
-      inputId = "keyword_exact", label = "Exact Match"
-    ),
-    actionButton(
-      inputId = "keyword_search", label = "Search"
+    fluidRow(
+      tableOutput("keyword_output")
     )
-  ),
-  mainPanel(
-    tableOutput("keyword_output")
   )
 )
