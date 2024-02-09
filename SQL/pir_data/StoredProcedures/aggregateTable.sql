@@ -9,6 +9,9 @@ BEGIN
 
 	DECLARE suffix VARCHAR(10) DEFAULT '';
 	DECLARE where_cond TEXT DEFAULT '';
+    DECLARE tname TEXT DEFAULT '';
+    DECLARE query_list TEXT DEFAULT '';
+    DECLARE ind INT DEFAULT 0;
     
 	IF agg_level REGEXP 'state' THEN
 		SET suffix = '_state';
@@ -19,17 +22,19 @@ BEGIN
 	ELSEIF agg_level REGEXP 'grant' THEN
 		SET suffix = '_grant';
 	ELSE 
-		SET SUFFIX = '_national';
+		SET suffix = '_national';
     END IF;
+    
+    SET tname = CONCAT('response', suffix);
     
     SET where_cond = (SELECT aggregateWhereCondition(agg_level));
 
 	SET @drop_query = CONCAT(
-		'DROP TABLE IF EXISTS response', suffix
+		'DROP TABLE IF EXISTS ', tname
 	);
 	IF agg_level = "national" THEN
 		SET @agg_query = CONCAT(
-			'CREATE TABLE response', suffix, ' AS '
+			'CREATE TABLE ', tname, ' AS '
 			'SELECT `year`, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			'FROM response ',
@@ -37,7 +42,7 @@ BEGIN
         );
     ELSE
 		SET @agg_query = CONCAT(
-			'CREATE TABLE response', suffix, ' AS '
+			'CREATE TABLE ', tname, ' AS '
 			'SELECT ', agg_level, ', resp.year, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			'FROM response resp ',
@@ -49,24 +54,26 @@ BEGIN
 		);
 	END IF;
     SET @index_qid = CONCAT(
-		'CREATE INDEX question_id ON response', suffix, ' (question_id)'
+		'CREATE INDEX ix_', tname, '_question_id ON ', tname, ' (question_id)'
     );
     SET @index_yr = CONCAT(
-		'CREATE INDEX `year` ON response', suffix, ' (`year`)'
+		'CREATE INDEX ix_', tname, '_year ON ', tname, ' (`year`)'
     );
     
-    -- select @agg_query;
-    PREPARE drop_statement FROM @drop_query;
-    EXECUTE drop_statement;
-    DEALLOCATE PREPARE drop_statement;
+    SET query_list = CONCAT(
+		@drop_query, ';', @agg_query, ';', @index_qid, ';', @index_yr
+    );
     
-    PREPARE create_statement FROM @agg_query;
-    EXECUTE create_statement;
-    DEALLOCATE PREPARE create_statement;
-    
-    PREPARE index_statement FROM @index_query;
-    EXECUTE index_statement;
-    DEALLOCATE PREPARE index_statement;
+    SET ind = Locate(';', query_list) + 1;
+    WHILE ind != 1 DO
+		SET @extract = SUBSTRING_INDEX(query_list, ';', 1);
+        SELECT @extract;
+        PREPARE statement FROM @extract;
+		EXECUTE statement;
+		DEALLOCATE PREPARE statement;
+        SET ind = Locate(';', query_list) + 1;
+        SET query_list = TRIM(SUBSTR(query_list, ind));
+    END WHILE;
 
 END //
 

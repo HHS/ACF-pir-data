@@ -1,24 +1,18 @@
 CREATE DATABASE IF NOT EXISTS pir_data_test;
 USE pir_data_test;
 
-CREATE TABLE `Response` (
+CREATE TABLE `response` (
   `uid` varchar(255),
   `question_id` varchar(255),
   `answer` text,
   `year` year,
   PRIMARY KEY (`uid`, `question_id`, `year`)
 );
+CREATE INDEX ix_response_uid ON response (uid);
+CREATE INDEX ix_response_question_id ON response (question_id);
+CREATE INDEX ix_response_year ON response (`year`);
 
-CREATE TABLE `unmatched_response` (
-  `uid` varchar(255),
-  `question_id` varchar(255),
-  `answer` text,
-  `reason` varchar(255),
-  `year` year,
-  PRIMARY KEY (`uid`, `question_id`, `year`)
-);
-
-CREATE TABLE `Program` (
+CREATE TABLE `program` (
   `uid` varchar(255),
   `program_number` varchar(255),
   `program_type` varchar(255),
@@ -39,8 +33,10 @@ CREATE TABLE `Program` (
   `year` year,
   PRIMARY KEY (`uid`, `year`)
 );
+CREATE INDEX ix_program_uid ON program (uid);
+CREATE INDEX ix_program_year ON program (`year`);
 
-CREATE TABLE `Question` (
+CREATE TABLE `question` (
   `question_id` varchar(255),
   `category` varchar(255),
   `section` varchar(255),
@@ -53,6 +49,8 @@ CREATE TABLE `Question` (
   `year` year,
   PRIMARY KEY (`question_id`, `year`)
 );
+CREATE INDEX ix_question_question_id ON question (question_id);
+CREATE INDEX ix_question_year ON question (`year`);
 
 CREATE TABLE `unmatched_question` (
   `question_id` varchar(255),
@@ -68,7 +66,9 @@ CREATE TABLE `unmatched_question` (
   `year` year,
   PRIMARY KEY (`question_id`, `year`)
 );
+CREATE INDEX ix_unmatched_question_question_id ON unmatched_question (question_id);
+CREATE INDEX ix_unmatched_question_year ON unmatched_question (`year`);
 
-ALTER TABLE `Response` ADD FOREIGN KEY (`uid`, `year`) REFERENCES `Program` (`uid`, `year`);
+ALTER TABLE `response` ADD FOREIGN KEY (`uid`, `year`) REFERENCES `program` (`uid`, `year`);
 
-ALTER TABLE `Response` ADD FOREIGN KEY (`question_id`, `year`) REFERENCES `Question` (`question_id`, `year`);
+ALTER TABLE `response` ADD FOREIGN KEY (`question_id`, `year`) REFERENCES `question` (`question_id`, `year`);
