@@ -36,5 +36,5 @@ CREATE TABLE `pir_manual_question_link` (
     `timestamp` TIMESTAMP,
     `base_id` TEXT,
     `linked_id` TEXT,
-    `type` VARCHAR(8)
+    `type` TEXT
 );
