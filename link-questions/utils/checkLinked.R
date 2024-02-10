@@ -26,14 +26,14 @@ checkLinked <- function(df_list) {
       lower_year,
       unlinked_db,
       by = "question_id"
-    )
+    ) %>%
+      # Cannot match to same year
+      filter(year.x != year.y)
     
     # If successful bind these matched records to linked
     if (nrow(unlinked_match) > 0) {
       
       linked <- unlinked_match %>%
-        # Cannot match to same year
-        filter(year.x != year.y) %>%
         # Pivot to get columns with matches by year
         pivot_longer(c(ends_with(".y"), -year.y)) %>%
         mutate(name = gsub("\\.y", "", name, perl = T)) %>%
