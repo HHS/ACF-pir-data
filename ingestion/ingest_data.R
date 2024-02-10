@@ -78,7 +78,7 @@ tryCatch(
   {
     wb_list <- list.files(
       file.path(datadir),
-      pattern = "pir_export_.*.xls$",
+      pattern = "pir_export_.*.xlsx$",
       full.names = T
     )
     logMessage("PIR workbooks found.", log_file)
