@@ -11,8 +11,8 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import subprocess
-from . import listener
-# import listener
+# from . import listener
+import listener
 
 class FolderWatcher(FileSystemEventHandler):
     def __init__(self, folder_path, log_file, log_path, r_path, script_path):
