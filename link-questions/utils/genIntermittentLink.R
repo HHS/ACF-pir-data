@@ -53,18 +53,32 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
     new_id <- base_id
   }
   
-  new_links <- dbGetQuery(
-    data_conn,
-    paste(
-      "SELECT *",
-      "FROM question",
-      "WHERE question_id IN (", paste0("'", link_id, "'", collapse = ","), ")"
+  if (count_link > 0 && count_base > 0) {
+  
+    update_query <- paste0(
+      "UPDATE linked ",
+      "SET uqid = '", new_id, "' ",
+      "WHERE question_id = '", link_id, "'"
     )
-  ) %>%
-    mutate(uqid = new_id) %>%
-    select(all_of(link_vars))
-
-  replaceInto(link_conn, new_links, "linked")
-  updateUnlinked(link_conn)
+    dbExecute(link_conn, update_query)
+  
+  
+  } else {
+    
+    new_links <- dbGetQuery(
+      data_conn,
+      paste(
+        "SELECT *",
+        "FROM question",
+        "WHERE question_id IN (", paste0("'", link_id, "'", collapse = ","), ")"
+      )
+    ) %>%
+      mutate(uqid = new_id) %>%
+      select(all_of(link_vars))
+  
+    replaceInto(link_conn, new_links, "linked")
+    updateUnlinked(link_conn)
+    
+  }
   logLink(base_id, link_id, "linked")
 }
