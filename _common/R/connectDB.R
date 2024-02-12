@@ -2,7 +2,7 @@
 connectDB <- function(dblist, username, password, log_file) {
   pkgs <- c("RMariaDB", "purrr")
   invisible(sapply(pkgs, require, character.only = T))
-  map(
+  connections <- map(
     dblist,
     function(name) {
       tryCatch(
@@ -29,4 +29,6 @@ connectDB <- function(dblist, username, password, log_file) {
       )
     }
   )
+  connections <- setNames(connections, dblist)
+  return(connections)
 }
