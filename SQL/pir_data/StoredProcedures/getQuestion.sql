@@ -9,27 +9,45 @@ CREATE PROCEDURE pir_data_test.getQuestion(
 BEGIN
 	
     IF kind = 'uqid' THEN
+	
+		IF INSTR(qid, "-") > 0 THEN
+        
+			SET @question_query = CONCAT(
+				'SELECT a.* ',
+                'FROM response a ',
+                'INNER JOIN (
+					SELECT DISTINCT question_id
+                    FROM question_links_test.linked b
+                    WHERE uqid = ', QUOTE(qid), ' '
+                ') b
+                ON a.question_id = b.question_id
+                '
+            );
+        
+        ELSE
 
-		SET @view_query = CONCAT(
-			'SELECT a.* ',
-			'FROM response a ',
-			'INNER JOIN (
-				SELECT DISTINCT question_id
-				FROM question_links.linked b
-				INNER JOIN (
-					SELECT DISTINCT uqid 
-					FROM question_links.linked 
-					WHERE question_id = "', qid, '" ',
-				') c
-				ON b.uqid = c.uqid
-			) d
-			ON a.question_id = d.question_id
-			'
-		);
+			SET @question_query = CONCAT(
+				'SELECT a.* ',
+				'FROM response a ',
+				'INNER JOIN (
+					SELECT DISTINCT question_id
+					FROM question_links.linked b
+					INNER JOIN (
+						SELECT DISTINCT uqid 
+						FROM question_links.linked 
+						WHERE question_id = "', qid, '" ',
+					') c
+					ON b.uqid = c.uqid
+				) d
+				ON a.question_id = d.question_id
+				'
+			);
+        
+        END IF;
         
 	ELSE
 		
-        SET @view_query = CONCAT(
+        SET @question_query = CONCAT(
 			'SELECT * ',
             'FROM response ',
             'WHERE question_id = "', qid, '"'
@@ -37,9 +55,9 @@ BEGIN
         
 	END IF;
         
-    SELECT @view_query;
+    SELECT @question_query;
     
-    PREPARE statement FROM @view_query;
+    PREPARE statement FROM @question_query;
     EXECUTE statement;
     DEALLOCATE PREPARE statement;
 
