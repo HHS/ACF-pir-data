@@ -70,5 +70,4 @@ CREATE INDEX ix_unmatched_question_question_id ON unmatched_question (question_i
 CREATE INDEX ix_unmatched_question_year ON unmatched_question (`year`);
 
 ALTER TABLE `response` ADD FOREIGN KEY (`uid`, `year`) REFERENCES `program` (`uid`, `year`);
-
 ALTER TABLE `response` ADD FOREIGN KEY (`question_id`, `year`) REFERENCES `question` (`question_id`, `year`);

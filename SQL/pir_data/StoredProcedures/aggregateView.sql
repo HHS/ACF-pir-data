@@ -4,7 +4,8 @@ DELIMITER //
 
 CREATE PROCEDURE aggregateView(
 	IN view_name VARCHAR(64), IN agg_level VARCHAR(64),
-	IN response_table VARCHAR(64), IN question_id VARCHAR(64)
+	IN response_table VARCHAR(64), IN question_id VARCHAR(64),
+    IN kind VARCHAR(12)
 )
 BEGIN
 
@@ -25,12 +26,26 @@ BEGIN
     END IF;
     
     SET where_cond = (SELECT aggregateWhereCondition(agg_level));
-
-	IF agg_level = "national" THEN
-		SET @agg_query = CONCAT(
-			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS '
-			'SELECT min(resp.`year`) as year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
-				'count(answer) as `count` ',
+    
+    IF kind = 'uqid' THEN
+		SET @question_query = CONCAT(
+			'FROM response resp ',
+			'INNER JOIN (
+				SELECT DISTINCT question_id
+				FROM question_links.linked a
+				INNER JOIN (
+					SELECT DISTINCT uqid 
+					FROM question_links.linked 
+					WHERE question_id = ', QUOTE(question_id),
+				') b
+				ON a.uqid = b.uqid
+			) c
+			ON resp.question_id = c.question_id ',
+            'LEFT JOIN program prg ',
+			'ON resp.uid = prg.uid '
+		);
+	ELSE
+		SET @question_query = CONCAT(
 			'FROM ( ',
 			'	SELECT * ',
 			'	FROM ', response_table,
@@ -39,25 +54,28 @@ BEGIN
 			'LEFT JOIN program prg ',
 			'ON resp.uid = prg.uid '
         );
+    END IF;
+
+	IF agg_level = "national" THEN
+		SET @agg_query = CONCAT(
+			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS ',
+			'SELECT min(resp.`year`) as year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+				'count(answer) as `count` ',
+			@question_query
+        );
     ELSE
 		SET @agg_query = CONCAT(
-			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS '
+			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS ',
 			'SELECT ', agg_level, ', min(resp.`year`) as year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
-			'FROM ( ',
-			'	SELECT * ',
-			'	FROM ', response_table,
-			'	WHERE question_id = ', QUOTE(question_id),
-			') resp ',
-			'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid ',
+			@question_query,
 			'WHERE ', where_cond, ' ',
 			'GROUP BY ', agg_level,
 			' ORDER BY ', agg_level
 		);
 	END IF;
     
-    -- select @agg_query;
+    select @agg_query;
     PREPARE view_statement FROM @agg_query;
     EXECUTE view_statement;
     DEALLOCATE PREPARE view_statement;
