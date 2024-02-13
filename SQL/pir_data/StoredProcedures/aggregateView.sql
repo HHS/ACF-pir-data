@@ -4,8 +4,7 @@ DELIMITER //
 
 CREATE PROCEDURE aggregateView(
 	IN view_name VARCHAR(64), IN agg_level VARCHAR(64),
-	IN response_table VARCHAR(64), IN question_id VARCHAR(64),
-    IN kind VARCHAR(12)
+    IN question_id VARCHAR(64), IN kind VARCHAR(12)
 )
 BEGIN
 
@@ -48,7 +47,7 @@ BEGIN
 		SET @question_query = CONCAT(
 			'FROM ( ',
 			'	SELECT * ',
-			'	FROM ', response_table,
+			'	FROM response',
 			'	WHERE question_id = ', QUOTE(question_id),
 			') resp ',
 			'LEFT JOIN program prg ',
