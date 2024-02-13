@@ -12,6 +12,9 @@ CREATE TABLE `linked` (
 	section varchar(2),
 	PRIMARY KEY (uqid, `year`, `question_id`)
 );
+CREATE INDEX ix_linked_uqid ON linked (uqid);
+CREATE INDEX ix_linked_year ON linked (`year`);
+CREATE INDEX ix_linked_question_id ON linked (question_id);
 
 CREATE TABLE `unlinked` (
 	`year` year, 
@@ -24,6 +27,8 @@ CREATE TABLE `unlinked` (
 	proposed_link TEXT,
 	PRIMARY KEY (question_id, `year`)
 );
+CREATE INDEX ix_unlinked_year ON unlinked (`year`);
+CREATE INDEX ix_unlinked_question_id ON unlinked (question_id);
 
 CREATE TABLE `new_questions` (
 	`year` year, 
@@ -35,3 +40,5 @@ CREATE TABLE `new_questions` (
 	section varchar(2),
 	PRIMARY KEY (question_id, `year`)
 );
+CREATE INDEX ix_new_questions_year ON new_questions (`year`);
+CREATE INDEX ix_new_questions_question_id ON new_questions (question_id);
