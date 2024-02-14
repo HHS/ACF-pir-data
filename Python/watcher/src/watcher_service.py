@@ -6,8 +6,9 @@ import socket
 import time
 
 class AppServerSvc(win32serviceutil.ServiceFramework):
-    _svc_name_ = "TestPythonWatcher"
-    _svc_display_name_ = "Test Python Watcher"
+    _svc_name_ = "PIRWatcher"
+    _svc_display_name_ = "PIR Folder Watcher"
+    _svc_description_ = "Watches the PIR folder for xlsx and xls files to ingest."
     
     def __init__(self, args):
         win32serviceutil.ServiceFramework.__init__(self, args)
@@ -30,7 +31,7 @@ class AppServerSvc(win32serviceutil.ServiceFramework):
             time.sleep(60)
         
     def main(self):
-        from . import watcher
+        from pir_watcher import watcher
         folder_path_to_monitor = r"C:\OHS-Project-1\ACF-pir-data\tests\data\unprocessed"
         # Path for log file to log the file details
         log_file_path = r"C:\OHS-Project-1\ACF-pir-data\tests\logs\watcher.txt"
