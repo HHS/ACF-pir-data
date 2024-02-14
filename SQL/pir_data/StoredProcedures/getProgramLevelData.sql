@@ -9,6 +9,9 @@ BEGIN
 
 	DECLARE where_cond TEXT DEFAULT '';
     
+    SET col = CONCAT(
+		'resp.', col
+    );
 	SET where_cond = CONCAT(
 		'WHERE ', col, ' = ', QUOTE(val)
     );
