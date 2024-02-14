@@ -17,3 +17,4 @@ config.R
 logs/
 data_repository/
 */_misc/
+*__pycache__/
