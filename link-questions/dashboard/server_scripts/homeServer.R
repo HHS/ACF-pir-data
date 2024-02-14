@@ -57,6 +57,18 @@ ingestion_query <- dbGetQuery(
   "
 )
 
+listener_query <- dbGetQuery(
+  log_conn,
+  "
+  SELECT *
+  FROM listener_logs
+  WHERE run = (
+  	SELECT max(run)
+  	FROM listener_logs
+  )
+  "
+)
+
 question_query <- dbGetQuery(
   log_conn, 
   "
@@ -84,6 +96,16 @@ ingestion_logs <- datatable(
   colnames = c('Run', 'Date', 'Message')
 )
 
+# Use DT to create an interactive table
+listener_logs <- datatable(
+  listener_query,
+  options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
+  rownames = FALSE,
+  class = 'cell-border compact stripe',
+  colnames = c('Run', 'Date', 'Message')
+)
+
+
 question_logs <- datatable(
   question_query, 
   options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
@@ -95,6 +117,12 @@ question_logs <- datatable(
 output$ingestion_logs <- renderDT({
   ingestion_logs
 })
+
+
+output$listener_logs <- renderDT({
+  listener_logs
+})
+
 
 output$question_logs <- renderDT({
   question_logs

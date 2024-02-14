@@ -25,23 +25,22 @@
 #   )
 # )
 
+
+
 home <- tabPanel(
   "Question Link Overview",
   fluidRow(
     column(
-      width = 4, # Adjust the width to accommodate three columns
+      width = 6,
       h1(paste0("Ingestion Logs")),
       # Use DTOutput instead of tableOutput
-      DTOutput("ingestion_logs")
+      DTOutput("ingestion_logs") # First table output
     ),
     column(
-      width = 4, # Adjust the width to accommodate three columns
-      h1(paste0("Listener Logs"))
-    ),
-    column(
-      width = 4, # Adjust the width to accommodate three columns
-      h1(paste0("Watcher Logs")),
-      # Add your content here
+      width = 6,
+      h1(paste0("Listener Logs")), # Repeat the header for the second table
+      # Use DTOutput instead of tableOutput
+      DTOutput("listener_logs") # Second table output
     )
   ),
   fluidRow(
