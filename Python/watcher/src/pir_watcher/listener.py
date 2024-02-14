@@ -1,7 +1,9 @@
 import os, time, datetime, subprocess
 
 def main(file_info, log_path, r_path, script_path):
+    
     to_ingest = {}
+    
     for file in file_info.keys():
         current_file = file_info[file]
         if file.split(".")[1] in ["xlsx", "csv", "xls"]:

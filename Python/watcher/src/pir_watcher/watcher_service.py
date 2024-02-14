@@ -30,14 +30,14 @@ class AppServerSvc(win32serviceutil.ServiceFramework):
             time.sleep(60)
         
     def main(self):
-        import watcher
+        from . import watcher
         folder_path_to_monitor = r"C:\OHS-Project-1\ACF-pir-data\tests\data\unprocessed"
         # Path for log file to log the file details
         log_file_path = r"C:\OHS-Project-1\ACF-pir-data\tests\logs\watcher.txt"
         log_path = r"C:\OHS-Project-1\ACF-pir-data\tests\logs"
         r_path = r"C:\OHS-Project-1\R-4.3.2\bin\Rscript.exe"
         script_path = r"C:\OHS-Project-1\ACF-pir-data\ingestion\ingest_data.R"
-        watcher.watcher.FolderWatcher(folder_path_to_monitor, log_file_path, log_path, r_path, script_path)
+        watcher.FolderWatcher(folder_path_to_monitor, log_file_path, log_path, r_path, script_path)
     
 if __name__ == '__main__':
     win32serviceutil.HandleCommandLine(AppServerSvc)
