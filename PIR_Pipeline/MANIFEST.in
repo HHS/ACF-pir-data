@@ -1,0 +1,3 @@
+recursive-include src/pir_pipeline/pir_sql *.sql
+recursive-include src/pir_pipeline/pir_ingestion *.R
+recursive-include src/pir_pipeline/pir_question_links *.R

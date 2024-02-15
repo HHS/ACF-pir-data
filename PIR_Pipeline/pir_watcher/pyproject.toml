@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pir_watcher"
+version = "1.0.0"
+authors = [
+    { name = "Arch Systems Inc."}
+]
+description = "Periodically poll folder for xlsx and xls files to schedule for PIR ingestion."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    "PRIVATE :: Do Not Upload"
+]
+dependencies = [
+    "pywin32"
+]
+
+[project.urls]
+Homepage = "https://github.com/HHS/ACF-pir-data"
+
+[project.scripts]
+pir-create-directories = "pir_watcher:createDirectories.main"
+
+[tools.setuptools]
+include-package-data = true

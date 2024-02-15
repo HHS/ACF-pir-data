@@ -1,0 +1,6 @@
+DROP VIEW IF EXISTS linked_v;
+
+CREATE OR REPLACE VIEW linked_v AS
+SELECT *
+FROM linked
+;
