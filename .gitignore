@@ -9,6 +9,7 @@
 *.geojson
 *.zip
 *.xls
+*.odg
 
 */output/*
 !pir_clean_2019_2022.csv
