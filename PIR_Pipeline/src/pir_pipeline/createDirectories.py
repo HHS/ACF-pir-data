@@ -1,11 +1,19 @@
 import os, json
-from tkinter import Tk
-from tkinter.filedialog import askdirectory
+from tkinter import Tk, messagebox
+from tkinter.filedialog import askdirectory, askopenfilename
 
 def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_json = os.path.join(current_dir, "config.json")
     
+    messagebox.showinfo(
+        "Instructions", 
+        """
+        Please select:
+        1. Where you would like to set up the PIR directory structure.
+        2. The path to your RScript.exe.
+        """
+    )
     Tk().withdraw()
     parent_dir = askdirectory()
     if parent_dir == '':
@@ -24,6 +32,9 @@ def main():
         path = os.path.join(parent_dir, dir)
         os.makedirs(path)
         config[dir.replace("PIR_data_repository\\", "")] = path
+        
+    R_path = askopenfilename()
+    config["R_Path"] = R_path
 
     with open(config_json, "w") as f:
         json.dump(config, f)
