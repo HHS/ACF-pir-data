@@ -16,14 +16,11 @@ def main(file_info, config):
     r_path = config["R_Path"]
     bat_path = config["Listener_bats"]
     
-    # try:
-    #     conn = mysql.connector.connect(**db_config)
-    #     cursor = conn.cursor()
-    # except Exception as e:
-    #     print("command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output))
-    # finally:
-    #     cursor.close()
-    #     conn.close()
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(buffered=True)
+    except Exception as e:
+        print("command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output))
     
     to_ingest = {}
 
@@ -51,12 +48,24 @@ def main(file_info, config):
             current_taskname, command_path, target_date.strftime("%m/%d/%Y")
     )
     
+    query = """
+        REPLACE INTO pir_listener_logs
+        (run, timestamp, message)
+        VALUES
+        ('{}', '{}', '{}')
+        """
+    
     try:
         subprocess.check_output(schedule_command,stderr=subprocess.STDOUT)
-        # Test:: raise subprocess.CalledProcessError(returncode=1, cmd=['my_command'], output=b'Some error occurred.')
-        with open(os.path.join(log_path, "pir_listener_logs", "listener_error_log.log"), 'a') as f:
-            f.write("Ingestion scheduled at 01:00am today for files: {}\n".format(paths))
-                
+        message = "Ingestion scheduled at 01:00am today for files: {}\n".format(paths)
+        query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
+        cursor.execute(query)
+        conn.commit()
     except subprocess.CalledProcessError as e:
-        with open(os.path.join(log_path, "pir_listener_logs", "listener_error_log.log"), 'a') as f:
-            f.write("command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output))
+        message = "command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output)
+        query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
+        cursor.execute(query)
+        conn.commit()
+        
+    cursor.close()
+    conn.close()

@@ -25,7 +25,7 @@ CREATE TABLE `security_logs` (
     `message` TEXT
 );
 
-CREATE TABLE `listener_logs` (
+CREATE TABLE `pir_listener_logs` (
     `run` TIMESTAMP,
     `timestamp` TIMESTAMP,
     `message` TEXT,
