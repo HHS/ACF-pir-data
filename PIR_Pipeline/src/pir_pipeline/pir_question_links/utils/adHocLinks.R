@@ -142,7 +142,7 @@ adHocLinks <- function(conn) {
   
   if (nrow(unlinked) > 0 && nrow(linked) > 0) {
     
-    ad_hoc_links <- readRDS(here("link-questions", "utils", "ad_hoc_links.RDS"))
+    ad_hoc_links <- readRDS(here("pir_question_links", "utils", "ad_hoc_links.RDS"))
     
     unlinked <- inner_join(
       unlinked,

@@ -30,7 +30,10 @@ invisible(
 )
 
 # Configuration (paths, db_name, etc.)
-source(here("config.R"))
+config <- jsonlite::fromJSON(here("config.json"))
+dbusername <- config$dbusername
+dbpassword <- config$dbpassword
+logdir <- config$Ingestion_Logs
 
 # Set up parallelization
 operating_system <- Sys.info()['sysname']
@@ -50,15 +53,12 @@ walk(
 
 # Question Linking functions
 walk(
-  list.files(here("link-questions", "utils"), full.names = T, pattern = "R$"),
+  list.files(here("pir_question_links", "utils"), full.names = T, pattern = "R$"),
   source
 )
 
 # Begin logging
-log_file <- startLog(
-  file.path(logdir, "automated_pipeline_logs", "question_linkage"),
-  "pir_question_linkage_logs"
-)
+log_file <- startLog("pir_question_linkage_logs")
 
 # Establish DB Connections
 connections <- connectDB(
@@ -67,8 +67,8 @@ connections <- connectDB(
   dbpassword, 
   log_file
 )
-conn <- connections[[1]]
-link_conn <- connections[[2]]
+conn <- connections$pir_data_test
+link_conn <- connections$question_links_test
 
 # Get tables and schemas
 schemas <- getSchemas(
