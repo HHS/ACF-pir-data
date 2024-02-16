@@ -11,17 +11,17 @@
 #' be kept (or added) to the corresponding data frame.
 
 cleanPirData <- function(workbooks, schema, log_file) {
-  
-  workbooks <- future_map(
+  require(dplyr)
+  workbooks <- furrr::future_map(
     workbooks,
     function(workbook) {
       
-      source(here("pir_ingestion", "utils", "addPirVars.R"), local = T)
+      source(here::here("pir_ingestion", "utils", "addPirVars.R"), local = T)
       
       func_env <- environment()
       
       # Create vectors of variables
-      walk(
+      purrr::walk(
         names(schema),
         function(table) {
           assign(
@@ -35,7 +35,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
       # Remove data frames with 0 observations
       df_list <- attributes(workbook)
       yr <- as.numeric(df_list$year)
-      df_list <- df_list[map_lgl(df_list, function(df) !is.null(nrow(df)) && nrow(df) > 0)]
+      df_list <- df_list[purrr::map_lgl(df_list, function(df) !is.null(nrow(df)) && nrow(df) > 0)]
       tables <- names(df_list)
       
       # Clean response table data
@@ -146,7 +146,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
       # Remove data frames with 0 rows again
       workbook_attr <- attributes(workbook)
       attributes(workbook) <- workbook_attr[
-        map_lgl(workbook_attr, function(df) !is.data.frame(df) || nrow(df) > 0)
+        purrr::map_lgl(workbook_attr, function(df) !is.data.frame(df) || nrow(df) > 0)
       ]
       return(workbook)
     }

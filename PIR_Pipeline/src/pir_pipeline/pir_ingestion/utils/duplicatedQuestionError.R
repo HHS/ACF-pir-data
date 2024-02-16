@@ -9,6 +9,7 @@
 #' @returns Data frame, unique by columns in assert call.
 
 duplicatedQuestionError <- function(list_of_errors, data) {
+  require(dplyr)
   
   output <- list()
   

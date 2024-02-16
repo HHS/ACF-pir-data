@@ -12,8 +12,9 @@
 #' attributes.
 
 mergePirReference <- function(workbooks, log_file) {
+  require(dplyr)
   
-  workbooks <- future_map(
+  workbooks <- furrr::future_map(
     workbooks,
     function(workbook) {
       

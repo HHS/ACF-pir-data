@@ -7,13 +7,11 @@
 #' @returns A hased string or vector of hashed strings.
 
 hashVector <- function(string) {
-  pkgs <- c("furrr", "digest")
-  invisible(sapply(pkgs, require, character.only = T))
   
-  hashed <- map_chr(
+  hashed <- purrr::map_chr(
     string,
     function(s) {
-      digest(s, algo = "md5", serialize = F)
+      digest::digest(s, algo = "md5", serialize = F)
     }
   )
   return(hashed)

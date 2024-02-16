@@ -7,7 +7,7 @@
 #' @returns A data frame.
 
 loadPirSection <- function(workbook, sheet) {
-  
+  require(dplyr)
   # Do not load colnames. Extract text and colnames below
   df <- readxl::read_excel(workbook, sheet = sheet, col_names = F)
   
@@ -70,7 +70,7 @@ loadPirSection <- function(workbook, sheet) {
       by = c("question_number"),
       relationship = "many-to-one"
     ) %>%
-    assert(not_na, question_name) %>%
+    assertr::assert(not_na, question_name) %>%
     mutate(section_response = gsub("^Section (\\w)", "\\1", sheet, perl = TRUE))
   
   return(df)

@@ -7,7 +7,7 @@
 
 addUnmatched <- function(data) {
   if ("unmatched" %notin% names(data)) {
-    data <- mutate(data, unmatched = NA_character_)
+    data <- dplyr::mutate(data, unmatched = NA_character_)
   }
   return(data)
 }

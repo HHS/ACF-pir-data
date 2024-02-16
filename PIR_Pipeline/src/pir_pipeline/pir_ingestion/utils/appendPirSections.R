@@ -12,12 +12,12 @@
 
 appendPirSections <- function(workbooks, log_file) {
   
-  workbooks <- map(
+  workbooks <- purrr::map(
     workbooks,
     function(workbook) {
       # Extract and append data sets with section in name
       sections <- grep("section", names(attributes(workbook)), value = T)
-      attr(workbook, "response") <- bind_rows(attributes(workbook)[sections])
+      attr(workbook, "response") <- dplyr::bind_rows(attributes(workbook)[sections])
       attributes(workbook)[sections] <- NULL
       return(workbook)
     }

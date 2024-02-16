@@ -9,6 +9,7 @@
 #' @returns question data frame with updated values for `unmatched`.
 
 responseMergeError <- function(list_of_errors, data) {
+  require(dplyr)
   
   data %>%
     filter(question_number %in% setdiff(response_nums, question_nums)) %>%

@@ -11,7 +11,7 @@
 #' @returns A data frame containing the variables in `mi_vars`.
 
 missingQuestionError <- function(list_of_errors, data) {
-  
+  require(dplyr)
   mi_question_env <- environment()
   
   # Create unmatched_questions and diff_name for outputting message

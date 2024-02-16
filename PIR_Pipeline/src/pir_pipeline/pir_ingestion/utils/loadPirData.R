@@ -11,8 +11,7 @@
 #' worksheet in the workbook identified by the object.
 
 loadPirData <- function(workbooks, log_file) {
-  pkgs <- c("readxl", "dplyr", "janitor", "assertr")
-  invisible(sapply(pkgs, require, character.only = T))
+  require(dplyr)
   
   
   workbooks <- future_map(
@@ -25,12 +24,12 @@ loadPirData <- function(workbooks, log_file) {
         if (grepl("Section", sheet)) {
           df <- loadPirSection(workbook, sheet)
         } else {
-          df <- read_excel(workbook, sheet)
+          df <- readxl::read_excel(workbook, sheet)
           # Remove duplicated questions in Reference sheets
           if (sheet == "Reference") {
             df <- df %>%
-              clean_names() %>%
-              assert_rows(
+              janitor::clean_names() %>%
+              assertr::assert_rows(
                 col_concat, is_uniq, question_number, question_name, 
                 error_fun = duplicatedQuestionError
               )

@@ -15,23 +15,18 @@ insertPirData <- function(conn, workbooks, schema, log_file) {
   walk(
     workbooks,
     function(workbook) {
-      # Generate response table for the present year
-      # year <- attr(workbook, "year")
-      # genResponseSchema(conn, year)
       map(
         # Insert data for all tables
         names(schema),
         function(table) {
           df <- attr(workbook, table)
-          if (table == "response") {
+
+          if(!is.null(df) && nrow(df) > 0) {
             replaceInto(conn, df, table, log_file)
           } else {
-            if(!is.null(df) && nrow(df) > 0) {
-              replaceInto(conn, df, table, log_file)
-            } else {
-              logMessage(paste("Table", table, "has 0 rows."), log_file)
-            }
+            logMessage(paste("Table", table, "has 0 rows."), log_file)
           }
+          
         }
       )
     }

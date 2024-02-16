@@ -9,7 +9,7 @@
 #' `unmatched`.
 
 naNumberError <- function(list_of_errors, data) {
-  
+  require(dplyr)
   naNum_env <- environment()
   
   question %>%
