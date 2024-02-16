@@ -41,7 +41,7 @@ BEGIN
 			) c
 			ON resp.question_id = c.question_id ',
             'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid '
+			'ON resp.uid = prg.uid AND resp.`year` = prg.`year` '
 		);
 	ELSE
 		SET @question_query = CONCAT(
@@ -51,7 +51,7 @@ BEGIN
 			'	WHERE question_id = ', QUOTE(question_id),
 			') resp ',
 			'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid '
+			'ON resp.uid = prg.uid AND resp.`year` = prg.`year` '
         );
     END IF;
 
