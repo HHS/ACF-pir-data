@@ -1,8 +1,8 @@
-DROP PROCEDURE IF EXISTS aggregateView;
+DROP PROCEDURE IF EXISTS pir_data.aggregateView;
 
 DELIMITER //
 
-CREATE PROCEDURE aggregateView(
+CREATE PROCEDURE pir_data.aggregateView(
 	IN view_name VARCHAR(64), IN agg_level VARCHAR(64),
     IN question_id VARCHAR(64), IN kind VARCHAR(12)
 )
@@ -31,10 +31,10 @@ BEGIN
 			'FROM response resp ',
 			'INNER JOIN (
 				SELECT DISTINCT question_id
-				FROM question_links.linked a
+				FROM pir_question_links.linked a
 				INNER JOIN (
 					SELECT DISTINCT uqid 
-					FROM question_links.linked 
+					FROM pir_question_links.linked 
 					WHERE question_id = ', QUOTE(question_id),
 				') b
 				ON a.uqid = b.uqid

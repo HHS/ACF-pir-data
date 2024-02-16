@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS minYearLinked;
-DROP FUNCTION IF EXISTS maxYearLinked;
+DROP FUNCTION IF EXISTS pir_question_links.minYearLinked;
+DROP FUNCTION IF EXISTS pir_question_links.maxYearLinked;
 
 DELIMITER //
-CREATE FUNCTION minYearLinked ()
+CREATE FUNCTION pir_question_links.minYearLinked ()
 RETURNS INT DETERMINISTIC
 BEGIN
 
@@ -14,7 +14,7 @@ END //
 DELIMITER ;
 
 DELIMITER //
-CREATE FUNCTION maxYearLinked ()
+CREATE FUNCTION pir_question_links.maxYearLinked ()
 RETURNS INT DETERMINISTIC
 BEGIN
 
@@ -25,14 +25,14 @@ BEGIN
 END //
 DELIMITER ;
 
-CREATE OR REPLACE VIEW intermittent_link_v AS
+CREATE OR REPLACE VIEW pir_question_links.intermittent_link_v AS
 SELECT DISTINCT a.uqid, 1 AS intermittent_link
-FROM linked a
+FROM pir_question_links.linked a
 RIGHT JOIN (
     SELECT uqid
-    FROM linked
+    FROM pir_question_links.linked
     GROUP BY uqid
-    HAVING min(year) != minYearLinked() and max(year) != maxYearLinked()
+    HAVING min(year) != pir_question_links.minYearLinked() and max(year) != pir_question_links.maxYearLinked()
 ) b
 ON a.uqid = b.uqid
 ORDER BY uqid

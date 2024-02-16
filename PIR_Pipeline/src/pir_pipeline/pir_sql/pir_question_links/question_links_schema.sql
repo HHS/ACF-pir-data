@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS `question_links`;
-use `question_links`;
+CREATE DATABASE IF NOT EXISTS `pir_question_links`;
+use `pir_question_links`;
 
 CREATE TABLE `linked` (
 	uqid varchar(255), 

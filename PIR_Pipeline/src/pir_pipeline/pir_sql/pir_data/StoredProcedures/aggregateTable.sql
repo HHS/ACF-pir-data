@@ -1,8 +1,8 @@
-DROP PROCEDURE IF EXISTS aggregateTable;
+DROP PROCEDURE IF EXISTS pir_data.aggregateTable;
 
 DELIMITER //
 
-CREATE PROCEDURE aggregateTable(
+CREATE PROCEDURE pir_data.aggregateTable(
 	IN agg_level VARCHAR(64)
 )
 BEGIN

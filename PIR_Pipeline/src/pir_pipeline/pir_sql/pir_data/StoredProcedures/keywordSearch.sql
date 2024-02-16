@@ -1,6 +1,6 @@
 DELIMITER //
 
-CREATE PROCEDURE keywordSearch(
+CREATE PROCEDURE pir_data.keywordSearch(
 	IN tab varchar(25), IN col VARCHAR(100), IN string TEXT, IN exact INT
 )
 BEGIN

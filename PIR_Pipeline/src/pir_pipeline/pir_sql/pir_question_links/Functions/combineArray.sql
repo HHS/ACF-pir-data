@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS combineArray;
+DROP FUNCTION IF EXISTS pir_question_links.combineArray;
 
 DELIMITER //
 
-CREATE FUNCTION combineArray(column_1 JSON, column_2 JSON, var_name VARCHAR(64))
+CREATE FUNCTION pir_question_links.combineArray(column_1 JSON, column_2 JSON, var_name VARCHAR(64))
 RETURNS JSON DETERMINISTIC
 BEGIN
 	

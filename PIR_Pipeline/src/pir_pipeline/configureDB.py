@@ -67,6 +67,8 @@ def main():
         with open(config_json, 'w') as f:
             json.dump(config, f)
         root.destroy()
+        from . import setupDB
+        setupDB.main()
         
 
     finish_button = ttk.Button(configure, text="Finish", command=finish_clicked)

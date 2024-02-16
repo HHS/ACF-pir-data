@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS addQuestionID;
+DROP FUNCTION IF EXISTS pir_question_links.addQuestionID;
 
 DELIMITER //
-CREATE FUNCTION addQuestionID (json_obj JSON, id VARCHAR(100), var_name VARCHAR(64))
+CREATE FUNCTION pir_question_links.addQuestionID (json_obj JSON, id VARCHAR(100), var_name VARCHAR(64))
 RETURNS JSON DETERMINISTIC
 BEGIN
 

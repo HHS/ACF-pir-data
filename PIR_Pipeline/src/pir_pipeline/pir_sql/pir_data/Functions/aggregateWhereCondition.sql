@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS aggregateWhereCondition;
+DROP FUNCTION IF EXISTS pir_data.aggregateWhereCondition;
 
 DELIMITER //
 
-CREATE FUNCTION aggregateWhereCondition(cols VARCHAR(100))
+CREATE FUNCTION pir_data.aggregateWhereCondition(cols VARCHAR(100))
 RETURNS TEXT DETERMINISTIC
 BEGIN
 

@@ -1,6 +1,8 @@
+DROP PROCEDURE IF EXISTS pir_question_links.newQuestions;
+
 DELIMITER //
 
-CREATE PROCEDURE newQuestions()
+CREATE PROCEDURE pir_question_links.newQuestions()
 BEGIN
 
 DECLARE current_year INT DEFAULT 0;

@@ -1,8 +1,8 @@
-DROP PROCEDURE IF EXISTS pir_data_test.getQuestion;
+DROP PROCEDURE IF EXISTS pir_data.getQuestion;
 
 DELIMITER //
 
-CREATE PROCEDURE pir_data_test.getQuestion(
+CREATE PROCEDURE pir_data.getQuestion(
 	IN qid VARCHAR(255),
     IN kind VARCHAR(12)
 )
@@ -17,7 +17,7 @@ BEGIN
                 'FROM response a ',
                 'INNER JOIN (
 					SELECT DISTINCT question_id
-                    FROM question_links_test.linked b
+                    FROM pir_question_links.linked b
                     WHERE uqid = ', QUOTE(qid), ' '
                 ') b
                 ON a.question_id = b.question_id
@@ -31,10 +31,10 @@ BEGIN
 				'FROM response a ',
 				'INNER JOIN (
 					SELECT DISTINCT question_id
-					FROM question_links.linked b
+					FROM pir_question_links.linked b
 					INNER JOIN (
 						SELECT DISTINCT uqid 
-						FROM question_links.linked 
+						FROM pir_question_links.linked 
 						WHERE question_id = "', qid, '" ',
 					') c
 					ON b.uqid = c.uqid

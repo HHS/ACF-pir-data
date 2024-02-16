@@ -1,6 +1,8 @@
+DROP PROCEDURE IF EXISTS pir_question_links.keywordSearch;
+
 DELIMITER //
 
-CREATE PROCEDURE keywordSearch(
+CREATE PROCEDURE pir_question_links.keywordSearch(
 	IN tab varchar(25), IN col VARCHAR(100), IN string TEXT, IN exact INT
 )
 BEGIN

@@ -1,6 +1,6 @@
-DROP VIEW IF EXISTS distinct_linked_v;
+DROP VIEW IF EXISTS pir_question_links.distinct_linked_v;
 
-CREATE OR REPLACE VIEW distinct_linked_v AS
+CREATE OR REPLACE VIEW pir_question_links.distinct_linked_v AS
 SELECT a.*, b.`year` AS first_appearance
 FROM (
 	SELECT DISTINCT question_id, question_name, question_text, question_number, category, section
