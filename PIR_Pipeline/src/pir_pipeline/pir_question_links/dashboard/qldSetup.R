@@ -54,7 +54,7 @@ connections <- connectDB(
 )
 
 conn <- connections$pir_data
-link_conn <- connections$question_links_test
+link_conn <- connections$pir_question_links
 log_conn <- connections$pir_logs
 
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"

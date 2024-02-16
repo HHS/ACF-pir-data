@@ -5,7 +5,7 @@ output$unlinked <- function() {
   unlinked <- dbGetQuery(
     link_conn,
     paste0(
-      "call reviewUnlinkedV('", input$review_question_id, "')"
+      "call reviewUnlinked('", input$review_question_id, "')"
     )
   ) %>%
     mutate(algorithm_dist = "Base")
@@ -168,7 +168,7 @@ observeEvent(
       unlinked <- dbGetQuery(
         link_conn,
         paste0(
-          "call reviewUnlinkedV('", input$review_question_id, "')"
+          "call reviewUnlinked('", input$review_question_id, "')"
         )
       )
       jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
@@ -191,7 +191,7 @@ observeEvent(
       unlinked <- dbGetQuery(
         link_conn,
         paste0(
-          "call reviewUnlinkedV('", input$review_question_id, "')"
+          "call reviewUnlinked('", input$review_question_id, "')"
         )
       )
       jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
