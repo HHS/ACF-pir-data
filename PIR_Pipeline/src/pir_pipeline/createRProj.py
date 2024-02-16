@@ -11,4 +11,5 @@ with open(rproj, 'a') as f:
         "Encoding: UTF-8", "RnwWeave: Sweave", "LaTeX: pdfLaTex"
     ]:
         f.write(line)
+        f.write("\n")
     f.write("\n")
