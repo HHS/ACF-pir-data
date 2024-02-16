@@ -12,12 +12,9 @@
 logMessage <- function(message, log_file) {
   func_call <- match.call()
   
-  pkgs <- c("dplyr")
-  invisible(sapply(pkgs, require, character.only = T))
-  
   timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
   
-  log_file <- bind_rows(
+  log_file <- dplyr::bind_rows(
     log_file,
     data.frame(
       list(

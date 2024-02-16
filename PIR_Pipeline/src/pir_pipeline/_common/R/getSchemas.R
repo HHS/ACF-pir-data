@@ -3,10 +3,10 @@ getSchemas <- function(conn, tables) {
   tryCatch(
     {
       schema <- list()
-      walk(
+      purrr::walk(
         tables,
         function(table) {
-          vars <- dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
+          vars <- DBI::dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
           vars <- vars$Field
           schema[[table]] <- vars
           assign("schema", schema, envir = func_env)

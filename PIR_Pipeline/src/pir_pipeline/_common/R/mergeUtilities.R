@@ -1,3 +1,6 @@
+require(dplyr)
+
+
 `%notin%` <- Negate(`%in%`)
 
 merge_check <- function(df) {

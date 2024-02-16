@@ -1,4 +1,5 @@
 missingDescribe <- function(data, ...) {
+  require(dplyr)
   dots <- match.call(expand.dots = F)
   names <- paste(dots$...) %>%
     {gsub("\\`", "", .)}

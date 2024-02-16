@@ -17,7 +17,7 @@
 #' replaceInto(conn, test_df, "test")
 replaceInto <- function(conn, df, table, log_file = NULL) {
   
-  dbExecute(conn, "SET foreign_key_checks = 0")
+  DBI::dbExecute(conn, "SET foreign_key_checks = 0")
   
   query <- paste(
     "REPLACE INTO",
@@ -34,11 +34,11 @@ replaceInto <- function(conn, df, table, log_file = NULL) {
     ),
     ")"
   )
-  # print(query)
-  dbExecute(conn, query, params = unname(as.list(df)))
+  
+  DBI::dbExecute(conn, query, params = unname(as.list(df)))
   if (!is.null(log_file)) {
     logMessage(paste("Successfully inserted data into", table), log_file)
   }
   
-  dbExecute(conn, "SET foreign_key_checks = 1")
+  DBI::dbExecute(conn, "SET foreign_key_checks = 1")
 }

@@ -1,13 +1,12 @@
 # Establish DB connection ----
 connectDB <- function(dblist, username, password, log_file, host = "localhost", port = 0) {
-  pkgs <- c("RMariaDB", "purrr")
-  invisible(sapply(pkgs, require, character.only = T))
-  connections <- map(
+
+  connections <- purrr::map(
     dblist,
     function(name) {
       tryCatch(
         {
-          conn <- dbConnect(
+          conn <- DBI::dbConnect(
             RMariaDB::MariaDB(), 
             dbname = name,
             host = host,

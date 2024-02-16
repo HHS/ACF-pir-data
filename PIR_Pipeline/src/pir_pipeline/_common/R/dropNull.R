@@ -1,4 +1,4 @@
 dropNull <- function(list) {
-  list[map_lgl(list, ~ !is.null(.))] %>%
+  list[purrr::map_lgl(list, ~ !is.null(.))] %>%
     return()
 }
