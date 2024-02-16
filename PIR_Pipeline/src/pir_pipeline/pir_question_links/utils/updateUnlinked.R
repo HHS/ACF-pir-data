@@ -7,5 +7,5 @@ updateUnlinked <- function(conn) {
     "ON a.question_id = b.question_id AND a.year = b.year",
     "WHERE a.question_id = b.question_id"
   )
-  dbExecute(conn, query)
+  DBI::dbExecute(conn, query)
 }

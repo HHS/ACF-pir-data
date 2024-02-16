@@ -1,5 +1,5 @@
 genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
-  link_vars <- dbGetQuery(
+  link_vars <- DBI::dbGetQuery(
     link_conn,
     paste(
       "SHOW COLUMNS",
@@ -7,7 +7,7 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
     )
   )$Field
   
-  link_unique <- dbGetQuery(
+  link_unique <- DBI::dbGetQuery(
     link_conn,
     paste(
       "SELECT COUNT(DISTINCT UQID)",
@@ -16,7 +16,7 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
     )
   )[[1]]
   
-  count_link <- dbGetQuery(
+  count_link <- DBI::dbGetQuery(
     link_conn,
     paste(
       "SELECT COUNT(year)",
@@ -31,7 +31,7 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
     )
   )[[1]]
   
-  count_base <- dbGetQuery(
+  count_base <- DBI::dbGetQuery(
     link_conn,
     paste(
       "SELECT COUNT(YEAR)",
@@ -41,7 +41,7 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
   )[[1]]
   
   if (link_unique == 1 & count_link > count_base) {
-    new_id <- dbGetQuery(
+    new_id <- DBI::dbGetQuery(
       link_conn,
       paste(
         "SELECT DISTINCT uqid",
@@ -60,12 +60,12 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
       "SET uqid = '", new_id, "' ",
       "WHERE question_id = '", link_id, "'"
     )
-    dbExecute(link_conn, update_query)
+    DBI::dbExecute(link_conn, update_query)
   
   
   } else {
     
-    new_links <- dbGetQuery(
+    new_links <- DBI::dbGetQuery(
       data_conn,
       paste(
         "SELECT *",

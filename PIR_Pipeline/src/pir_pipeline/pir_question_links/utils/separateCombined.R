@@ -1,7 +1,6 @@
 separateCombined <- function(df, varnames, caller) {
   
-  pkgs <- c("dplyr", "stringr", "assertr", "jsonlite")
-  invisible(sapply(pkgs, require, character.only = T))
+  require(dplyr)
   
   func_env <- environment()
   separated <- list()
@@ -11,9 +10,9 @@ separateCombined <- function(df, varnames, caller) {
     combined <- df %>% 
       mutate(across(ends_with("_dist"), as.character)) %>%
       # Extract years from unlinked_db records
-      pivot_longer(c(ends_with(".y"), -year.y, ends_with("dist"))) %>%
+      tidyr::pivot_longer(c(ends_with(".y"), -year.y, ends_with("dist"))) %>%
       mutate(name = gsub("\\.y", "", name, perl = T)) %>%
-      pivot_wider(
+      tidyr::pivot_wider(
         id_cols = c(ends_with(".x"), confirmed),
         names_from = c(name, year.y),
         values_from = value,
@@ -25,12 +24,12 @@ separateCombined <- function(df, varnames, caller) {
       ) %>%
       select(-year.x) %>%
       rename_with(
-        ~ str_replace_all(., c("\\.x$" = x_year)),
+        ~ stringr::str_replace_all(., c("\\.x$" = x_year)),
         everything()
       ) %>%
       genUQID() %>%
       mutate(match_group = row_number()) %>%
-      pivot_longer(
+      tidyr::pivot_longer(
         -c("confirmed", "uqid", "match_group"),
         names_to = c(".value", "year"),
         names_pattern = "^(\\w+)(\\d{4})$"
@@ -62,7 +61,7 @@ separateCombined <- function(df, varnames, caller) {
     separated$unlinked <- df %>%
       filter(confirmed == 0) %>%
       mutate(match_group = row_number()) %>%
-      pivot_longer(
+      tidyr::pivot_longer(
         c(
           ends_with(c(".x", ".y"))
         ),

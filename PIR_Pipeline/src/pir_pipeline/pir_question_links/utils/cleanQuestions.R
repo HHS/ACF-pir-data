@@ -6,8 +6,7 @@
 #' @returns A list of data frames ready for insertion.
 
 cleanQuestions <- function(df_list) {
-  pkgs <- c("uuid", "assertr", "stringr", "rlang", "jsonlite", "tidyr", "dplyr")
-  invisible(sapply(pkgs, require, character.only = T))
+  require(dplyr)
   
   # Extract data
   linked_vars <- df_list$linked_vars
@@ -41,10 +40,10 @@ cleanQuestions <- function(df_list) {
   # i.e. question A.1 from 2023 cannot be proposed to link with question
   # A.2 from 2023.
   if (!is.null(unlinked) && nrow(unlinked) > 0) {
-    proposed_link_ids <- map(
-      map(
+    proposed_link_ids <- purrr::map(
+      purrr::map(
         unlinked$proposed_link,
-        fromJSON
+        jsonlite::fromJSON
       ),
       names
     )

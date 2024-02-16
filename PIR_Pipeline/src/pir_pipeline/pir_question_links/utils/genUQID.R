@@ -6,8 +6,8 @@
 #' @returns The input data frame with an updated/generated `uqid` column. 
 
 genUQID <- function(df) {
-  pkgs <- c("dplyr", "uuid", "assertr")
-  invisible(sapply(pkgs, require, character.only = T))
+  
+  require(dplyr)
   
   df %>%
     # Generate uqid if it does not exist. 
@@ -20,10 +20,10 @@ genUQID <- function(df) {
     } %>%
     mutate(
       uqid = case_when(
-        is.na(uqid) ~ UUIDgenerate(n = nrow(.)),
+        is.na(uqid) ~ uuid::UUIDgenerate(n = nrow(.)),
         TRUE ~ uqid
       )
     ) %>%
-    assert(is_uniq, uqid) %>%
+    assertr::assert(is_uniq, uqid) %>%
     return()
 }

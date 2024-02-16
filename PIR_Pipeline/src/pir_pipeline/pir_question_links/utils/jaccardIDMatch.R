@@ -1,10 +1,10 @@
 jaccardIDMatch <- function(conn, id, type) {
-  pkgs <- c("fedmatch")
-  invisible(sapply(pkgs, require, character.only = TRUE))
+  
+  require(dplyr)
   
   func_env <- environment()
   
-  linked <- dbGetQuery(
+  linked <- DBI::dbGetQuery(
     conn,
     paste(
       "SELECT *",
@@ -12,7 +12,7 @@ jaccardIDMatch <- function(conn, id, type) {
     )
   )
   
-  unlinked <- dbGetQuery(
+  unlinked <- DBI::dbGetQuery(
     conn,
     "
     SELECT *

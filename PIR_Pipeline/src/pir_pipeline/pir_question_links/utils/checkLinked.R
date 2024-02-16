@@ -8,8 +8,7 @@
 
 checkLinked <- function(df_list) {
   
-  pkgs <- c("dplyr", "stringr", "assertr")
-  invisible(sapply(pkgs, require, character.only = T))
+  require(dplyr)
   
   # Extract data of interest
   lower_year <- df_list$lower_year
@@ -35,9 +34,9 @@ checkLinked <- function(df_list) {
       
       linked <- unlinked_match %>%
         # Pivot to get columns with matches by year
-        pivot_longer(c(ends_with(".y"), -year.y)) %>%
+        tidyr::pivot_longer(c(ends_with(".y"), -year.y)) %>%
         mutate(name = gsub("\\.y", "", name, perl = T)) %>%
-        pivot_wider(
+        tidyr::pivot_wider(
           id_cols = c(ends_with(".x"), question_id),
           names_from = c(name, year.y),
           values_from = value,
@@ -49,13 +48,13 @@ checkLinked <- function(df_list) {
         ) %>%
         select(-year.x) %>%
         rename_with(
-          ~ str_replace_all(., c("\\.x$" = x_year)),
+          ~ stringr::str_replace_all(., c("\\.x$" = x_year)),
           everything()
         ) %>%
         # Generate unique question id
         genUQID() %>%
         # Pivot from one row per uqid to one row per uqid/year
-        pivot_longer(
+        tidyr::pivot_longer(
           -c("uqid", "question_id"),
           names_to = c(".value", "year"),
           names_pattern = "^(\\w+)(\\d{4})$"

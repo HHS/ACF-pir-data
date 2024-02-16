@@ -7,10 +7,9 @@
 #' @param conn A database connection.
 
 genLink <- function(base_id, link_id, conn) {
-  pkgs <- c("RMariaDB", "dplyr", "uuid")
-  invisible(sapply(pkgs, require, character.only = T))
+  require(dplyr)
   
-  unlinked_ids <- dbGetQuery(
+  unlinked_ids <- DBI::dbGetQuery(
     conn,
     "
     SELECT DISTINCT question_id
@@ -18,7 +17,7 @@ genLink <- function(base_id, link_id, conn) {
     "
   )$question_id
   
-  varnames <- dbGetQuery(
+  varnames <- DBI::dbGetQuery(
     conn,
     "
     SHOW COLUMNS
@@ -26,7 +25,7 @@ genLink <- function(base_id, link_id, conn) {
     "
   )$Field
   
-  unlinked <- dbGetQuery(
+  unlinked <- DBI::dbGetQuery(
     conn,
     paste0(
       "
@@ -42,12 +41,12 @@ genLink <- function(base_id, link_id, conn) {
     
     unlinked <- unlinked %>%
       mutate(
-        uqid = UUIDgenerate()
+        uqid = uuid::UUIDgenerate()
       ) %>%
       select(all_of(varnames))
     
   } else {
-    linked <- dbGetQuery(
+    linked <- DBI::dbGetQuery(
       conn,
       paste0(
         "

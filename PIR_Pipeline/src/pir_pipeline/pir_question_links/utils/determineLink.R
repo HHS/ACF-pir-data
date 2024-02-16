@@ -15,16 +15,16 @@
 #' @returns A data frame with confirmed question links.
 
 determineLink <- function(df) {
-  pkgs <- c("stringdist", "dplyr", "assertr")
-  invisible(sapply(pkgs, require, character.only = T))
+  
+  require(dplyr)
   
   df <- df %>%
     # Calculate string distances and sum
     mutate(
-      question_number_dist = stringdist(question_number.x, question_number.y),
-      question_name_dist = stringdist(question_name.x, question_name.y),
-      question_text_dist = stringdist(question_text.x, question_text.y),
-      section_dist = stringdist(section.x, section.y)
+      question_number_dist = stringdist::stringdist(question_number.x, question_number.y),
+      question_name_dist = stringdist::stringdist(question_name.x, question_name.y),
+      question_text_dist = stringdist::stringdist(question_text.x, question_text.y),
+      section_dist = stringdist::stringdist(section.x, section.y)
     ) %>%
     mutate(
       dist_sum = rowSums(.[grepl("_dist", names(.), perl = T)])
@@ -69,12 +69,12 @@ determineLink <- function(df) {
       )
     ) %>%
     ungroup() %>%
-    assert(not_na, question_id.x) %>%
+    assertr::assert(not_na, question_id.x) %>%
     # Confirm that newly matched records are only confirmed once
     pipeExpr(
       . %>%
         filter(confirmed == 1) %>%
-        assert(is_uniq, question_id.x)
+        assertr::assert(is_uniq, question_id.x)
     ) %>%
     # Return confirmed records
     {

@@ -1,20 +1,20 @@
 getSchemas <- function(conn_list, db_list) {
   
-  map2(
+  purrr::map2(
     conn_list,
     db_list,
     function(conn, db) {
       tryCatch(
         {
-          tables <- dbGetQuery(conn, paste("SHOW TABLES FROM", db))[[1]]
+          tables <- DBI::dbGetQuery(conn, paste("SHOW TABLES FROM", db))[[1]]
           logMessage(
             paste("List of tables in database", db, "obtained."), 
             log_file
           )
-          schema <- map(
+          schema <- purrr::map(
             tables,
             function(table) {
-              vars <- dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
+              vars <- DBI::dbGetQuery(conn, paste("SHOW COLUMNS FROM", table))
               vars <- vars$Field
               return(vars)
             }

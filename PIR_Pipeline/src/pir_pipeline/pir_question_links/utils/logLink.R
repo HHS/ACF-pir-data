@@ -1,10 +1,8 @@
 logLink <- function(base_id, link_id, type) {
-  pkgs <- c("dplyr")
-  invisible(sapply(pkgs, require, character.only = T))
   
   timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
   
-  link_log <<-  data.frame(
+  link_log <-  data.frame(
     "timestamp" = timestamp,
     "base_id" = base_id,
     "linked_id" = link_id,

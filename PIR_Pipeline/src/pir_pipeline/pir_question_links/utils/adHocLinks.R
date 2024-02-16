@@ -1,7 +1,8 @@
 adHocLinks <- function(conn) {
-
+  require(dplyr)
+  
   # Ad Hoc Links - 2011
-  unlinked <- dbGetQuery(
+  unlinked <- DBI::dbGetQuery(
     conn,
     "
     SELECT *
@@ -10,7 +11,7 @@ adHocLinks <- function(conn) {
     "
   )
   
-  linked <- dbGetQuery(
+  linked <- DBI::dbGetQuery(
     conn,
     "
     SELECT DISTINCT uqid, question_number
@@ -19,7 +20,7 @@ adHocLinks <- function(conn) {
     "
   )
   
-  link_vars <- dbGetQuery(
+  link_vars <- DBI::dbGetQuery(
     conn,
     "
     SHOW COLUMNS FROM linked
@@ -62,7 +63,7 @@ adHocLinks <- function(conn) {
   }
   
   # Ad Hoc Links - 2023
-  unlinked <- dbGetQuery(
+  unlinked <- DBI::dbGetQuery(
     conn,
     "
     SELECT *
@@ -71,7 +72,7 @@ adHocLinks <- function(conn) {
     "
   )
   
-  linked <- dbGetQuery(
+  linked <- DBI::dbGetQuery(
     conn,
     "
     SELECT DISTINCT uqid, question_number
@@ -124,7 +125,7 @@ adHocLinks <- function(conn) {
   }
   
   # Other Ad-hoc links
-  unlinked <- dbGetQuery(
+  unlinked <- DBI::dbGetQuery(
     conn,
     "
     SELECT * 
@@ -132,7 +133,7 @@ adHocLinks <- function(conn) {
     "
   )
   
-  linked <- dbGetQuery(
+  linked <- DBI::dbGetQuery(
     conn,
     "
     SELECT DISTINCT uqid, question_id

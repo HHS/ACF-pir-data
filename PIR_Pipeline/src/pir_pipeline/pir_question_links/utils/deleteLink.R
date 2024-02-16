@@ -15,17 +15,17 @@ deleteLink <- function(conn, uqid, question_id_list) {
       paste0("'", question_id_list, "'", collapse = ", "),
     ")"
   )
-  newly_unlinked <- dbGetQuery(
+  newly_unlinked <- DBI::dbGetQuery(
     conn,
     unlinked_query
   )
   # Move all affected records to unlinked temporarily
   replaceInto(conn, newly_unlinked, "unlinked")
   # Delete target records
-  dbExecute(conn, delete_query)
+  DBI::dbExecute(conn, delete_query)
   # Remove any records in unlinked that are actually still present in the linked table
   updateUnlinked(conn)
-  map(
+  purrr::map(
     question_id_list,
     function(id) {
       logLink(uqid, id, "unlinked")

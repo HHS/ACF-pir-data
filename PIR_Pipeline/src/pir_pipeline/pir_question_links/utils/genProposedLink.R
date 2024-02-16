@@ -6,9 +6,8 @@
 #' @returns Input data frame with an additional column: `proposed_link`.
 
 genProposedLink <- function(df) {
-  pkgs <- c("dplyr", "jsonlite")
-  invisible(sapply(pkgs, require, character.only = T))
-  
+
+  require(dplyr)
   
   df %>%
     group_by(match_group) %>%
@@ -22,7 +21,7 @@ genProposedLink <- function(df) {
     mutate(
       ids = c(question_id), 
       proposed_link = setNames(distances, ids),
-      proposed_link = toJSON(proposed_link),
+      proposed_link = jsonlite::toJSON(proposed_link),
       year = as.numeric(year)
     ) %>%
     ungroup() %>%

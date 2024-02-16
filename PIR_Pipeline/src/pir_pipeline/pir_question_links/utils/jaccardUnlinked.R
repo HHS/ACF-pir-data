@@ -1,8 +1,8 @@
 jaccardUnlinked <- function(conn, id) {
-  pkgs <- c("fedmatch", "dplyr")
-  invisible(sapply(pkgs, require, character.only = TRUE))
   
-  unlinked <- dbGetQuery(
+  require(dplyr)
+  
+  unlinked <- DBI::dbGetQuery(
     conn,
     paste(
     "SELECT *",
@@ -11,7 +11,7 @@ jaccardUnlinked <- function(conn, id) {
     )
   )
   
-  linked <- dbGetQuery(
+  linked <- DBI::dbGetQuery(
     conn,
     "SELECT * FROM linked"
   )
@@ -27,11 +27,11 @@ jaccardUnlinked <- function(conn, id) {
   
   unlinked_yr <- unlinked %>%
     mutate(
-      across(c(starts_with("question")), clean_strings)
+      across(c(starts_with("question")), fedmatch::clean_strings)
     ) %>%
     rename(question_id_base = question_id)
   
-    matches <- merge_plus(
+    matches <- fedmatch::merge_plus(
       unlinked_yr, linked_yr,
       by = c("question_name", "question_text", "question_number", "section"),
       match_type = "multivar",

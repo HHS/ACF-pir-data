@@ -13,8 +13,11 @@ pkgs <- c(
 )
 invisible(sapply(pkgs, library, character.only = T))
 
-# Configurations
-source(here("config.R"))
+# Configuration (paths, db_name, etc.)
+config <- jsonlite::fromJSON(here("config.json"))
+dbusername <- config$dbusername
+dbpassword <- config$dbpassword
+logdir <- config$Ingestion_Logs
 
 # Common functions
 walk(
@@ -22,16 +25,13 @@ walk(
   source
 )
 walk(
-  list.files(here("link-questions", "utils"), full.names = T, pattern = "R$"),
+  list.files(here("pir_question_links", "utils"), full.names = T, pattern = "R$"),
   source
 )
 
 
 # Logging
-log_file <- startLog(
-  here("logs", "automated_pipeline_logs", "question_linkage"),
-  "pir_question_linkage_logs"
-)
+log_file <- startLog("pir_question_linkage_logs")
 
 # Dashboard meta data
 dash_meta <- list()
@@ -52,9 +52,7 @@ connections <- connectDB(
   dbpassword, 
   log_file
 )
-connections <- set_names(
-  connections, dash_meta$dbnames
-)
+
 conn <- connections$pir_data
 link_conn <- connections$question_links_test
 log_conn <- connections$pir_logs

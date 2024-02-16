@@ -8,6 +8,8 @@
 
 checkUnlinked <- function(df_list) {
   
+  require(dplyr)
+  
   # Extract data
   unlinked <- df_list$unlinked
   unlinked_db <- df_list$unlinked_db
@@ -44,7 +46,7 @@ checkUnlinked <- function(df_list) {
         rowwise() %>%
         # Convert proposed_link to named list
         mutate(
-          across(starts_with("proposed_link"), ~ list(fromJSON(.)))
+          across(starts_with("proposed_link"), ~ list(jsonlite::fromJSON(.)))
         ) 
     }
     
@@ -66,7 +68,7 @@ checkUnlinked <- function(df_list) {
         proposed_link = list(
           proposed_link[-which(names(proposed_link) == question_id)]
         ),
-        proposed_link = toJSON(proposed_link)
+        proposed_link = jsonlite::toJSON(proposed_link)
       ) %>%
       ungroup() %>%
       select(all_of(df_list$unlinked_vars))
