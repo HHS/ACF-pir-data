@@ -9,7 +9,6 @@
 import time
 import os
 import subprocess
-from . import listener
 
 class FolderWatcher():
     def __init__(self, folder_path, log_file, log_path, r_path, script_path):
@@ -57,6 +56,7 @@ class FolderWatcher():
             self.alert_listener()
 
 if __name__ == "__main__":
+    from . import listener
     # Path for PIR directory to monitor
     folder_path_to_monitor = r"C:\OHS-Project-1\ACF-pir-data\tests\data\unprocessed"
     # Path for log file to log the file details
@@ -70,3 +70,5 @@ if __name__ == "__main__":
 
     # Start monitoring the folder
     FolderWatcher(folder_path_to_monitor, log_file_path, log_path, r_path, script_path)
+else:
+    import listener

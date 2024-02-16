@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pir_watcher"
+name = "pir_pipeline"
 version = "1.0.0"
 authors = [
     { name = "Arch Systems Inc."}
@@ -17,14 +17,15 @@ classifiers = [
     "PRIVATE :: Do Not Upload"
 ]
 dependencies = [
-    "pywin32"
+    "pywin32", "mysql.connector"
 ]
 
 [project.urls]
 Homepage = "https://github.com/HHS/ACF-pir-data"
 
 [project.scripts]
-pir-create-directories = "pir_watcher:createDirectories.main"
+pir-create-directories = "pir_pipeline:createDirectories.main"
+pir-config-db = "pir_pipeline:configureDB.main"
 
 [tools.setuptools]
 include-package-data = true

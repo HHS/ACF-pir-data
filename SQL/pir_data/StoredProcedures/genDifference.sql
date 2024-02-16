@@ -32,5 +32,3 @@ BEGIN
 
 END //
 DELIMITER ;
-
-call pir_data_test.genDifference("-", '4fbac59c868a7255a0acb42bd6e2ec54', 'TotalCumulEnr', '7a3fba3c01b9d1d6a4d65be2b33d2ae6', 'PregWmnCumulEnr', 'ChildCumulEnr');

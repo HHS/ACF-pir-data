@@ -22,3 +22,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/HHS/ACF-pir-data"
+
+[project.scripts]
+pir-create-directories = "pir_watcher:createDirectories.main"
+
+[tools.setuptools]
+include-package-data = true

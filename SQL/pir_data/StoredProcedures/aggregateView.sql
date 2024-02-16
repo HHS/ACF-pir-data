@@ -1,8 +1,8 @@
-DROP PROCEDURE IF EXISTS aggregateView;
+DROP PROCEDURE IF EXISTS pir_data_test.aggregateView;
 
 DELIMITER //
 
-CREATE PROCEDURE aggregateView(
+CREATE PROCEDURE pir_data_test.aggregateView(
 	IN view_name VARCHAR(64), IN agg_level VARCHAR(64),
     IN question_id VARCHAR(64), IN kind VARCHAR(12)
 )
@@ -58,19 +58,20 @@ BEGIN
 	IF agg_level = "national" THEN
 		SET @agg_query = CONCAT(
 			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS ',
-			'SELECT min(resp.`year`) as year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+			'SELECT resp.year, sum(answer) as `sum`, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
-			@question_query
+			@question_query,
+            'GROUP BY resp.year'
         );
     ELSE
 		SET @agg_query = CONCAT(
 			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS ',
-			'SELECT ', agg_level, ', min(resp.`year`) as year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+			'SELECT ', agg_level, ', resp.year, sum(answer) as `sum`, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			@question_query,
 			'WHERE ', where_cond, ' ',
-			'GROUP BY ', agg_level,
-			' ORDER BY ', agg_level
+			'GROUP BY resp.year, ', agg_level,
+			' ORDER BY resp.year, ', agg_level
 		);
 	END IF;
     

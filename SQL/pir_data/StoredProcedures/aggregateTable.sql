@@ -1,8 +1,8 @@
-DROP PROCEDURE IF EXISTS aggregateTable;
+DROP PROCEDURE IF EXISTS pir_data_test.aggregateTable;
 
 DELIMITER //
 
-CREATE PROCEDURE aggregateTable(
+CREATE PROCEDURE pir_data_test.aggregateTable(
 	IN agg_level VARCHAR(64)
 )
 BEGIN
@@ -35,7 +35,7 @@ BEGIN
 	IF agg_level = "national" THEN
 		SET @agg_query = CONCAT(
 			'CREATE TABLE ', tname, ' AS '
-			'SELECT `year`, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+			'SELECT `year`, question_id, sum(answer) as `sum`, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			'FROM response ',
             'GROUP BY `year`, question_id'
@@ -43,7 +43,7 @@ BEGIN
     ELSE
 		SET @agg_query = CONCAT(
 			'CREATE TABLE ', tname, ' AS '
-			'SELECT ', agg_level, ', resp.year, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+			'SELECT ', agg_level, ', resp.year, question_id, sum(answer) as `sum`, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			'FROM response resp ',
 			'LEFT JOIN program prg ',
