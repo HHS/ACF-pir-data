@@ -20,7 +20,7 @@ mergePirReference <- function(workbooks, log_file) {
       # Source the error functions
       rm(list = ls(pattern = "Error"))
       error_funs <- list.files(
-        here("ingestion", "utils"), 
+        here("pir_ingestion", "utils"), 
         pattern = "Error.R$",
         full.names = T
       )
@@ -86,10 +86,20 @@ mergePirReference <- function(workbooks, log_file) {
         select(-c(merge)) %>%
         assertr::assert(not_na, question_name, question_number)
       
-      # Remove unmatched questions
+      # Add section where missing
+      question <- question %>%
+        left_join(
+          response %>%
+            distinct(question_number, question_name, section_response),
+          by = c("question_number", "question_name"),
+          relationship = "one-to-one"
+        ) 
+      
+      # Highlight unmatched questions
       unmatched_question <- question %>%
         filter(!is.na(unmatched))  %>%
         rename(reason = unmatched)
+      
 
       for (table in c("response", "question", "unmatched_question")) {
         attr(workbook, table) <- get(table)

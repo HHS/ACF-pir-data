@@ -16,7 +16,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
     workbooks,
     function(workbook) {
       
-      source(here("ingestion", "utils", "addPirVars.R"), local = T)
+      source(here("pir_ingestion", "utils", "addPirVars.R"), local = T)
       
       func_env <- environment()
       
@@ -69,7 +69,11 @@ cleanPirData <- function(workbooks, schema, log_file) {
             df <- df_list[[table]] %>%
               assertr::assert(not_na, question_number, question_name) %>%
               mutate(
-                section = gsub("^(\\w).*", "\\1", question_number, perl = T)
+                section = case_when(
+                  grepl("^(\\w)\\..*", question_number) ~ gsub("^(\\w)\\..*", "\\1", question_number, perl = T),
+                  !is.na(section_response) ~ section_response,
+                  TRUE ~ NA
+                )
               ) %>%
               rename(
                 question_type = type
@@ -110,7 +114,8 @@ cleanPirData <- function(workbooks, schema, log_file) {
               mutate(
                 year = yr,
                 uid_hash = paste0(grant_number, program_number, program_type),
-                uid = hashVector(uid_hash)
+                uid = hashVector(uid_hash),
+                region = as.numeric(gsub("\\D+", "", region, perl = TRUE))
               ) %>%
               pipeExpr(
                 assign(

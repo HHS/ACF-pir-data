@@ -55,21 +55,18 @@ walk(
 )
 
 # Begin logging
-log_file <- startLog(
-  file.path(logdir, "automated_pipeline_logs", "pir_ingestion_logs"),
-  "pir_ingestion_logs"
-)
+log_file <- startLog("pir_ingestion_logs")
 
 # Establish DB connection ----
-connections <- connectDB("pir_data_test", dbusername, dbpassword, log_file)
+connections <- connectDB("pir_data_test2", dbusername, dbpassword, log_file)
 conn <- connections$pir_data_test
 tables <- c("response", "question", "program", "unmatched_question")
 schema <- getSchemas(conn, tables)
 
 # Get file(s) ----
 args <- commandArgs(TRUE)
-wb_list <- args
-
+# wb_list <- args
+wb_list <- "C:\\OHS-Project-1\\ACF-pir-data\\New folder\\PIR_data_repository\\Raw\\base_test_2009.xlsx"
 # Ingestion ----
 
 # Extract all sheets from PIR workbooks

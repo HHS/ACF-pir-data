@@ -70,7 +70,8 @@ loadPirSection <- function(workbook, sheet) {
       by = c("question_number"),
       relationship = "many-to-one"
     ) %>%
-    assert(not_na, question_name)
+    assert(not_na, question_name) %>%
+    mutate(section_response = gsub("^Section (\\w)", "\\1", sheet, perl = TRUE))
   
   return(df)
 }
