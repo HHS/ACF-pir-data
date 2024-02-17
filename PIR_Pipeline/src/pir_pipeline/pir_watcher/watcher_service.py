@@ -36,7 +36,7 @@ class AppServerSvc(win32serviceutil.ServiceFramework):
         config_json = os.path.join(current_dir, "..", "config.json")
         config = open(config_json)
         config = json.loads(config.read())
-        watcher.FolderWatcher(config)
+        watcher.FolderWatcher(config)            
     
 if __name__ == '__main__':
     win32serviceutil.HandleCommandLine(AppServerSvc)

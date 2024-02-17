@@ -1,9 +1,7 @@
-import os, time, datetime, subprocess, mysql.connector, shutil
-
 def main(file_info, config):
-    
+    import os, time, datetime, subprocess, mysql.connector, shutil
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
+
     db_config = {
         'host' : config["dbhost"],
         'port' : config["dbport"],
@@ -15,7 +13,7 @@ def main(file_info, config):
     script_path = os.path.join(current_dir, "..", "pir_ingestion", "ingest_data.R")
     r_path = config["R_Path"]
     bat_path = config["Listener_bats"]
-    
+
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(buffered=True)
