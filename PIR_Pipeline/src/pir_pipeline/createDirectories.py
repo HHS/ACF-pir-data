@@ -72,6 +72,7 @@ def main():
 
         with open(config_json, "w") as f:
             json.dump(config, f)
+        root.destroy()
 
     finish_button = ttk.Button(configure, text="Finish", command=finish_clicked)
     finish_button.pack(fill='x', expand=True, pady=10)
