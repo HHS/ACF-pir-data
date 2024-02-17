@@ -24,11 +24,14 @@ dependencies = [
 Homepage = "https://github.com/HHS/ACF-pir-data"
 
 [project.scripts]
-pir-create-directories = "pir_pipeline:createDirectories.main"
-pir-config-db = "pir_pipeline:configureDB.main"
 pir-ingest = "pir_pipeline:ingestData.main"
 pir-start-watcher = "pir_pipeline:startWatcher.main"
 pir-link = "pir_pipeline:linkQuestions.main"
+
+[project.gui-scripts]
+pir-setup = "pir_pipeline:pirSetup.main"
+pir-create-directories = "pir_pipeline:createDirectories.main"
+pir-config-db = "pir_pipeline:configureDB.main"
 
 [tools.setuptools]
 include-package-data = true
