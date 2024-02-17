@@ -25,7 +25,6 @@ Homepage = "https://github.com/HHS/ACF-pir-data"
 
 [project.scripts]
 pir-ingest = "pir_pipeline:ingestData.main"
-pir-start-watcher = "pir_pipeline:startWatcher.main"
 pir-link = "pir_pipeline:linkQuestions.main"
 
 [project.gui-scripts]
