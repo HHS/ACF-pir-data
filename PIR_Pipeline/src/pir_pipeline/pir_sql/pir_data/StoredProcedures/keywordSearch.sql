@@ -1,3 +1,4 @@
+DROP PROCEDURE IF EXISTS pir_data.keywordSearch;
 DELIMITER //
 
 CREATE PROCEDURE pir_data.keywordSearch(

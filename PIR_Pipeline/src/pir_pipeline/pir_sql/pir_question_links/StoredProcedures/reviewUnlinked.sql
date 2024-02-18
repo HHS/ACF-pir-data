@@ -1,7 +1,7 @@
-DROP PROCEDURE IF EXISTS reviewUnlinked;
+DROP PROCEDURE IF EXISTS pir_question_links.reviewUnlinked;
 DELIMITER //
 
-CREATE PROCEDURE reviewUnlinked(IN qid VARCHAR(255))
+CREATE PROCEDURE pir_question_links.reviewUnlinked(IN qid VARCHAR(255))
 BEGIN
 
 SELECT a.*, 
