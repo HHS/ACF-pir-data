@@ -27,12 +27,12 @@ def main():
     # Interface
     def browseDir():
         path = askdirectory()
-        dir_entry.delete(1, tk.END)
+        dir_entry.delete(0, tk.END)
         dir_entry.insert(0, path)
     
     def browseFile():
         path = askopenfilename()
-        r_entry.delete(1, tk.END)
+        r_entry.delete(0, tk.END)
         r_entry.insert(0, path)
     
     dir_label = ttk.Label(configure, text='PIR Root Directory:')
