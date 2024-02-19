@@ -40,7 +40,7 @@ def main(file_info, config):
     schedule_command = 'schtasks /CREATE /TN {} /TR "{}" /SC ONCE /SD {} /ST 01:00 /RU System'
     
     with open(command_path, "w") as f:
-        change_directories = "cd {}\n".format(script_dir)
+        change_directories = "cd {}\n".format(os.path.join(current_dir, ".."))
         command = r_path + " " + script_path + " " + paths + " >> " + ingestion_log + " 2>&1"
         f.write(change_directories)
         f.write(command)

@@ -8,14 +8,13 @@
 # Setup ----
 
 rm(list = ls())
-
+.libPaths()
 # Packages
 pkgs <- c(
-  "tidyr", "dplyr", "roxygen2", "assertr", 
+  "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
   "furrr", "readxl", "digest", "jsonlite"
 )
-
 
 invisible(
   lapply(
@@ -131,6 +130,18 @@ tryCatch(
   {
     insertPirData(conn, wb_appended, schema, log_file)
     logMessage("Successfully inserted data into DB.", log_file)
+  },
+  error = function(cnd) {
+    logMessage("Failed to insert data into DB.", log_file)
+    errorMessage(cnd, log_file)
+  }
+)
+
+# Move Files
+tryCatch(
+  {
+    moveFiles(wb_appended, config$Processed)
+    logMessage("Moved files to processed directory.", log_file)
   },
   error = function(cnd) {
     logMessage("Failed to insert data into DB.", log_file)
