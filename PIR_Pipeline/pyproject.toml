@@ -10,7 +10,7 @@ authors = [
 ]
 description = "Periodically poll folder for xlsx and xls files to schedule for PIR ingestion."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: Microsoft :: Windows",
