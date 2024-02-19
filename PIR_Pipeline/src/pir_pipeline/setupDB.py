@@ -8,8 +8,8 @@ def main():
     db_config = {
         'host' : config["dbhost"],
         'port' : config["dbport"],
-        'user' : config['dbusername'],
-        'password' : config['dbpassword']
+        'user' : config["dbusername"],
+        'password' : config["dbpassword"]
     }
 
     # Get all sql files
@@ -28,8 +28,10 @@ def main():
             conn.close()
             
     files = [file for file in glob.glob(sql_dir + "/**/**/*") if os.path.isfile(file) and not file in schemas]
-
+        
+    retries = 0
     while files:
+
         try:
             with open(files[0], 'r') as f:
                 conn = mysql.connector.connect(**db_config)
@@ -37,8 +39,7 @@ def main():
                 content = f.read()
                 delimiters = re.compile('DELIMITER (//|;)')
                 content = re.sub(delimiters, "", content)
-                content = re.sub("//", ";", content)
-                print(content)
+                content = re.sub("//", "", content)
                 cursor.execute(content)
                 cursor.close()
                 conn.close()
@@ -46,8 +47,9 @@ def main():
         except Exception as e:
             print("command '{}' returned with error (code {}): {}\n".format(e.msg, e.errno, e.errno))
             files.append(files.pop(0))
+            retries += 1
+            if retries > 10:
+                exit()
 
     cursor.close()
     conn.close()
-    
-main()
