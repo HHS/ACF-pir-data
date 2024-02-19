@@ -16,7 +16,7 @@ moveFiles <- function(path_list, destination) {
       )
       destination <- file.path(destination, fname)
       file.copy(path, destination)
-      # file.remove(path)
+      file.remove(path)
     }
   )
 }
