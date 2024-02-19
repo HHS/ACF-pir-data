@@ -8,7 +8,7 @@
 # Setup ----
 
 rm(list = ls())
-.libPaths()
+
 # Packages
 pkgs <- c(
   "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
