@@ -1,6 +1,0 @@
-log_file <- startLog()
-logMessage("test", log_file)
-logMessage("test", log_file)
-e <- simpleError("A simple error")
-writeLog(log_file)
-errorMessage(e, log_file)
