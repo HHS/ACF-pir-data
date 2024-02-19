@@ -28,7 +28,7 @@ def main():
             conn.close()
             
     files = [file for file in glob.glob(sql_dir + "/**/**/*") if os.path.isfile(file) and not file in schemas]
-        
+
     retries = 0
     while files:
 

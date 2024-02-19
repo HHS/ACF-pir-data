@@ -1,13 +1,3 @@
-DROP TABLE IF EXISTS pir_question_links.proposed_link;
-
-CREATE TABLE pir_question_links.proposed_link AS
-SELECT 
-	question_id,
-    `year`,
-    combineArray(JSON_KEYS(proposed_link), addQuestionID(JSON_EXTRACT(proposed_link, "$.*"), question_id, 'question_id'), 'proposed_id') as proposed_link
-FROM pir_question_links.unlinked
-;
-
 CREATE OR REPLACE VIEW pir_question_links.unlinked_v AS 
 SELECT b.*, a.`year`, c.question_name, c.question_text, c.question_number, c.section
 FROM pir_question_links.proposed_link a
