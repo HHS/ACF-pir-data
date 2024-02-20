@@ -47,7 +47,7 @@ if __name__ == "__main__":
     
     # Start monitoring the folder
     FolderWatcher(config)
-elif __name__ == "pir_pipeline.pir_watcher":
+elif __name__.find("pir_pipeline.pir_watcher") + 1:
     from . import listener
 else:
     import listener

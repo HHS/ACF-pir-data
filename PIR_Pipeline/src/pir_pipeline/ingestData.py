@@ -9,4 +9,6 @@ def main():
     script_path = os.path.join(script_dir, "ingest_data.R")
     
     files = glob.glob(config["Raw"] + "/*")
-    subprocess.call([config["R_Path"], script_path, *files], cwd = current_dir)
+    from .pir_watcher import watcher
+    watcher.FolderWatcher(config)
+    # subprocess.call([config["R_Path"], script_path, *files], cwd = current_dir)
