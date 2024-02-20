@@ -12,13 +12,14 @@ import subprocess
 import mysql.connector
 
 class FolderWatcher():
-    def __init__(self, config):
+    def __init__(self, config, schedule_command):
         super().__init__()
         self.config = config
+        self.schedule_command = schedule_command
         self.start_watching(self.config['Raw'])
             
     def alert_listener(self):
-        listener.main(self.file_info, self.config)
+        listener.main(self.file_info, self.config, self.schedule_command)
 
     def start_watching(self, folder_path):
         files = os.listdir(folder_path)
@@ -44,9 +45,10 @@ if __name__ == "__main__":
     config_json = os.path.join(current_dir, "..", "config.json")
     config = open(config_json)
     config = json.loads(config.read())
+    schedule_command = 'schtasks /CREATE /TN {} /TR "{}" /SC ONCE /SD {} /ST 01:00 /RU System'
     
     # Start monitoring the folder
-    FolderWatcher(config)
+    FolderWatcher(config, schedule_command)
 elif __name__.find("pir_pipeline.pir_watcher") + 1:
     from . import listener
 else:

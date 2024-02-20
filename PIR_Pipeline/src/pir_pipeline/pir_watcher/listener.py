@@ -1,4 +1,4 @@
-def main(file_info, config):
+def main(file_info, config, schedule_command):
     import os, time, datetime, subprocess, mysql.connector, shutil
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,7 +19,7 @@ def main(file_info, config):
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor(buffered=True)
     except Exception as e:
-        print("command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output))
+        print([e._full_msg, e.msg, e.errno])
     
     to_ingest = {}
 
@@ -37,7 +37,6 @@ def main(file_info, config):
     paths = [to_ingest[key]['Path'] for key in to_ingest.keys()]
     paths = ' '.join(paths)
     ingestion_log = os.path.join(log_path, "ingestion_log_{}.log".format(current_task_time))
-    schedule_command = 'schtasks /CREATE /TN {} /TR "{}" /SC ONCE /SD {} /ST 01:00 /RU System'
     
     with open(command_path, "w") as f:
         change_directories = "cd {}\n".format(os.path.join(current_dir, ".."))
