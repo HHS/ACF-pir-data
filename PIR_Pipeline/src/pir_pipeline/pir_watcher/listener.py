@@ -40,7 +40,7 @@ def main(file_info, config, schedule_command):
     
     with open(command_path, "w") as f:
         change_directories = "cd {}\n".format(os.path.join(current_dir, ".."))
-        command = r_path + " " + script_path + " " + paths + " >> " + ingestion_log + " 2>&1"
+        command = '"' + r_path + '"' + " " + script_path + " " + paths + " >> " + ingestion_log + " 2>&1"
         f.write(change_directories)
         f.write(command)
     
@@ -50,7 +50,7 @@ def main(file_info, config, schedule_command):
     )
     
     query = """
-        REPLACE INTO pir_listener_logs
+        REPLACE INTO pir_listener_logs 
         (run, timestamp, message)
         VALUES
         ('{}', '{}', '{}')
