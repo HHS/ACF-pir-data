@@ -1,6 +1,7 @@
 # PIR Pipeline
 
 ## Installation
+    - python -m venv venv (create virtual environment)
     - pip install <path to .whl>
 ### Configuration
     - pir-setup
