@@ -19,7 +19,7 @@
 5. The configuration file will now be generated and the database will be populated with relevant schemas, views, and stored procedures.
 
 ### R Package Installation
-- pir-install-r-packages (currently not working)
+- pir-r-packages (currently not working)
 ## Data Ingestion
 ### Ingesting from the Command Line
 - pir-ingest

@@ -7,7 +7,8 @@ if (!requireNamespace("renv", quietly = TRUE)) {
         dir.create(library_path, recursive = TRUE)
         .libPaths(c(.libPaths(), library_path))
     }
-    install.packages("renv", lib = library_path, prompt = FALSE)
+    install.packages("renv", lib = library_path, repos = "https://cloud.r-project.org/", prompt = FALSE)
+    library(renv, lib = library_path)
 }
 
 renv::restore()

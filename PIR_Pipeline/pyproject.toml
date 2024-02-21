@@ -8,7 +8,7 @@ version = "1.0.0"
 authors = [
     { name = "Arch Systems Inc."}
 ]
-description = "Periodically poll folder for xlsx and xls files to schedule for PIR ingestion."
+description = "Program Information Report ingestion and linking infrastructure."
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -26,7 +26,7 @@ Homepage = "https://github.com/HHS/ACF-pir-data"
 [project.scripts]
 pir-ingest = "pir_pipeline:ingestData.main"
 pir-link = "pir_pipeline:linkQuestions.main"
-pir-install-r-packages = "pir_pipeline:installPackages.main"
+pir-r-packages = "pir_pipeline:installPackages.main"
 
 [project.gui-scripts]
 pir-setup = "pir_pipeline:pirSetup.main"
