@@ -10,7 +10,7 @@
 rm(list = ls())
 
 pkgs <- c(
-  "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
+  "tidyr", "dplyr", "roxygen2", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
   "furrr", "readxl", "digest", "jsonlite"
 )
@@ -50,18 +50,18 @@ log_file <- startLog("pir_question_linkage_logs")
 
 # Establish DB Connections
 connections <- connectDB(
-  list("pir_data_test", "pir_question_links"), 
+  list("pir_data", "pir_question_links"), 
   dbusername, 
   dbpassword, 
   log_file
 )
-conn <- connections$pir_data_test
+conn <- connections$pir_data
 link_conn <- connections$pir_question_links
 
 # Get tables and schemas
 schemas <- getSchemas(
   list(conn, link_conn), 
-  list("pir_data_test", "pir_question_links")
+  list("pir_data", "pir_question_links")
 )
 
 # Extract years from question table

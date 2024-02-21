@@ -10,7 +10,7 @@
 rm(list = ls())
 
 pkgs <- c(
-  "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
+  "tidyr", "dplyr", "roxygen2", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
   "furrr", "readxl", "digest", "jsonlite"
 )

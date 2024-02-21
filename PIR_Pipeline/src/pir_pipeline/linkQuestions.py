@@ -8,4 +8,4 @@ def main():
     script_dir = os.path.join(current_dir, "pir_question_links")
     script_path = os.path.join(script_dir, "linkQuestions.R")
     
-    subprocess.call([config["R_Path"], script_path], cwd = script_dir)
+    subprocess.call([config["R_Path"], script_path], cwd = current_dir)
