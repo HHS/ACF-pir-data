@@ -62,8 +62,7 @@ def main():
         
         for dir in ["mySQL_Logs", "mySQL_General_Logs", "mySQL_Binary_Logs", "mySQL_Query_Logs", "Installation_Logs",
                     "Automated_Pipeline_Logs", "Listener_Logs", "PIR_data_repository", "Listener_bats",
-                    "PIR_data_repository\\Raw", "PIR_data_repository\\Scheduled", 
-                    "PIR_data_repository\\Processed", "PIR_data_repository\\Unprocessed"]:
+                    "PIR_data_repository\\Raw", "PIR_data_repository\\Processed", "PIR_data_repository\\Unprocessed"]:
             path = os.path.join(dir_entry.get(), dir)
             os.makedirs(path)
             config[dir.replace("PIR_data_repository\\", "")] = path
