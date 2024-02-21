@@ -35,12 +35,13 @@ def main(file_info, config, schedule_command):
     bat_name = current_taskname + ".bat"
     command_path =  os.path.join(bat_path, bat_name)
     paths = [to_ingest[key]['Path'] for key in to_ingest.keys()]
+    paths = ['"{}"'.format(p) for p in paths]
     paths = ' '.join(paths)
     ingestion_log = os.path.join(log_path, "ingestion_log_{}.log".format(current_task_time))
     
     with open(command_path, "w") as f:
         change_directories = "cd {}\n".format(os.path.join(current_dir, ".."))
-        command = '"' + r_path + '"' + " " + script_path + " " + paths + " >> " + ingestion_log + " 2>&1"
+        command = '"{}"'.format(r_path) + ' ' + '"{}"'.format(script_path) + ' ' + paths + ' >> ' + '"{}"'.format(ingestion_log) + ' 2>&1'
         f.write(change_directories)
         f.write(command)
     

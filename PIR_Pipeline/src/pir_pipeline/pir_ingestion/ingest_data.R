@@ -9,8 +9,16 @@
 
 rm(list = ls())
 
+pkgs <- c(
+  "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
+  "purrr", "RMariaDB", "here", "janitor",
+  "furrr", "readxl", "digest", "jsonlite"
+)
+
+invisible(sapply(pkgs, library, character.only = TRUE))
+
 # Configuration (paths, db_name, etc.)
-config <- jsonlite::fromJSON(here("config.json"))
+config <- jsonlite::fromJSON(here::here("config.json"))
 dbusername <- config$dbusername
 dbpassword <- config$dbpassword
 logdir <- config$Ingestion_Logs
@@ -20,7 +28,7 @@ operating_system <- Sys.info()['sysname']
 if (operating_system == "Windows") {
   processors <- as.numeric(shell("echo %NUMBER_OF_PROCESSORS%", intern = T))/2
 }
-future::plan(multisession, workers = processors)
+future::plan(future::multisession, workers = processors)
 options(future.globals.maxSize = 2000*1024^2)
 
 # Functions ----

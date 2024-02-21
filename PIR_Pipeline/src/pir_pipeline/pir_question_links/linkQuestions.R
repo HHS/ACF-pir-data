@@ -9,6 +9,14 @@
 
 rm(list = ls())
 
+pkgs <- c(
+  "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
+  "purrr", "RMariaDB", "here", "janitor",
+  "furrr", "readxl", "digest", "jsonlite"
+)
+
+invisible(sapply(pkgs, library, character.only = TRUE))
+
 # Configuration (paths, db_name, etc.)
 config <- jsonlite::fromJSON(here("config.json"))
 dbusername <- config$dbusername
