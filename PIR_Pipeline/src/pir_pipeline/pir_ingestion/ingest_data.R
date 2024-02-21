@@ -9,25 +9,6 @@
 
 rm(list = ls())
 
-# Packages
-pkgs <- c(
-  "renv", "tidyr", "dplyr", "roxygen2", "assertr", 
-  "purrr", "RMariaDB", "here", "janitor",
-  "furrr", "readxl", "digest", "jsonlite"
-)
-
-invisible(
-  lapply(
-    pkgs,
-    function(pkg) {
-      if (!requireNamespace(pkg, quietly = TRUE)) {
-        renv::install(pkg, prompt = FALSE)
-      }
-      library(pkg, character.only = T)
-    }
-  )
-)
-
 # Configuration (paths, db_name, etc.)
 config <- jsonlite::fromJSON(here("config.json"))
 dbusername <- config$dbusername
@@ -141,15 +122,16 @@ tryCatch(
 tryCatch(
   {
     moveFiles(wb_appended, config$Processed)
-    logMessage("Moved files to processed directory.", log_file)
+    logMessage("Successfully moved files to processed directory.", log_file)
   },
   error = function(cnd) {
-    logMessage("Failed to insert data into DB.", log_file)
+    logMessage("Failed to move files.", log_file)
     errorMessage(cnd, log_file)
   }
 )
 
 # Write log and connect to DB
+logMessage("Successfully ingested PIR data", log_file)
 writeLog(log_file)
 dbDisconnect(conn)
 gc()

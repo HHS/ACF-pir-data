@@ -9,26 +9,6 @@
 
 rm(list = ls())
 
-# Packages
-pkgs <- c(
-  "tidyr", "dplyr", "roxygen2", "assertr", 
-  "purrr", "RMariaDB", "here", "janitor",
-  "furrr", "readxl", "fuzzyjoin", "stringdist"
-)
-
-
-invisible(
-  lapply(
-    pkgs,
-    function(pkg) {
-      if (!requireNamespace(pkg, quietly = TRUE)) {
-        renv::install(pkg, prompt = FALSE)
-      }
-      library(pkg, character.only = T)
-    }
-  )
-)
-
 # Configuration (paths, db_name, etc.)
 config <- jsonlite::fromJSON(here("config.json"))
 dbusername <- config$dbusername
@@ -236,5 +216,6 @@ tryCatch(
   }
 )
 
+logMessage("Successfully linked questions", log_file)
 writeLog(log_file)
 map(connections, dbDisconnect)
