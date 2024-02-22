@@ -22,5 +22,3 @@ def main():
             except:
                 traceback = None
         print([e.cmd, e.output, e.returncode])
-    
-main()
