@@ -6,6 +6,7 @@ def main():
         description="Schedule PIR data for ingestion, or ingest data in Raw folder."
     )
     parser.add_argument('--now', action='store_true')
+    parser.add_argument('--files', nargs='+')
     
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_json = os.path.join(current_dir, "config.json")
@@ -15,8 +16,12 @@ def main():
     script_path = os.path.join(script_dir, "ingest_data.R")
     schedule_command = 'schtasks /CREATE /TN {} /TR "{}" /SC ONCE /SD {} /ST 01:00'
     
-    files = glob.glob(config["Raw"] + "/*")
     args = parser.parse_args()
+    
+    if args.files:
+        files = args.files
+    else:
+        files = glob.glob(config["Raw"] + "/*")
     
     if args.now:
         subprocess.call([config["R_Path"], script_path, *files], cwd = current_dir)
