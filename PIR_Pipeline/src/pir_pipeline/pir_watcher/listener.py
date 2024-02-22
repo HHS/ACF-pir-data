@@ -42,10 +42,13 @@ def main(file_info, config, schedule_command):
     with open(command_path, "w") as f:
         change_directories = "cd {}\n".format(os.path.join(current_dir, ".."))
         command = '"{}"'.format(r_path) + ' ' + '"{}"'.format(script_path) + ' ' + paths + ' >> ' + '"{}"'.format(ingestion_log) + ' 2>&1'
+        delete_command = "schtasks /DELETE /TN {} /F".format(current_taskname)
         f.write(change_directories)
         f.write(command)
+        f.write("\n")
+        f.write(delete_command)
     
-    target_date = datetime.date.today() # + datetime.timedelta(days = 1)
+    target_date = datetime.date.today() + datetime.timedelta(days = 1)
     schedule_command = schedule_command.format(
             current_taskname, command_path, target_date.strftime("%m/%d/%Y")
     )
@@ -59,7 +62,7 @@ def main(file_info, config, schedule_command):
     
     try:
         subprocess.check_output(schedule_command,stderr=subprocess.STDOUT)
-        message = "Ingestion scheduled at 01:00am today for files: {}\n".format(paths)
+        message = "Ingestion scheduled at 01:00am tomorrow for files: {}\n".format(paths)
         query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
         cursor.execute(query)
         conn.commit()
