@@ -40,13 +40,15 @@ def main(file_info, config, schedule_command):
     ingestion_log = os.path.join(log_path, "ingestion_log_{}.log".format(current_task_time))
     
     with open(command_path, "w") as f:
-        change_directories = "cd {}\n".format(os.path.join(current_dir, ".."))
+        change_directories = 'cd "{}"\n'.format(os.path.join(current_dir, ".."))
         command = '"{}"'.format(r_path) + ' ' + '"{}"'.format(script_path) + ' ' + paths + ' >> ' + '"{}"'.format(ingestion_log) + ' 2>&1'
-        delete_command = "schtasks /DELETE /TN {} /F".format(current_taskname)
+        delete_scheduled = "schtasks /DELETE /TN {} /F \n".format(current_taskname)
+        delete_self = '(goto) 2>nul & del "%~f0"'
         f.write(change_directories)
         f.write(command)
         f.write("\n")
-        f.write(delete_command)
+        f.write(delete_scheduled)
+        f.write(delete_self)
     
     target_date = datetime.date.today() + datetime.timedelta(days = 1)
     schedule_command = schedule_command.format(
