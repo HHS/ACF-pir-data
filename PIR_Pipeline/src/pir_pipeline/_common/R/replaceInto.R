@@ -18,6 +18,7 @@
 replaceInto <- function(conn, df, table, log_file = NULL) {
   
   DBI::dbExecute(conn, "SET foreign_key_checks = 0")
+  DBI::dbExecute(conn, "SET autocommit = 0")
   
   query <- paste(
     "REPLACE INTO",
@@ -41,4 +42,5 @@ replaceInto <- function(conn, df, table, log_file = NULL) {
   }
   
   DBI::dbExecute(conn, "SET foreign_key_checks = 1")
+  DBI::dbExecute(conn, "COMMIT")
 }
