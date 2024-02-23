@@ -16,7 +16,7 @@ output$intermittent_link <- function() {
   year_range <- dbGetQuery(
     link_conn,
     paste(
-      "SELECT DISTINCT question_id, uqid, year AS year_range",
+      "SELECT DISTINCT question_id, uqid, year as year_range",
       "FROM linked",
       "WHERE uqid IN (", 
         paste0("'", uqids$uqid, "'", collapse = ","),
@@ -27,37 +27,39 @@ output$intermittent_link <- function() {
     group_by(uqid) %>%
     summarize(year_range = paste0(year_range, collapse = ", ")) %>%
     ungroup()
-  
+
   intermittent <- intermittent %>%
     mutate(
       id = row_number(),
       across(everything(), as.character)
-    ) %>%
-    select(id, ends_with(c("proposed", "base"))) %>%
-    pivot_longer(
-      ends_with(c("base", "proposed")),
-      names_to = c(".value", "name"),
-      names_pattern = "(\\w+)_(\\w+)$"
-    ) %>%
-    left_join(
-      uqids,
-      by = "question_id"
-    ) %>%
-    left_join(
-      year_range,
-      by = "uqid"
-    ) %>%
-    pivot_longer(
-      -c(id, name),
-      names_to = "column"
-    ) %>%
-    pivot_wider(
-      names_from = c("id", "name"),
-      values_from = value,
-      names_glue = "{name}_{id}"
-    ) 
+  ) %>%
+  select(id, ends_with(c("proposed", "base"))) %>%
+  pivot_longer(
+    ends_with(c("base", "proposed")),
+    names_to = c(".value", "name"),
+    names_pattern = "(\\w+)_(\\w+)$"
+  ) %>%
+  left_join(
+    uqids,
+    by = "question_id"
+  ) %>%
+  left_join(
+    year_range,
+    by = "uqid"
+  ) %>%
+  pivot_longer(
+    -c(id, name),
+    names_to = "column"
+  ) %>%
+  pivot_wider(
+    names_from = c("id", "name"),
+    values_from = value,
+    names_glue = "{name}_{id}"
+  )
   
+
   intermittent %>%
+    filter(column != 'year') %>% 
     kableExtra::kable() %>%
     kableExtra::kable_styling("striped")
 }
@@ -80,12 +82,18 @@ observeEvent(
   input$intermittent_create_link,
   {
     genIntermittentLink(input$intermittent_uqid, input$intermittent_proposed_link, conn, link_conn)
+    choices <- dbGetQuery(
+      link_conn,
+      "
+      SELECT distinct uqid
+      FROM imperfect_link_v
+      WHERE intermittent_link = 1
+      "
+    )$uqid
     updateSelectInput(
       session,
       "intermittent_uqid",
-      choices = dash_meta$intermittent_uqid_choices,
-      selected = "None"
+      choices = choices
     )
-    js$refresh_page()
   }
 )

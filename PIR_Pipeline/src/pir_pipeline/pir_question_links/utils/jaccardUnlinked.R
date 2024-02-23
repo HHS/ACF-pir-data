@@ -20,7 +20,7 @@ jaccardUnlinked <- function(conn, id) {
     bind_rows(unlinked) %>%
     filter(year != unique(unlinked$year)) %>%
     mutate(
-      across(starts_with("question"), clean_strings)
+      across(c(starts_with("question")), fedmatch::clean_strings)
     ) %>%
     rename(question_id_proposed = question_id) %>%
     distinct(question_id_proposed, .keep_all = T)

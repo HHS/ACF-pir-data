@@ -54,12 +54,25 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
   }
   
   if (count_link > 0 && count_base > 0) {
-  
-    update_query <- paste0(
-      "UPDATE linked ",
-      "SET uqid = '", new_id, "' ",
-      "WHERE question_id = '", link_id, "'"
-    )
+    
+    if (count_link > count_base) {
+      
+      update_query <- paste0(
+        "UPDATE linked ",
+        "SET uqid = '", new_id, "' ",
+        "WHERE uqid = '", base_id, "'"
+      )
+      
+    } else {
+      
+      update_query <- paste0(
+        "UPDATE linked ",
+        "SET uqid = '", new_id, "' ",
+        "WHERE question_id = '", link_id, "'"
+      )
+    
+    }
+
     DBI::dbExecute(link_conn, update_query)
   
   
@@ -75,7 +88,7 @@ genIntermittentLink <- function(base_id, link_id, data_conn, link_conn) {
     ) %>%
       mutate(uqid = new_id) %>%
       select(all_of(link_vars))
-  
+
     replaceInto(link_conn, new_links, "linked")
     updateUnlinked(link_conn)
     
