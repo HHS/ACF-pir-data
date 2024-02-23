@@ -28,6 +28,7 @@ pir-ingest = "pir_pipeline:ingestData.main"
 pir-link = "pir_pipeline:linkQuestions.main"
 pir-r-packages = "pir_pipeline:installPackages.main"
 pir-dashboard = "pir_pipeline:startDashboard.main"
+pir-status = "pir_pipeline:pirStatus.main"
 
 [project.gui-scripts]
 pir-setup = "pir_pipeline:pirSetup.main"
