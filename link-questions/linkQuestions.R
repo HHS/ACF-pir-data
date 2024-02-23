@@ -62,7 +62,7 @@ log_file <- startLog(
 
 # Establish DB Connections
 connections <- connectDB(
-  list("pir_data_test", "question_links_test"), 
+  list("pir_data_test", "pir_question_links"), 
   dbusername, 
   dbpassword, 
   log_file
@@ -73,7 +73,7 @@ link_conn <- connections[[2]]
 # Get tables and schemas
 schemas <- getSchemas(
   list(conn, link_conn), 
-  list("pir_data_test", "question_links_test")
+  list("pir_data_test", "pir_question_links")
 )
 
 # Extract years from question table

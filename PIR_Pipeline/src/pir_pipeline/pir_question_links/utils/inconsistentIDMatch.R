@@ -5,7 +5,7 @@ inconsistentIDMatch <- function(conn, id) {
   linked <- DBI::dbGetQuery(
     conn,
     paste(
-      "SELECT DISTINCT uqid, question_id, question_name, question_text, question_number, category, section",
+      "SELECT DISTINCT uqid, cast(year as char) as year, question_id, question_name, question_text, question_number, category, section",
       "FROM linked"
     )
   )

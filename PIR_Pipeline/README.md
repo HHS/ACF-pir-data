@@ -119,6 +119,15 @@ A great feature of PIR data is that it is available longitudinally. A challenge 
 
 ## Dashboard
 
+### Question Link Overview tab
+
+The Question Link Overview tab provides a summary of three types of logs: Ingestion Logs, Listener Logs, and Question Linkage Logs. Additionally, it includes tables displaying counts of linked and unlinked questions, both for unique questions and all questions.
+
+
+### Search for Question by Keyword tab
+
+This tab facilitates the search for questions across multiple tables, including linked, unlinked, proposed, imperfect, and inconsistent question tables. Users can enter search criteria such as question name, text, number, category, or section to find specific questions. Upon performing a search, the system returns a table of questions matching the specified criteria, displaying relevant details such as the question's name, text, number, category, and section.
+
 ### Viewing the data
 
 ### Linking/Unlinking
