@@ -1,6 +1,7 @@
 recursive-include src/pir_pipeline/pir_sql *.sql
 recursive-include src/pir_pipeline/pir_ingestion *.R
 recursive-include src/pir_pipeline/pir_question_links *.R
+recursive-include src/pir_pipeline/pir_question_links *.RDS
 recursive-include src/pir_pipeline/_common *
 include src/pir_pipeline/renv.lock
 include src/pir_pipeline/renv/activate.R
