@@ -1,0 +1,26 @@
+inconsistentIDMatch <- function(conn, id) {
+  require(dplyr)
+  func_env <- environment()
+  
+  linked <- DBI::dbGetQuery(
+    conn,
+    paste(
+      "SELECT DISTINCT uqid, cast(year as char) as year, question_id, question_name, question_text, question_number, category, section",
+      "FROM linked"
+    )
+  )
+  
+  linked <- linked %>%
+    filter(uqid == id) %>%
+    select(-c(uqid)) %>%
+    mutate(row_num = row_number()) %>%
+    tidyr::pivot_longer(
+      -row_num
+    ) %>%
+    tidyr::pivot_wider(
+      names_from = "row_num",
+      names_glue = "Question {row_num}"
+    )
+  
+  return(linked)
+}
