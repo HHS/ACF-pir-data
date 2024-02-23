@@ -153,6 +153,5 @@ cleanPirData <- function(workbooks, schema, log_file) {
   )
   
   gc()
-  logMessage("Successfully cleaned PIR data.", log_file)
   return(workbooks)
 }

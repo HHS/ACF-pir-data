@@ -58,83 +58,11 @@ wb_list <- args
 # Ingestion ----
 
 # Extract all sheets from PIR workbooks
-tryCatch(
-  {
-    wb_appended <- extractPirSheets(wb_list, log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to extract PIR data sheets.", log_file)
-    errorMessage(cnd, log_file)
-  }
-)
-
-# Load all data
-tryCatch(
-  {
-    wb_appended <- loadPirData(wb_appended, log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to load PIR data.", log_file)
-    errorMessage(cnd, log_file)
-  }
-)
-
-# Append sections into response data
-tryCatch(
-  {
-    wb_appended <- appendPirSections(wb_appended, log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to append Section sheet(s).", log_file)
-    errorMessage(cnd, log_file)
-  }
-)
-
-# Merge reference sheet to section sheets
-tryCatch(
-  {
-    wb_appended <- mergePirReference(wb_appended, log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to merge Reference sheet(s).", log_file)
-    errorMessage(cnd, log_file)
-  }
-)
-
-# Final cleaning
-tryCatch(
-  {
-    wb_appended <- cleanPirData(wb_appended, schema, log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to clean PIR data.", log_file)
-    errorMessage(cnd, log_file)
-  }
-)
-
-# Write to DB ----
-
-# Write data
-tryCatch(
-  {
-    insertPirData(conn, wb_appended, schema, log_file)
-    logMessage("Successfully inserted data into DB.", log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to insert data into DB.", log_file)
-    errorMessage(cnd, log_file)
-  }
-)
-
-# Move Files
-tryCatch(
-  {
-    moveFiles(wb_appended, config$Processed)
-    logMessage("Successfully moved files to processed directory.", log_file)
-  },
-  error = function(cnd) {
-    logMessage("Failed to move files.", log_file)
-    errorMessage(cnd, log_file)
+map(
+  wb_list,
+  function(workbook) {
+    pirIngest(workbook)
+    gc()
   }
 )
 

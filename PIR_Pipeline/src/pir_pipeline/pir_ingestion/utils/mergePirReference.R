@@ -113,6 +113,5 @@ mergePirReference <- function(workbooks, log_file) {
   )
 
   gc()
-  logMessage("Successfully merged reference sheet(s).", log_file)
   return(workbooks)
 }
