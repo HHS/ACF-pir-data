@@ -2,7 +2,7 @@ pirIngest <- function(workbook) {
   
   tryCatch(
     {
-      wb_appended <- extractPirSheets(wb_list, log_file)
+      wb_appended <- extractPirSheets(workbook, log_file)
       logMessage(
         paste0("Successfully extracted PIR sheets from ", workbook, "."),
         log_file
