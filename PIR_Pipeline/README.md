@@ -15,11 +15,11 @@ It will be helpful to have a few pieces of information on hand:
 1. Path to RScript.exe
     - Setup will try to find this, but in the event that it cannot the user will need to provide it.
 2. Database credentials
-    - Setup will specifically request the username, password, host, and port for the target database. Use credentials for an account with administrator level privileges.
+    - Setup will specifically request the username, password, host, and port for the target server. Use credentials for an account with administrator level privileges.
 
 ## Package Installation
 
-1.  Clone the repository from GitHub [LINK]().
+1.  Clone the repository from [GitHub](https://github.com/HHS/ACF-pir-data).
 
 2.  Create a new virtual environment in which to install the package.
 
@@ -81,7 +81,8 @@ An example workflow might look like this:
     - `pir-ingest --now` to immediately ingest all files in the `PIR\PIR_data_repository\Raw` folder.
     - `pir-ingest --now --files <path-to-file-1>...<path-to-file-n>` to immediately ingest only the files listed.
 5. To verify that ingestion succeeded:
-    - Query pir_logs schema e.g.:
+    - `pir-status --ingestion`
+    - Query pir_logs schema directly e.g.:
         ```
         SELECT * 
         FROM pir_logs.pir_ingestion_logs 
@@ -99,7 +100,8 @@ A great feature of PIR data is that it is available longitudinally. A challenge 
 2. Activate the virtual environment `venv`.
 3. Type `pir-link`.
 4. To verify that questions successfully linked:
-    - Query pir_logs schema e.g.:
+    - `pir-status --link`
+    - Query pir_logs schema directly e.g.:
         ```
         SELECT * 
         FROM pir_logs.pir_question_linkage_logs 
@@ -109,16 +111,33 @@ A great feature of PIR data is that it is available longitudinally. A challenge 
         )
         ```
 
+## PIR Monitoring Dashboard
+
+The PIR package includes an R Shiny dashboard for reviewing logs, viewing data, and managing question links. To start the dashboard:
+
+1. Open the command prompt.
+2. Activate the virtual environment `venv`.
+3. Type `pir-dashboard` and press `enter`.
+4. A series of messages will print, culminating with a message that says *Listening on \<url>*. Navigate to this url in a browser to view the dashboard.
+
+To close the dashboard:
+1. Close the browser tab.
+2. In the command prompt, press `CTRL+C`.
+
+### Viewing the data
+
 ### Creating Manual Links in the Dashboard
+
+The algorithm does a good job of linking questions, but there are some cases a user might want to review manually. Specifically:
+
+1. Questions are linked within some sub-period of the full period available. For example if data were ingested for 2008-2023, but a specific question is only linked in 2008-2010.
+2. Questions are linked, but the question IDs vary over time.
+3. Questions are unlinked.
+
+The dashboard provides options for reviewing and rectifying these three scenarios. To manually create and delete links
 
 ## Database Management
 
 ### Existing views, tables, stored procedures, and functions
 
 ### Creating views, stored procedures, and functions
-
-## Dashboard
-
-### Viewing the data
-
-### Linking/Unlinking
