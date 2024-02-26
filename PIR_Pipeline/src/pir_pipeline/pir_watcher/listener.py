@@ -56,7 +56,7 @@ def main(file_info, config, schedule_command):
     )
     
     query = """
-        REPLACE INTO pir_logs.listener_logs 
+        REPLACE INTO pir_logs.pir_listener_logs 
         (run, timestamp, message)
         VALUES
         ('{}', '{}', '{}')
