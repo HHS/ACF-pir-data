@@ -1,5 +1,7 @@
 # PIR Pipeline
 
+This package is designed to streamline PIR survey data analysis. The pipeline accepts data in .xlsx or .xls formats and ingests it into a MySQL database. Questions can then be linked across years providing some longitudinal view of the data. The package includes an R shiny dashboard that allows for exploration and review of the data. Please note that this package is currently designed for single-user environments and is not compatible with cloud-based systems out of the box.
+
 ## Requirements
 
 - [Python](https://www.python.org/) 3.10 or greater
@@ -138,6 +140,52 @@ The dashboard provides options for reviewing and rectifying these three scenario
 
 ## Database Management
 
-### Existing views, tables, stored procedures, and functions
+### Schemas
 
-### Creating views, stored procedures, and functions
+Three schemas support the PIR pipeline.
+
+1. pir_data
+    - Description: This schema contains all of the data from the PIR exports. 
+    - Tables:
+        - response - Contains information present in "Section" sheets of PIR exports. Each program's (identified by `uid`) responses to the questions in the section are stored in the `answer` column. Questions are identified by `question_id` and the `year` column identifies the year a given response comes from.
+        - question - Contains all unique questions and meta-data about them such as the question name, question number, question text, etc.
+        - program - Contains all unique programs and meta-data about them such as the region and state in which they are located, grant number, program type, etc.
+    - Functions:
+        - aggregateWhereCondition - Concatenate's a series of column names with `AND` to create a syntactically correct where condition.
+    - Stored Procedures:
+        - aggregateTable - Create a table aggregated at the specified level.
+        - aggregateView - Create a view aggregated at the specified level.
+        - genDifference - Generate a new column based on a linear combination of two others.
+        - getProgramLevelData - Get program-level data from the response table.
+        - getQuestion - Get program-level data from the response table by question ID.
+        - keywordSearch - Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
+
+2. pir_logs
+    - Description: This schema contains all of the logs for the PIR pipeline.
+    - Tables:
+        - pir_ingestion_logs - Contains ingestion logs.
+        - pir_question_linkage_logs - Contains question linkage logs.
+        - pir_listener_logs - Contains logs for the listener/scheduled ingestions.
+        - pir_manual_question_link - Contains logs of manual question links. Executing pir-link may populate this schema due to ad-hoc links embedded in the linking process. In addition, any time a user creates or deletes a link in the Monitoring Dashboard, an entry will be made in this log.
+
+3. pir_question_links
+    - Description: This schema contains information regarding questions that have been linked across time.
+    - Tables:
+        - linked - Contains questions that have been linked across at least two years.
+        - new_questions - Contains questions that appear for the first time in any given year.
+        - proposed-link - Intermediary table for creation of unlinked view.
+        - unlinked - Contains questions that could not be linked across at least two years.
+    - Functions:
+        - addQuestionID - Add a field to a JSON array. Used to add question ID to the proposed_link JSON arrays.
+        - combineArray - Combine two JSON array columns and return the combined column.
+        - maxYearLinked - Return the maximum year in the linked table.
+        - minYearLinked - Return the minimum year in the linked table.
+    - Stored Procedures:
+        - keywordSearch - Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
+        - newQuestions - Create or update the new_questions table.
+        - reviewUnlinked - Return a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
+    - Views:
+        - inconsistent_question_id_v - A view displaying all questions that are linked, but `question_id` varies within `uqid`.
+        - imperfect_link_v - A view combining the inconsistent_question_id_v and intermittent_link_v views.
+        - intermittent_link_v - A view displaying all questions that are linked, but do not cover the full period of years available.
+        - unlinked_v - A view of the unlinked table where proposed_link has been unpacked.
