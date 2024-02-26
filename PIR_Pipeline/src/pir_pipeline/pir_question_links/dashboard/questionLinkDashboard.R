@@ -29,8 +29,7 @@ ui <- fluidPage(
   tabsetPanel(
     home,
     keyword_search,
-    question_review,
-    view_search
+    question_review
   )
 )
 
