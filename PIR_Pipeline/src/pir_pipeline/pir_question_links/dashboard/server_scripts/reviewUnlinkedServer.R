@@ -2,56 +2,13 @@ output$unlinked <- function() {
   
   if (input$review_algorithm == "Base") {
   
-  unlinked <- dbGetQuery(
-    link_conn,
-    paste0(
-      "call reviewUnlinked('", input$review_question_id, "')"
-    )
-  ) %>%
-    mutate(algorithm_dist = "Base")
-  
-  jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
-  
-  jaccard <- jaccard %>%
-    rename(
-      question_id = question_id_base,
-      proposed_id = question_id_proposed
+    unlinked <- dbGetQuery(
+      link_conn,
+      paste0(
+        "call reviewUnlinked('", input$review_question_id, "')"
+      )
     ) %>%
-    rename_with(
-      ~ gsub(
-        "(\\w+)_proposed",
-        "comparison_\\1",
-        .,
-        perl = TRUE
-      ),
-      ends_with("proposed")
-    ) %>%
-    rename_with(
-      ~ gsub(
-        "compare",
-        "dist",
-        .,
-        perl = TRUE
-      ),
-      ends_with("compare")
-    ) %>%
-    mutate(
-      algorithm = "Weighted Jaccard",
-      across(matches("year"), as.character)
-    ) %>%
-    select(any_of(names(unlinked))) %>%
-    mutate(algorithm_dist = "Weighted Jaccard")
-  
-  unlinked <- bind_rows(
-    unlinked,
-    jaccard
-  ) %>%
-    # Replace observations in Jaccard with stored procedure results for base 
-    fill(
-      question_name, question_text, question_number, section,
-      starts_with("base"),
-      .direction = "down"
-    )
+      mutate(algorithm_dist = "Base")
   
   } else {
     unlinked <- jaccardUnlinked(link_conn, input$review_question_id) %>%
@@ -171,8 +128,7 @@ observeEvent(
           "call reviewUnlinked('", input$review_question_id, "')"
         )
       )
-      jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
-      choices <- unique(c(unlinked$proposed_id, jaccard$question_id_proposed))
+      choices <- unique(c(unlinked$proposed_id))
     } else {
       choices <- jaccardUnlinked(link_conn, input$review_question_id)$question_id_proposed
     }
@@ -194,8 +150,7 @@ observeEvent(
           "call reviewUnlinked('", input$review_question_id, "')"
         )
       )
-      jaccard <- jaccardIDMatch(link_conn, input$review_question_id, "unlinked")$matches
-      choices <- unique(c(unlinked$proposed_id, jaccard$question_id_proposed))
+      choices <- unique(c(unlinked$proposed_id))
     } else {
       choices <- jaccardUnlinked(link_conn, input$review_question_id)$question_id_proposed
     }
