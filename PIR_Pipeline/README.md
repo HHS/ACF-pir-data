@@ -49,8 +49,10 @@ Package installation should now be complete.
 1. Open the command prompt.
 2. Activate the virtual environment `venv`.
 3. In the command prompt type `pir-setup` and press `enter`. A GUI should appear requesting the path at which to create the PIR directories and the path to *RScript.exe*. 
+![Path GUI](images/pir_setup_directories.PNG?raw=true "Path GUI")
 4. Click `finish` after providing these paths.
-5. A second window should appear requesting database credentials. 
+5. A second window should appear requesting database credentials.
+![Config GUI](images/pir_setup_config.PNG?raw=true "Config GUI")
 6. Click `finish` after entering your credentials.
 7. The configuration file will now be generated, the database populated with relevant schemas, views, and stored procedures, and R packages installed.
 
@@ -84,6 +86,7 @@ An example workflow might look like this:
     - `pir-ingest --now --files <path-to-file-1>...<path-to-file-n>` to immediately ingest only the files listed.
 5. To verify that ingestion succeeded:
     - `pir-status --ingestion`
+    ![Ingestion Log](images/command_line_log.PNG?raw-true "Ingestion Log")
     - Query pir_logs schema directly e.g.:
         ```
         SELECT * 
@@ -112,56 +115,6 @@ A great feature of PIR data is that it is available longitudinally. A challenge 
             FROM pir_logs.pir_question_linkage_logs
         )
         ```
-
-## PIR Monitoring Dashboard
-
-The PIR package includes an R Shiny dashboard for reviewing logs, viewing data, and managing question links. To start the dashboard:
-
-1. Open the command prompt.
-2. Activate the virtual environment `venv`.
-3. Type `pir-dashboard` and press `enter`.
-4. A series of messages will print, culminating with a message that says *Listening on \<url>*. Navigate to this url in a browser to view the dashboard.
-
-To close the dashboard:
-1. Close the browser tab.
-2. In the command prompt, press `CTRL+C`.
-
-### Question Link Overview tab
-
-The Question Link Overview tab provides a summary of three types of logs: Ingestion Logs, Listener Logs, and Question Linkage Logs. Additionally, it includes tables displaying counts of linked and unlinked questions, both for unique questions and all questions.
-
-### Search for Question by Keyword tab
-
-This tab facilitates the search for questions across multiple tables, including linked, unlinked, proposed, imperfect, and inconsistent question tables. Users can enter search criteria such as question name, text, number, category, or section to find specific questions. Upon performing a search, the system returns a table of questions matching the specified criteria, displaying relevant details such as the question's name, text, number, category, and section.
-
-### Review Links {#review-links}
-
-#### Review Unlinked Questions
-
-Under the "Review Unlinked Questions" tab, you can review and link unlinked questions. This process involves selecting the unlinked question ID, choosing the algorithm for linkage (either Base or Jaccard), reviewing proposed links in the table, and ultimately linking the chosen proposed link using the "Link" button. Upon accessing the tab within the dashboard interface, you'll find a list of unlinked questions awaiting review. From this list, select the question ID of the unlinked question you wish to address. Before proceeding, decide whether to utilize the base algorithm, which suggests links based on predefined criteria, or the Jaccard algorithm, which assesses similarity in question text. After selecting the algorithm, review the proposed links generated in the table. Each proposed link represents a potential connection between the unlinked question and other questions in the system. Carefully assess the relevance and accuracy of each proposed link in establishing the desired connection. Once you've identified the most suitable link, select it within the dashboard interface. Finally, confirm your choice by clicking the "Link" button, effectively establishing the connection between the questions. This systematic approach ensures the accurate and relevant linkage of unlinked questions.
-
-#### Review Intermittent Links
-
-This section is dedicated to establishing question links that cover the full range of years sampled. Any question that is not linked for all years will appear here as a base question with a series of proposed linkages. Below are the definitions:
-
-- Base: A question that is not matched for the full year range.
-- Proposed: The proposed match to the base question.
-
-Linking the two questions will distribute whichever 'uqid' exists in more cases across both of the 'question ids'. It's essential that the questions have different 'uqid' and different 'question id' for accurate linkage.
-
-#### Review Inconsistent Links
-
-Within the dashboard interface, the "Review Inconsistent Links" tab provides a straightforward method for addressing and managing inconsistent question links. This tab facilitates the process of unlinking previously connected questions. To begin, navigate to the dashboard interface and locate the "Review Inconsistent Links" tab. Upon accessing the tab, you'll find a list of unique question IDs. Identify the unique question ID of the question you wish to unlink from others, then review the associated question and its linked connections. Determine which specific question(s) you want to unlink from the selected question. Once you've made your selection, click on the "Unlink" button within the dashboard interface. This action will remove the specified link(s) between the selected question and the chosen question(s) to unlink. By following these steps, you can effectively manage inconsistent links within the database, maintaining the accuracy and integrity of question links.
-
-### Creating Manual Links in the Dashboard
-
-The algorithm does a good job of linking questions, but there are some cases a user might want to review manually. Specifically:
-
-1. Questions are linked within some sub-period of the full period available. For example if data were ingested for 2008-2023, but a specific question is only linked in 2008-2010.
-2. Questions are linked, but the question IDs vary over time.
-3. Questions are unlinked.
-
-The dashboard provides options for reviewing and rectifying these three scenarios. To manually create and delete links
 
 ## Database Management
 
@@ -214,3 +167,51 @@ Three schemas support the PIR pipeline.
         - imperfect_link_v - A view combining the inconsistent_question_id_v and intermittent_link_v views.
         - intermittent_link_v - A view displaying all questions that are linked, but do not cover the full period of years available.
         - unlinked_v - A view of the unlinked table where proposed_link has been unpacked.
+
+## PIR Monitoring Dashboard
+
+The PIR package includes an R Shiny dashboard for reviewing logs, viewing data, and managing question links. To start the dashboard:
+
+1. Open the command prompt.
+2. Activate the virtual environment `venv`.
+3. Type `pir-dashboard` and press `enter`.
+4. A series of messages will print, culminating with a message that says *Listening on \<url>*. Navigate to this url in a browser to view the dashboard.
+
+To close the dashboard:
+1. Close the browser tab.
+2. In the command prompt, press `CTRL+C`.
+
+### Question Link Overview tab
+
+The Question Link Overview tab provides a summary of three types of logs: Ingestion Logs, Listener Logs, and Question Linkage Logs. Additionally, it includes tables displaying counts of linked and unlinked questions, both for unique questions and all questions.
+
+### Search for Question by Keyword tab
+
+This tab facilitates the search for questions across multiple tables, including linked, unlinked, proposed, imperfect, and inconsistent question tables. Users can enter search criteria such as question name, text, number, category, or section to find specific questions. Upon performing a search, the system returns a table of questions matching the specified criteria, displaying relevant details such as the question's name, text, number, category, and section.
+
+### Review Links Tab
+
+The algorithm does a good job of linking questions, but there are some cases a user might want to review manually. Specifically:
+
+1. Questions are linked within some sub-period of the full period available. For example if data were ingested for 2008-2023, but a specific question is only linked in 2008-2010.
+2. Questions are linked, but the question IDs vary over time.
+3. Questions are unlinked.
+
+The dashboard provides options for manually creating and deleting links to rectify errant cases falling under these three conditions.
+
+#### Review Unlinked Questions
+
+Under the "Review Unlinked Questions" tab, you can review and link unlinked questions. This process involves selecting the unlinked question ID, choosing the algorithm for linkage (either Base or Jaccard), reviewing proposed links in the table, and ultimately linking the chosen proposed link using the "Link" button. Upon accessing the tab within the dashboard interface, you'll find a list of unlinked questions awaiting review. From this list, select the question ID of the unlinked question you wish to address. Before proceeding, decide whether to utilize the base algorithm, which suggests links based on predefined criteria, or the Jaccard algorithm, which assesses similarity in question text. After selecting the algorithm, review the proposed links generated in the table. Each proposed link represents a potential connection between the unlinked question and other questions in the system. Carefully assess the relevance and accuracy of each proposed link in establishing the desired connection. Once you've identified the most suitable link, select it within the dashboard interface. Finally, confirm your choice by clicking the "Link" button, effectively establishing the connection between the questions. This systematic approach ensures the accurate and relevant linkage of unlinked questions.
+
+#### Review Intermittent Links
+
+This section is dedicated to establishing question links that cover the full range of years sampled. Any question that is not linked for all years will appear here as a base question with a series of proposed linkages. Below are the definitions:
+
+- Base: A question that is not matched for the full year range.
+- Proposed: The proposed match to the base question.
+
+Linking the two questions will distribute whichever 'uqid' exists in more cases across both of the 'question ids'. It's essential that the questions have different 'uqid' and different 'question id' for accurate linkage.
+
+#### Review Inconsistent Links
+
+Within the dashboard interface, the "Review Inconsistent Links" tab provides a straightforward method for addressing and managing inconsistent question links. This tab facilitates the process of unlinking previously connected questions. To begin, navigate to the dashboard interface and locate the "Review Inconsistent Links" tab. Upon accessing the tab, you'll find a list of unique question IDs. Identify the unique question ID of the question you wish to unlink from others, then review the associated question and its linked connections. Determine which specific question(s) you want to unlink from the selected question. Once you've made your selection, click on the "Unlink" button within the dashboard interface. This action will remove the specified link(s) between the selected question and the question(s) chosen to unlink. By following these steps, you can effectively manage inconsistent links within the database, maintaining the accuracy and integrity of question links.
