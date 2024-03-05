@@ -75,6 +75,8 @@ The command `pir-ingest` can be used to ingest data. This command has a few opti
 - `--now`: Immediately trigger ingestion.
 - `--files`: Combine with `--now` to trigger immediate ingestion only for specific files.
 
+It is important to note that when no files exist in the PIR directory `PIR\PIR_data_repository\Raw`, executing the command `pir-ingest` will schedule a task in the task scheduler. However, if you attempt to manually run the scheduled task, it will not execute.
+
 An example workflow might look like this:
 
 1. Place data in the `PIR\PIR_data_repository\Raw` folder.
