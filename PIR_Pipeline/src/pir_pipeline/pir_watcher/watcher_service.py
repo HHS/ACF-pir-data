@@ -36,7 +36,9 @@ class AppServerSvc(win32serviceutil.ServiceFramework):
         config_json = os.path.join(current_dir, "..", "config.json")
         config = open(config_json)
         config = json.loads(config.read())
-        watcher.FolderWatcher(config)            
+        schedule_command = 'schtasks /CREATE /TN {} /TR "{}" /SC ONCE /SD {} /ST 01:00'
+
+        watcher.FolderWatcher(config, schedule_command)  
     
 if __name__ == '__main__':
     win32serviceutil.HandleCommandLine(AppServerSvc)
