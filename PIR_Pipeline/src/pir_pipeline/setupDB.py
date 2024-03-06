@@ -1,10 +1,11 @@
 def main():
+    # Import necessary modules for database connection, file handling, pattern matching, and timing
     import mysql.connector, os, json, glob, re, time
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_json = os.path.join(current_dir, "config.json")
     config = open(config_json)
     config = json.loads(config.read())
-
+    # Set up database configuration using the loaded settings
     db_config = {
         'host' : config["dbhost"],
         'port' : config["dbport"],
@@ -17,7 +18,6 @@ def main():
     schemas = [file for file in glob.glob(sql_dir + "/**/*") if os.path.isfile(file)]
 
     # Establish db connection
-
     for schema in schemas:
         with open(schema, 'r') as f:
             conn = mysql.connector.connect(**db_config)
@@ -26,10 +26,11 @@ def main():
             cursor.execute(content)
             cursor.close()
             conn.close()
-            
+    # Identify additional SQL files, excluding those already executed        
     files = [file for file in glob.glob(sql_dir + "/**/**/*") if os.path.isfile(file) and not file in schemas]
 
     retries = 0
+    # Attempt to execute the remaining SQL files
     while files:
 
         try:
@@ -45,9 +46,11 @@ def main():
                 conn.close()
                 files.pop(0)
         except Exception as e:
+            # On failure, print error message and rotate the problematic file to the end of the list for a retry
             print("command '{}' returned with error (code {}): {}\n".format(e.msg, e.errno, e.errno))
             files.append(files.pop(0))
             retries += 1
+            # If too many retries occur, terminate the script
             if retries > 10:
                 exit()
 
