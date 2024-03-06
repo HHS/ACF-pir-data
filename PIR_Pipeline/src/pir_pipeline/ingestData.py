@@ -21,7 +21,7 @@ def main():
     if args.files:
         files = args.files
     else:
-        files = glob.glob(config["Raw"] + "/*")
+        files = glob.glob(config["Raw"] + "/*.xls*")
     
     if args.now:
         subprocess.call([config["R_Path"], script_path, *files], cwd = current_dir)
