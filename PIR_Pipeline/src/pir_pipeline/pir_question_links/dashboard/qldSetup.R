@@ -63,3 +63,12 @@ log_conn <- connections$pir_logs
 
 # JavaScript code for refreshing page
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"
+
+# Number of unlinked records
+unlinked_count <- dbGetQuery(
+  link_conn,
+  "
+  SELECT COUNT(DISTINCT question_id) as Count
+  FROM unlinked
+  "
+)$Count

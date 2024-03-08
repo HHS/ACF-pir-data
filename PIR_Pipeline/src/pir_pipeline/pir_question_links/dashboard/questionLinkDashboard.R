@@ -33,14 +33,22 @@ question_review <- tabPanel(
 )
 
 # Define UI
-ui <- fluidPage(
-  useShinyjs(),
-  extendShinyjs(text = jscode, functions = "refresh_page"),
-  tabsetPanel(
+if (unlinked_count > 0) {
+  tabs <- tabsetPanel(
     home,
     keyword_search,
     question_review
   )
+} else {
+  tabs <- tabsetPanel(
+    home,
+    keyword_search
+  )
+}
+ui <- fluidPage(
+  useShinyjs(),
+  extendShinyjs(text = jscode, functions = "refresh_page"),
+  tabs
 )
 
 # Define server function
@@ -48,6 +56,10 @@ server <- function(input, output, session) {
   for (script in server_scripts) {
     source(script, local = T)$value
   }
+  session$onSessionEnded(function() {
+    map(connections, DBI::dbDisconnect)
+    stopApp()
+  })
 }
 
 # Run the Shiny app
