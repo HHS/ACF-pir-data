@@ -1,3 +1,17 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Update the unlinked table.
+################################################################################
+
+
+#' Update Unlinked Table
+#' 
+#' Update the unlinked table by removing records that are already linked in the linked table.
+#' 
+#' @param conn A database connection.
+#' 
+
 updateUnlinked <- function(conn) {
   query <- paste(
     "DELETE a",

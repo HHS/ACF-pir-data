@@ -1,12 +1,14 @@
-#############################################
+################################################################################
 ## Written by: Reggie Gilliard
 ## Date: 01/05/2023
 ## Description: Question Linking Dashboard setup
-#############################################
+################################################################################
 
+
+# Clear the global environment
 rm(list = ls())
 
-# Packages
+# Load packages
 pkgs <- c(
   "shiny", "here", "dplyr", "kableExtra", "RMariaDB", 
   "shinyjs", "purrr", "tidyr", "stringr", "DT"
@@ -19,7 +21,7 @@ dbusername <- config$dbusername
 dbpassword <- config$dbpassword
 logdir <- config$Ingestion_Logs
 
-# Common functions
+# Load common functions
 walk(
   list.files(here("_common", "R"), full.names = T, pattern = "R$"),
   source
@@ -30,7 +32,7 @@ walk(
 )
 
 
-# Logging
+# Start logging
 log_file <- startLog("pir_question_linkage_logs")
 
 # Dashboard meta data
@@ -46,6 +48,7 @@ dash_meta$dbnames <- dbGetQuery(
 )$Database
 dash_meta$dbnames <- grep("pir|question", dash_meta$dbnames, value = TRUE)
 
+# Connect to databases
 connections <- connectDB(
   dash_meta$dbnames, 
   dbusername, 
@@ -53,8 +56,10 @@ connections <- connectDB(
   log_file
 )
 
+# Connection to the pir_data database
 conn <- connections$pir_data
 link_conn <- connections$pir_question_links
 log_conn <- connections$pir_logs
 
+# JavaScript code for refreshing page
 jscode <- "shinyjs.refresh_page = function() { history.go(0); }"

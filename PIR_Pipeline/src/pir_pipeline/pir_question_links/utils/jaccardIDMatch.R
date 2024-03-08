@@ -1,9 +1,24 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Create a Jaccard ID Match.
+################################################################################
+
+
+#' Jaccard ID Match
+#' 
+#' @param conn A database connection object.
+#' @param id The ID to search for in the database.
+#' @param type The type of match to perform ("unlinked" or "intermittent").
+#' @return A data frame containing the Jaccard ID matches.
+#' 
+
 jaccardIDMatch <- function(conn, id, type) {
   
   require(dplyr)
   
   func_env <- environment()
-  
+  # Retrieve data from linked table
   linked <- DBI::dbGetQuery(
     conn,
     paste(
@@ -11,7 +26,7 @@ jaccardIDMatch <- function(conn, id, type) {
       "FROM linked"
     )
   )
-  
+  # Retrieve data from unlinked table
   unlinked <- DBI::dbGetQuery(
     conn,
     "
@@ -19,7 +34,7 @@ jaccardIDMatch <- function(conn, id, type) {
     FROM unlinked
     "
   )
-  
+  # Determine the sample based on the type
   if (type == "unlinked") {
     
     sample <- unlinked %>%
@@ -31,7 +46,7 @@ jaccardIDMatch <- function(conn, id, type) {
       filter(uqid == id)
     
   }
-
+  # Prepare the sample data
   sample <- sample %>%
     pipeExpr(assign("sample_years", unique(.$year), func_env)) %>%
     mutate(
@@ -58,7 +73,7 @@ jaccardIDMatch <- function(conn, id, type) {
     mutate(across(c("question_name", "question_text", "question_number"), fedmatch::clean_strings)) %>%
     distinct(question_id, .keep_all = T) %>%
     rename(question_id_proposed = question_id)
-  
+  # Perform the match
   match <- fedmatch::merge_plus(
     sample, pool,
     by = c("question_name", "question_text", "question_number", "section"),

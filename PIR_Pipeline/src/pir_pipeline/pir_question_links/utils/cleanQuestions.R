@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Prepare questions for insertion into question_links database
+################################################################################
+
+
 #' Prepare questions for insertion into question_links database
 #' 
 #' `cleanQuestions` performs cleaning and data integrity checks on linked and

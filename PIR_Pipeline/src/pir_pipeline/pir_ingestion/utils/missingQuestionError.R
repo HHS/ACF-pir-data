@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/14/2023
+## Description: Identify missing questions.
+################################################################################
+
+
 #' Identify missing questions
 #' 
 #' `missingQuestionError` is a function intended for use with assertr.
@@ -11,7 +18,9 @@
 #' @returns A data frame containing the variables in `mi_vars`.
 
 missingQuestionError <- function(list_of_errors, data) {
+  # Load the dplyr package
   require(dplyr)
+  # Create an environment
   mi_question_env <- environment()
   
   # Create unmatched_questions and diff_name for outputting message
@@ -29,6 +38,7 @@ missingQuestionError <- function(list_of_errors, data) {
       assign(
         "unmatched_questions",
         unique(.$question_number),
+        # Assign unique question numbers to environment
         envir = mi_question_env
       )
     )
@@ -36,14 +46,16 @@ missingQuestionError <- function(list_of_errors, data) {
   # Update question data to exclude unmatched_questions
   question <- question %>%
     full_join_check(
+      # Select relevant columns for join
       select(diff_name, question_number),
       by = "question_number"
     ) %>%
     mutate(
       unmatched = ifelse(merge == 3, "Missing/mismatched question", unmatched)
     ) %>%
+    # Remove merge column
     select(-c(merge))
-  
+  # Assign modified question data
   assign("question", question, envir = func_env)
   
   # Descriptive log message
@@ -69,9 +81,10 @@ missingQuestionError <- function(list_of_errors, data) {
         collapse = "\n"
       )
     ), 
+    # Log the message to the log file
     log_file
   )
-  
+  # Return the modified data frame
   data %>%
     mutate(unmatched = ifelse(mi_q_cond == 0, "Missing/mismatched question", unmatched)) %>%
     return()

@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Script to generate a link between two questions.
+################################################################################
+
+
 #' Generate a link between two questions
 #' 
 #' `genLink` generates a link between two questions. It is primarily
@@ -9,6 +16,7 @@
 genLink <- function(base_id, link_id, conn) {
   require(dplyr)
   
+  # Retrieve distinct unlinked question IDs
   unlinked_ids <- DBI::dbGetQuery(
     conn,
     "
@@ -17,6 +25,7 @@ genLink <- function(base_id, link_id, conn) {
     "
   )$question_id
   
+  # Retrieve column names from the "linked" table
   varnames <- DBI::dbGetQuery(
     conn,
     "
@@ -25,6 +34,7 @@ genLink <- function(base_id, link_id, conn) {
     "
   )$Field
   
+  # Retrieve information about unlinked questions
   unlinked <- DBI::dbGetQuery(
     conn,
     paste0(
@@ -55,13 +65,13 @@ genLink <- function(base_id, link_id, conn) {
         WHERE question_id = '", link_id, "'"
       )
     )
-    
+    # Update the unlinked question's record with the associated UQID
     unlinked <- filter(unlinked, question_id == base_id) %>%
       mutate(uqid = linked$uqid) %>%
       select(all_of(varnames))
     
   }
-  
+  # Insert or update records in the "linked" table
   replaceInto(conn, unlinked, "linked")
   updateUnlinked(conn)
   logLink(base_id, link_id, "linked")

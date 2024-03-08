@@ -1,5 +1,20 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/14/2023
+## Description: Perform PIR data ingestion.
+################################################################################
+
+
+#' Perform PIR data ingestion 
+#' 
+#' `pirIngest` is a function that executes the entire data ingestion pipeline
+#' for PIR.
+#' 
+#' @param workbook A single workbook path.
+#' @return NULL
+
 pirIngest <- function(workbook) {
-  
+  # Extract PIR sheets
   tryCatch(
     {
       wb_appended <- extractPirSheets(workbook, log_file)
@@ -126,5 +141,6 @@ pirIngest <- function(workbook) {
       errorMessage(cnd, log_file)
     }
   )
-  gc()
+  # Perform garbage collection
+  gc() 
 }

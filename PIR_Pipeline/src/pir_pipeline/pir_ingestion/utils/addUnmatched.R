@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Add unmatched variables to a data frame
+################################################################################
+
+
 #' Add the variable `unmatched` to a data frame
 #' 
 #' @param data Data frame

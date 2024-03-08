@@ -1,12 +1,29 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Separates combined data into linked and unlinked records.
+################################################################################
+
+
+#' Separate Combined Data
+#' 
+#' Separates combined data into linked and unlinked records.
+#' 
+#' @param df The combined data frame.
+#' @param varnames Variable names.
+#' @param caller The calling function (either "unlinked" or "linked").
+#' 
+
 separateCombined <- function(df, varnames, caller) {
   
   require(dplyr)
-  
+  # Get the environment of the calling function
   func_env <- environment()
+  # Initialize an empty list to store separated data frames
   separated <- list()
   
   if (caller == "unlinked") {
-    
+    # Process combined data for unlinked records
     combined <- df %>% 
       mutate(across(ends_with("_dist"), as.character)) %>%
       # Extract years from unlinked_db records
@@ -50,7 +67,7 @@ separateCombined <- function(df, varnames, caller) {
       select(question_id, year, proposed_link)
     
   } else if (caller == "linked") {
-    
+    # Process combined data for linked records
     separated$linked <- filter(df, confirmed == 1) %>%
       select(-ends_with(".y")) %>%
       rename_with(

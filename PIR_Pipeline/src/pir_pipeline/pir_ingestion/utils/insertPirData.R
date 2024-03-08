@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: A wrapper for replaceInto and genResponseSchema
+################################################################################
+
+
 #' A wrapper for replaceInto and genResponseSchema
 #' 
 #' `insertPirData` wraps genResponseSchema and replaceInto

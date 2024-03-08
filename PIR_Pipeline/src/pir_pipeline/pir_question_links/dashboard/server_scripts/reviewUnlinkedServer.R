@@ -1,7 +1,15 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/10/2024
+## Description: Script to fetch data for the Unlinked questions tab.
+################################################################################
+
+
+# Fetch data for the Unlinked questions tab
 output$unlinked <- function() {
-  
+  # Check the selected algorithm
   if (input$review_algorithm == "Base") {
-  
+    # Execute the review unlinked query for the base algorithm
     unlinked <- dbGetQuery(
       link_conn,
       paste0(
@@ -11,6 +19,7 @@ output$unlinked <- function() {
       mutate(algorithm_dist = "Base")
   
   } else {
+    # Execute the Jaccard unlinked algorithm
     unlinked <- jaccardUnlinked(link_conn, input$review_question_id) %>%
       rename(
         question_id = question_id_base,
@@ -50,7 +59,7 @@ output$unlinked <- function() {
       select(matches(c("question", "section", "year")), ends_with(c("id", "dist"))) %>%
       mutate(algorithm_dist = "Weighted Jaccard")
   }
-  
+  # Prepare base data
   base <- unlinked %>%
     mutate(
       across(everything(), as.character),
@@ -64,7 +73,7 @@ output$unlinked <- function() {
     ) %>%
     distinct() %>%
     mutate(Variable = gsub("base_", "", Variable))
-  
+  # Prepare comparison data
   comparison <- unlinked %>%
     mutate(
       id = row_number(),
@@ -83,7 +92,7 @@ output$unlinked <- function() {
     mutate(
       Variable = str_replace_all(Variable, c("comparison_" = "", "proposed_" = "question_"))
     )
-  
+  # Prepare distances data
   distances <- unlinked %>%
     mutate(
       id = row_number(),
@@ -102,7 +111,7 @@ output$unlinked <- function() {
     mutate(
       Variable = str_replace_all(Variable, c("_dist" = ""))
     )
-  
+  # Join all prepared data
   unlinked <- left_join(
     base,
     comparison,
@@ -112,16 +121,17 @@ output$unlinked <- function() {
       distances,
       by = "Variable"
     )
-  
+  # Render the unlinked data as a table
   unlinked %>%
     kableExtra::kable() %>%
     kableExtra::kable_styling("striped")
 }
-
+# Observe changes in the review question ID input
 observeEvent(
   input$review_question_id,
   {
     if (input$review_algorithm == "Base") {
+      # If base algorithm selected, fetch unique proposed IDs from review unlinked query
       unlinked <- dbGetQuery(
         link_conn,
         paste0(
@@ -130,8 +140,10 @@ observeEvent(
       )
       choices <- unique(c(unlinked$proposed_id))
     } else {
+      # If weighted Jaccard algorithm selected, fetch unique proposed IDs from Jaccard unlinked query
       choices <- jaccardUnlinked(link_conn, input$review_question_id)$question_id_proposed
     }
+    # Update select input with available choices for proposed link
     updateSelectInput(
       session,
       "review_proposed_link",
@@ -140,10 +152,12 @@ observeEvent(
   }
 )
 
+# Observe changes in the review algorithm input
 observeEvent(
   input$review_algorithm,
   {
     if (input$review_algorithm == "Base") {
+      # If base algorithm selected, fetch unique proposed IDs from review unlinked query
       unlinked <- dbGetQuery(
         link_conn,
         paste0(
@@ -152,8 +166,10 @@ observeEvent(
       )
       choices <- unique(c(unlinked$proposed_id))
     } else {
+      # If weighted Jaccard algorithm selected, fetch unique proposed IDs from Jaccard unlinked query
       choices <- jaccardUnlinked(link_conn, input$review_question_id)$question_id_proposed
     }
+    # Update select input with available choices for proposed link
     updateSelectInput(
       session,
       "review_proposed_link",
@@ -163,10 +179,13 @@ observeEvent(
   }
 )
 
+# Observe creation of a new link
 observeEvent(
   input$review_create_link,
   {
+    # Generate link based on selected review question ID and proposed link
     genLink(input$review_question_id, input$review_proposed_link, link_conn)
+    # Fetch distinct question IDs for unlinked data
     choices <- dbGetQuery(
       link_conn,
       "

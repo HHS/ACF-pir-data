@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Script to generate a column of proposed links.
+################################################################################
+
+
 #' Generate a column of proposed links
 #' 
 #' `genProposedLink` generates a JSON column containing the

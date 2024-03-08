@@ -1,3 +1,11 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/10/2024
+## Description: Script to create Inconsistent links tab of the dashboard
+################################################################################
+
+
+# Retrieve inconsistent ID choices from the database
 dash_meta$inconsistent_id_choices <- dbGetQuery(
   link_conn,
   "
@@ -7,6 +15,7 @@ dash_meta$inconsistent_id_choices <- dbGetQuery(
   "
 )$uqid
 
+# Define a tab named "Review Inconsistent Links"
 inconsistent_id <- tabPanel(
   "Review Inconsistent Links",
   fluidPage(

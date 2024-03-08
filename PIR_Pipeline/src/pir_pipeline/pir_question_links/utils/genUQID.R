@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Script to generate a unique question ID.
+################################################################################
+
+
 #' Generate a unique question ID
 #' 
 #' `genUQID` checks for a `uqid` column and generates uqids for

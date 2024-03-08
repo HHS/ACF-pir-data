@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Append all "Section" sheets of PIR workbook
+################################################################################
+
+
 #' Append all "Section" sheets of PIR workbook
 #' 
 #' `appendPirSections` appends all sheets of a PIR workbook containing the word

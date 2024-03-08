@@ -1,11 +1,11 @@
-#############################################
+################################################################################
 ## Written by: Reggie Gilliard
 ## Date: 11/10/2023
-## Description: Data ingestion
-## ToDo: Error handling, credential management, move functions out
-#############################################
+## Description: Link questions
+################################################################################
 
-# Setup ----
+
+# Setup 
 
 rm(list = ls())
 
@@ -31,7 +31,7 @@ if (operating_system == "Windows") {
 future::plan(multisession, workers = processors)
 options(future.globals.maxSize = 2000*1024^2)
 
-# Functions ----
+# Functions 
 
 # Common functions
 walk(

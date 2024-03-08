@@ -1,3 +1,11 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/10/2024
+## Description: Script to create Intermittent links tab of the dashboard
+################################################################################
+
+
+# Retrieve intermittent unique question ID choices from the database
 dash_meta$intermittent_uqid_choices <- dbGetQuery(
   link_conn,
   "
@@ -6,7 +14,7 @@ dash_meta$intermittent_uqid_choices <- dbGetQuery(
   WHERE intermittent_link = 1
   "
 )$uqid
-
+# Define a tab named "Review Intermittent Links"
 intermittent_id <- tabPanel(
   "Review Intermittent Links",
   fluidPage(

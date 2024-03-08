@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Load "Section [A-D]" worksheets from PIR workbooks.
+################################################################################
+
+
 #' Load "Section [A-D]" worksheets from PIR workbooks.
 #' 
 #' `loadPirSection` loads section worksheets from PIR workbooks,
@@ -7,6 +14,7 @@
 #' @returns A data frame.
 
 loadPirSection <- function(workbook, sheet) {
+  # Load the dplyr package
   require(dplyr)
   # Do not load colnames. Extract text and colnames below
   df <- readxl::read_excel(workbook, sheet = sheet, col_names = F)
@@ -24,19 +32,22 @@ loadPirSection <- function(workbook, sheet) {
     ) %>%
     ungroup() %>%
     mutate(
+      # Check for NA values in question numbers
       na_number = grepl(
         "^na$",
         tolower(gsub("\\W", "", question_number, perl = T))
       ),
       question_number = ifelse(num != 1, paste(question_number, num, sep = "_"), question_number)
     ) %>%
+    # Assign NA values to global environment
     pipeExpr(
       assign("na_number", which(.$na_number == TRUE), envir = .GlobalEnv)
     ) %>%
-    {.[["question_number"]]}
+    {.[["question_number"]]} # Extract question numbers
   
   # First row contains question_name
-  text_df <- df[1,] %>%
+  text_df <- df[1,] %>% # Use the first row for question names
+    # Convert data to long format
     pivot_longer(
       cols = everything(),
       names_to = "question_number",
@@ -55,6 +66,7 @@ loadPirSection <- function(workbook, sheet) {
   
   df <- df %>% 
     mutate(across(everything(), as.character)) %>%
+    # Convert data to long format
     pivot_longer(
       cols = !c(
         "Region", "State", "Grant Number", "Program Number", 

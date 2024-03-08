@@ -1,3 +1,11 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/14/2024
+## Description: Script to create UI for the Unlinked questions tab of the dashboard
+################################################################################
+
+
+# Retrieve distinct question IDs from the "unlinked" table
 dash_meta$review_question_id_choices <- dbGetQuery(
   link_conn,
   "
@@ -6,6 +14,7 @@ dash_meta$review_question_id_choices <- dbGetQuery(
   "
 )
 
+# Define a tab named "Review Unlinked Questions"
 review_unlinked <- tabPanel(
   "Review Unlinked Questions",
   fluidPage(

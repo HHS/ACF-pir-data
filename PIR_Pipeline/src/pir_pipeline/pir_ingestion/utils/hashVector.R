@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Return a hash for each element of a string vector/list of strings
+################################################################################
+
+
 #' Return a hash for each element of a string vector/list of strings
 #' 
 #' `hasVector` returns a vector of md5 hashes the of the same length

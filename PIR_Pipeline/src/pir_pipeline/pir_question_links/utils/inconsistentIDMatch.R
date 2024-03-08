@@ -1,7 +1,24 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Script to retrieve inconsistent ID matches.
+################################################################################
+
+
+#' Inconsistent ID Match
+#' 
+#' This function retrieves inconsistent ID matches from the provided connection for a specific ID.
+#' 
+#' @param conn A database connection object.
+#' @param id The ID to search for in the database.
+#' @return A data frame containing the inconsistent ID matches.
+#' 
+
 inconsistentIDMatch <- function(conn, id) {
   require(dplyr)
   func_env <- environment()
   
+  # Retrieve distinct data from linked table based on provided ID
   linked <- DBI::dbGetQuery(
     conn,
     paste(
@@ -10,6 +27,7 @@ inconsistentIDMatch <- function(conn, id) {
     )
   )
   
+  # Filter the data to include only rows with the specified ID
   linked <- linked %>%
     filter(uqid == id) %>%
     select(-c(uqid)) %>%

@@ -1,8 +1,28 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/09/2023
+## Description: This script handles the creation of ad hoc links in the database.
+################################################################################
+
+
+#' Ad Hoc Links
+#' 
+#' This function handles the creation of ad hoc links in the database.
+#' 
+#' @param conn A database connection object.
+#' @return NULL
+#' 
+#' @details This function retrieves unlinked and linked data from the database, creates ad hoc links 
+#' according to specified criteria, logs the created links, and updates the database with the new links.
+#' 
+
 adHocLinks <- function(conn) {
+  # Load the dplyr package for data manipulation
   require(dplyr)
   
   # Ad Hoc Links - 2011
   unlinked <- DBI::dbGetQuery(
+    # Retrieve unlinked data for the year 2011
     conn,
     "
     SELECT *
@@ -48,17 +68,21 @@ adHocLinks <- function(conn) {
       unlinked,
       linked,
       by = c("question_number_revised" = "question_number"),
+      # Perform an inner join to link the data based on specified columns
       relationship = "many-to-one"
     ) %>%
       select(all_of(link_vars))
-    
+    # Log and update links
     pmap(
       linked[, c("uqid", "question_id")],
       function(uqid, question_id) {
+        # Log the link
         logLink(uqid, question_id, "linked")
       }
     )
+    # Replace existing data in the "linked" table
     replaceInto(conn, linked, "linked")
+    # Update the "unlinked" table
     updateUnlinked(conn)
   }
   
@@ -103,12 +127,14 @@ adHocLinks <- function(conn) {
           TRUE ~ question_number
         )
       ) %>%
+      # Exclude the original question_number column
       select(-c(question_number))
     
     linked <- inner_join(
       unlinked,
       linked,
       by = c("question_number_revised" = "question_number_revised"),
+      # Perform an inner join to link the data based on specified columns
       relationship = "one-to-many"
     ) %>%
       select(all_of(link_vars))

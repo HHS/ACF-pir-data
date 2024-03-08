@@ -1,7 +1,14 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/10/2024
+## Description: Script to fetch data for the Intermittent links tab of the dashboard
+################################################################################
+
+# Fetch data for the Intermittent links tab of the dashboard
 output$intermittent_link <- function() {
-  
+  # Get intermittent matches
   intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches
-  
+  # Get unique question IDs and corresponding unique IDs from linked table
   uqids <- dbGetQuery(
     link_conn,
     paste(
@@ -12,7 +19,7 @@ output$intermittent_link <- function() {
       ")"
     )
   )
-  
+  # Get year range for each unique ID
   year_range <- dbGetQuery(
     link_conn,
     paste(
@@ -27,7 +34,7 @@ output$intermittent_link <- function() {
     group_by(uqid) %>%
     summarize(year_range = paste0(year_range, collapse = ", ")) %>%
     ungroup()
-
+  # Prepare intermittent matches data
   intermittent <- intermittent %>%
     mutate(
       id = row_number(),
@@ -57,19 +64,22 @@ output$intermittent_link <- function() {
     names_glue = "{name}_{id}"
   )
   
-
+  # Render table with kableExtra package
   intermittent %>%
     filter(column != 'year') %>% 
     kableExtra::kable() %>%
     kableExtra::kable_styling("striped")
 }
 
+# Update select input for proposed links
 observeEvent(
   input$intermittent_uqid,
   {
+    # Get intermittent matches
     intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches
-    
+    # Filter unique proposed question IDs
     choices <- unique(intermittent$question_id_proposed)
+    # Update select input
     updateSelectInput(
       session,
       "intermittent_proposed_link",
@@ -78,10 +88,13 @@ observeEvent(
   }
 )
 
+# Event handler for creating intermittent links
 observeEvent(
   input$intermittent_create_link,
   {
+    # Generate intermittent link
     genIntermittentLink(input$intermittent_uqid, input$intermittent_proposed_link, conn, link_conn)
+    # Get unique IDs with intermittent links
     choices <- dbGetQuery(
       link_conn,
       "
@@ -90,6 +103,7 @@ observeEvent(
       WHERE intermittent_link = 1
       "
     )$uqid
+    # Update select input
     updateSelectInput(
       session,
       "intermittent_uqid",

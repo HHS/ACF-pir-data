@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Load all data from PIR workbook.
+################################################################################
+
+
 #' Load all data from PIR workbook
 #' 
 #' `loadPirData` loads data from all worksheets of a given PIR workbook, or
@@ -11,11 +18,13 @@
 #' worksheet in the workbook identified by the object.
 
 loadPirData <- function(workbooks, log_file) {
+  # Load the dplyr package
   require(dplyr)
   
-  
+  # Use future_map to process workbooks in parallel
   workbooks <- future_map(
     workbooks,
+    # Function to process each workbook
     function(workbook) {
       sheets <- attr(workbook, "sheets")
       

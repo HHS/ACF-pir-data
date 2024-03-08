@@ -1,3 +1,11 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Clean PIR data
+################################################################################
+
+
+
 #' Perform cleaning to prepare data for MySQL database
 #' 
 #' `cleanPirData` performs several cleaning steps, such as hashing values,
@@ -11,13 +19,15 @@
 #' be kept (or added) to the corresponding data frame.
 
 cleanPirData <- function(workbooks, schema, log_file) {
+  # Load required packages
   require(dplyr)
+  # Process each workbook in parallel
   workbooks <- furrr::future_map(
     workbooks,
     function(workbook) {
-      
+      # Load additional utility functions
       source(here::here("pir_ingestion", "utils", "addPirVars.R"), local = T)
-      
+      # Define environment
       func_env <- environment()
       
       # Create vectors of variables
@@ -42,16 +52,19 @@ cleanPirData <- function(workbooks, schema, log_file) {
       map(
         tables,
         function(table) {
+          # Get column names for the current table
           vars <- get(paste0(tolower(table), "_vars"), envir = func_env)
-          
+          # Check if the table is a response table
           if (grepl("response", table)) {
             df <- df_list[[table]] %>%
+              # Clean column names
               janitor::clean_names() %>%
               rename(
                 program_type = type
               ) %>%
               assertr::assert(not_na, grant_number, program_number, program_type) %>%
               assertr::assert(not_na, question_number, question_name) %>%
+              # Add new columns
               mutate(
                 year = yr,
                 uid_hash = paste0(grant_number, program_number, program_type),
@@ -60,7 +73,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                 question_id = hashVector(question_id_hash)
               ) %>%
               select(all_of(vars))
-            
+            # Assign cleaned data frame back to the workbook
             attr(workbook, table) <- df
             assign("workbook", workbook, envir = func_env)
             
@@ -68,6 +81,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
             
             df <- df_list[[table]] %>%
               assertr::assert(not_na, question_number, question_name) %>%
+              # Add new columns
               mutate(
                 section = case_when(
                   grepl("^(\\w)\\..*", question_number) ~ gsub("^(\\w)\\..*", "\\1", question_number, perl = T),
@@ -75,6 +89,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                   TRUE ~ NA
                 )
               ) %>%
+              # Rename columns
               rename(
                 question_type = type
               ) %>%
@@ -83,6 +98,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                 question_id_hash = paste0(question_number, question_name),
                 question_id = hashVector(question_id_hash)
               ) %>%
+              # Evaluate expression in specified environment
               pipeExpr(
                 assign(
                   "mi_vars",
@@ -90,6 +106,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                   envir = func_env
                 )
               ) %>%
+              # Verify condition
               assertr::verify(
                 length(mi_vars) == 0,
                 error_fun = addPirVars
@@ -117,6 +134,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                 uid = hashVector(uid_hash),
                 region = as.numeric(gsub("\\D+", "", region, perl = TRUE))
               ) %>%
+              # Evaluate expression in specified environment
               pipeExpr(
                 assign(
                   "mi_vars",
@@ -124,6 +142,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
                   envir = func_env
                 )
               ) %>%
+              # Verify condition
               assertr::verify(
                 length(mi_vars) == 0,
                 error_fun = addPirVars
@@ -135,7 +154,7 @@ cleanPirData <- function(workbooks, schema, log_file) {
             assign("workbook", workbook, envir = func_env)
             
           } else {
-            
+            # If the table does not match any specific pattern, remove it
             attr(workbook, table) <- NULL
             assign("workbook", workbook, envir = func_env)
             
@@ -148,10 +167,11 @@ cleanPirData <- function(workbooks, schema, log_file) {
       attributes(workbook) <- workbook_attr[
         purrr::map_lgl(workbook_attr, function(df) !is.data.frame(df) || nrow(df) > 0)
       ]
-      return(workbook)
+      # Return the cleaned workbook
+      return(workbook) 
     }
   )
-  
+  # Perform garbage collection to free up memory
   gc()
   return(workbooks)
 }

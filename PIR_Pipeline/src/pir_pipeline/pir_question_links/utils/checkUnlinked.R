@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/05/2023
+## Description: Check unlinked table for question matches.
+################################################################################
+
+
 #' Check unlinked table for question matches
 #' 
 #' `checkUnlinked` checks the unlinked table for question links

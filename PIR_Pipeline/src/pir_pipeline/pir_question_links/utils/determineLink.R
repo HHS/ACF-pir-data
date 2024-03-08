@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/02/2023
+## Description: Determine whether two questions are considered linked.
+################################################################################
+
+
 #' Determine whether two questions are considered linked
 #' 
 #' `determineLink` determines whether two questions are considered

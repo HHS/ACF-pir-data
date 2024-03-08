@@ -1,14 +1,13 @@
-#############################################
+################################################################################
 ## Written by: Reggie Gilliard
 ## Date: 11/10/2023
-## Description: Data ingestion
-## ToDo: Error handling, credential management, move functions out
-#############################################
+## Description: Ingest data
+################################################################################
 
-# Setup ----
-
+# Remove objects from the R environment
 rm(list = ls())
 
+# Load packages
 pkgs <- c(
   "tidyr", "dplyr", "roxygen2", "assertr", 
   "purrr", "RMariaDB", "here", "janitor",
@@ -31,8 +30,7 @@ if (operating_system == "Windows") {
 future::plan(future::multisession, workers = processors)
 options(future.globals.maxSize = 2000*1024^2)
 
-# Functions ----
-
+# Load functions 
 walk(
   list.files(here::here("pir_ingestion", "utils"), full.names = T, pattern = "R$"),
   source
@@ -45,17 +43,17 @@ walk(
 # Begin logging
 log_file <- startLog("pir_ingestion_logs")
 
-# Establish DB connection ----
+# Establish DB connection 
 connections <- connectDB("pir_data", dbusername, dbpassword, log_file)
 conn <- connections$pir_data
 tables <- c("response", "question", "program", "unmatched_question")
 schema <- getSchemas(conn, tables)
 
-# Get file(s) ----
+# Get file(s) 
 args <- commandArgs(TRUE)
 wb_list <- args
 
-# Ingestion ----
+# Ingestion
 
 # Extract all sheets from PIR workbooks
 map(
@@ -71,3 +69,4 @@ logMessage("Successfully ingested PIR data", log_file)
 writeLog(log_file)
 dbDisconnect(conn)
 gc()
+

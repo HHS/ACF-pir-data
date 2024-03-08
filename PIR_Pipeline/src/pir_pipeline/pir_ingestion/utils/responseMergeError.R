@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/14/2023
+## Description: Identify questions in response, but not in Reference.
+################################################################################
+
+
 #' Identify questions in response, but not in Reference
 #' 
 #' `responseMergeError` is a function intended for use with assertr.

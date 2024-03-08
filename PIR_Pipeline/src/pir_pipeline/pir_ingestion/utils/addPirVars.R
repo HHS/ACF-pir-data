@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Add missing variables to a data frame
+################################################################################
+
+
 #' Add missing variables to a data frame
 #' 
 #' `addPirVars` is a function intended for use with assertr.

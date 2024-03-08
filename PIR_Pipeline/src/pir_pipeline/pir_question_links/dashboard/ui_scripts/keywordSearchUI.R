@@ -1,11 +1,19 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/10/2024
+## Description: Script to create UI for the Keywords tab of the dashboard
+################################################################################
+
+# Retrieve column names from the "linked" table in the database
 varnames <- dbGetQuery(
-  link_conn,
+  link_conn, # Database connection object
   "
   SHOW COLUMNS 
   FROM linked
   "
 )$Field
 
+# Retrieve table names from the database
 dash_meta$tables <- dbGetQuery(
   link_conn,
   "
@@ -13,8 +21,10 @@ dash_meta$tables <- dbGetQuery(
   "
 )[[1]]
 
+# Exclude specific columns from the keyword search choices
 dash_meta$keyword_choices <- varnames[-which(varnames %in% c("uqid", "year", "question_id"))]
 
+# Define a tab named "Search for Questions By Keyword"
 keyword_search <- tabPanel(
   "Search for Questions By Keyword",
   fluidPage(

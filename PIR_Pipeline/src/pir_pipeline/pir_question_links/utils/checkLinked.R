@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 01/05/2023
+## Description: Check linked table for question matches.
+################################################################################
+
+
 #' Check linked table for question matches
 #' 
 #' `checkLinked` checks the linked table for question links

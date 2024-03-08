@@ -1,3 +1,10 @@
+################################################################################
+## Written by: Reggie Gilliard
+## Date: 11/10/2023
+## Description: Merge Reference sheet to appended Sections.
+################################################################################
+
+
 #' Merge Reference sheet to appended Sections
 #' 
 #' Extract question metadata from the Reference sheet and
