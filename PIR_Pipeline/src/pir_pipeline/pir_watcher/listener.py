@@ -71,18 +71,19 @@ def main(file_info, config, schedule_command):
         VALUES
         ('{}', '{}', '{}')
         """
-    # Attempt to schedule the task and log success message
-    try:
-        subprocess.check_output(schedule_command,stderr=subprocess.STDOUT)
-        message = "Ingestion scheduled at 01:00am tomorrow for files: {}\n".format(paths)
-        query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
-        cursor.execute(query)
-        conn.commit()
-    except subprocess.CalledProcessError as e:
-        message = "command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output)
-        query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
-        cursor.execute(query)
-        conn.commit()
+    # Attempt to schedule the task and log success message, but only when there are files to ingest
+    if to_ingest:
+        try:
+            subprocess.check_output(schedule_command,stderr=subprocess.STDOUT)
+            message = "Ingestion scheduled at 01:00am tomorrow for files: {}\n".format(paths)
+            query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
+            cursor.execute(query)
+            conn.commit()
+        except subprocess.CalledProcessError as e:
+            message = "command '{}' returned with error (code {}): {}\n".format(e.cmd, e.returncode, e.output)
+            query = query.format(*[time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S"), message])
+            cursor.execute(query)
+            conn.commit()
         
     cursor.close()
     conn.close()
