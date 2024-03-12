@@ -1,5 +1,5 @@
 # Import necessary libraries for file and directory manipulation, JSON operations, and creating a GUI
-import os, json, glob
+import os, json, glob, subprocess
 import tkinter as tk
 from tkinter import Tk, ttk
 from tkinter.filedialog import askdirectory, askopenfilename
@@ -18,8 +18,12 @@ def main():
     
     # Look for R and include as default if found
     suggested_path = glob.glob("C:/Program Files/R/*/bin/RScript.exe")
+    r_on_path = subprocess.run(["where", "RScript"], capture_output=True)
+
     if suggested_path:
         r_path = tk.StringVar(value=suggested_path[0])
+    elif r_on_path.returncode == 0:
+        r_path = tk.StringVar(value=r_on_path.stdout.decode().strip())
     else:
         r_path = tk.StringVar()
     
@@ -76,7 +80,7 @@ def main():
         config["R_Path"] = r_entry.get()
         # Save the updated configuration to the JSON file
         with open(config_json, "w") as f:
-            json.dump(config, f)
+            json.dump(config, f, indent=2)
         root.destroy()
     # Create and pack the Finish button
     finish_button = ttk.Button(configure, text="Finish", command=finish_clicked)
