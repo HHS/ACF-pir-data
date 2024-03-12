@@ -68,7 +68,7 @@ def main():
         for c in ["dbusername", "dbpassword", "dbhost", "dbport"]:
             config[c] = locals()[c]
         with open(config_json, 'w') as f:
-            json.dump(config, f)
+            json.dump(config, f, indent=2)
         root.destroy()
         from . import setupDB
         setupDB.main()
