@@ -15,9 +15,7 @@ output$unlinked <- function() {
       paste0(
         "call reviewUnlinked('", input$review_question_id, "')"
       )
-    ) %>%
-      mutate(algorithm_dist = "Base")
-  
+    )
   } else {
     # Execute the Jaccard unlinked algorithm
     unlinked <- jaccardUnlinked(link_conn, input$review_question_id) %>%
@@ -56,8 +54,7 @@ output$unlinked <- function() {
         algorithm = "Weighted Jaccard",
         across(matches("year"), as.character)
       ) %>%
-      select(matches(c("question", "section", "year")), ends_with(c("id", "dist"))) %>%
-      mutate(algorithm_dist = "Weighted Jaccard")
+      select(matches(c("question", "section", "year")), ends_with(c("id", "dist")))
   }
   # Prepare base data
   base <- unlinked %>%

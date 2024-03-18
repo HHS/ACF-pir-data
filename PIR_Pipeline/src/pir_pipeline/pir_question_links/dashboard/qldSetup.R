@@ -72,3 +72,9 @@ unlinked_count <- dbGetQuery(
   FROM unlinked
   "
 )$Count
+
+# Update proposed_link table
+dbExecute(
+  link_conn,
+  "call proposedLink()"
+)
