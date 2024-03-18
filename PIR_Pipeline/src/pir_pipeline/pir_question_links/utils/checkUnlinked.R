@@ -30,9 +30,16 @@ checkUnlinked <- function(df_list) {
   if (!is.null(unlinked) && nrow(unlinked) > 0 && nrow(unlinked_db) > 0) {
   
     separated <- cross_join(unlinked, unlinked_db) %>%
-      filter(year.x != year.y) %>%
-      determineLink() %>%
-      separateCombined(df_list$question_vars, "unlinked")
+      filter(year.x != year.y)
+    
+    if (nrow(separated) > 0) {
+      separated <- separated %>%
+        determineLink() %>%
+        separateCombined(df_list$question_vars, "unlinked")
+    } else {
+      separated$linked <- data.frame()
+      separated$unlinked <- unlinked
+    }
     
     # Bind to linked if there are newly linked records
     if (nrow(separated$linked) > 0) {
