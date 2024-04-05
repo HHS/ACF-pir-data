@@ -1,3 +1,11 @@
+-- =============================================
+-- Author:      Reggie Gilliard
+-- Create date: 03/01/2024
+-- Description: This view provides a list of questions that have not been linked.
+-- It unnests the proposed_link JSON array and joins it with the unlinked table,
+-- so that the resultant view contains one row per proposed link.
+-- =============================================
+
 CREATE OR REPLACE VIEW pir_question_links.unlinked_v AS 
 SELECT b.*, a.`year`, c.question_name, c.question_text, c.question_number, c.section
 FROM pir_question_links.proposed_link a

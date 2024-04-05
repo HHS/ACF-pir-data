@@ -1,3 +1,11 @@
+-- =============================================
+-- Author:      Reggie Gilliard
+-- Create date: 03/01/2024
+-- Description: This function returns the minimum year from the linked table.
+-- Parameters: None
+-- Returns: The minimum year from the linked table.
+-- Example: SELECT pir_question_links.minYearLinked();
+-- =============================================
 DROP FUNCTION IF EXISTS pir_question_links.minYearLinked;
 
 DELIMITER //

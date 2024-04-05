@@ -1,3 +1,9 @@
+-- =============================================
+-- Author:      Reggie Gilliard
+-- Create date: 03/01/2024
+-- Description: This view provides a list of questions that have inconsistent question IDs or intermittent links.
+-- =============================================
+
 CREATE OR REPLACE VIEW pir_question_links.imperfect_link_v AS
 SELECT DISTINCT a.uqid, b.inconsistent_question_id, c.intermittent_link
 FROM pir_question_links.linked a

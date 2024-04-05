@@ -1,3 +1,8 @@
+-- =============================================
+-- Author:      Reggie Gilliard
+-- Create date: 03/01/2024
+-- Description: This view provides a list of distinct linked questions and the year they first appeared.
+-- =============================================
 DROP VIEW IF EXISTS pir_question_links.distinct_linked_v;
 
 CREATE OR REPLACE VIEW pir_question_links.distinct_linked_v AS

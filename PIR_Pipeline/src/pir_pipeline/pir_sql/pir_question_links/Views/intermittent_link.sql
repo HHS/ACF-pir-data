@@ -1,3 +1,9 @@
+-- =============================================
+-- Author:      Reggie Gilliard
+-- Create date: 03/01/2024
+-- Description: This view provides a list of questions that have intermittent links.
+-- =============================================
+
 CREATE OR REPLACE VIEW pir_question_links.intermittent_link_v AS
 SELECT DISTINCT a.uqid, 1 AS intermittent_link
 FROM pir_question_links.linked a

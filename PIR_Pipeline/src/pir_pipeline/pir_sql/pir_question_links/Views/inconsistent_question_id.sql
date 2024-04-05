@@ -1,3 +1,9 @@
+-- =============================================
+-- Author:      Reggie Gilliard
+-- Create date: 03/01/2024
+-- Description: This view provides a list of questions that have inconsistent question IDs.
+-- =============================================
+
 CREATE OR REPLACE VIEW pir_question_links.inconsistent_question_id_v AS
 SELECT DISTINCT a.uqid, 1 AS inconsistent_question_id
 FROM pir_question_links.linked a
