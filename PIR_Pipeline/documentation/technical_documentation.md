@@ -525,7 +525,7 @@ The same algorithm is used in checkUnlinked.R to attempt linkages
 between QTM and questions in pir\_question\_links.unlinked.
 
 After checking pir\_question\_links.linked and
-pir\_question\_links.unlinked, a call is made to cleanPirQuestions.R to
+pir\_question\_links.unlinked, a call is made to cleanQuestions.R to
 perform some data integrity checks and prepare the data for insertion
 into MySQL. Questions are then inserted into the relevant tables using
 replaceInto.R. After insertion, updateUnlinked.R confirms that questions
