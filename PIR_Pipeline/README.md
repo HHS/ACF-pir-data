@@ -124,23 +124,23 @@ A great feature of PIR data is that it is available longitudinally. A challenge 
 
 Three schemas support the PIR pipeline.
 
-1. pir_data
+1. [pir_data](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/pir_data_schema.sql)
     - Description: This schema contains all of the data from the PIR exports. 
     - Tables:
         - response - Contains information present in "Section" sheets of PIR exports. Each program's (identified by `uid`) responses to the questions in the section are stored in the `answer` column. Questions are identified by `question_id` and the `year` column identifies the year a given response comes from.
         - question - Contains all unique questions and meta-data about them such as the question name, question number, question text, etc.
         - program - Contains all unique programs and meta-data about them such as the region and state in which they are located, grant number, program type, etc.
     - Functions:
-        - aggregateWhereCondition - Concatenate's a series of column names with `AND` to create a syntactically correct where condition.
+        - [aggregateWhereCondition](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/Functions/aggregateWhereCondition.sql) - Concatenate's a series of column names with `AND` to create a syntactically correct where condition.
     - Stored Procedures:
-        - aggregateTable - Create a table aggregated at the specified level.
-        - aggregateView - Create a view aggregated at the specified level.
-        - genDifference - Generate a new column based on a linear combination of two others.
-        - getProgramLevelData - Get program-level data from the response table.
-        - getQuestion - Get program-level data from the response table by question ID.
-        - keywordSearch - Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
+        - [aggregateTable](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/StoredProcedures/aggregateTable.sql) - Create a table aggregated at the specified level.
+        - [aggregateView]( https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/StoredProcedures/aggregateView.sql)- Create a view aggregated at the specified level.
+        - [genDifference](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/StoredProcedures/genDifference.sql) - Generate a new column based on a linear combination of two others.
+        - [getProgramLevelData](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/StoredProcedures/getProgramLevelData.sql) - Get program-level data from the response table.
+        - [getQuestion]( https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/StoredProcedures/getQuestion.sql) - Get program-level data from the response table by question ID.
+        -  [keywordSearch](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_data/StoredProcedures/keywordSearch.sql)- Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
 
-2. pir_logs
+2. [pir_logs](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_logs/pir_logs_schema.sql)
     - Description: This schema contains all of the logs for the PIR pipeline.
     - Tables:
         - pir_ingestion_logs - Contains ingestion logs.
@@ -148,27 +148,27 @@ Three schemas support the PIR pipeline.
         - pir_listener_logs - Contains logs for the listener/scheduled ingestions.
         - pir_manual_question_link - Contains logs of manual question links. Executing pir-link may populate this schema due to ad-hoc links embedded in the linking process. In addition, any time a user creates or deletes a link in the Monitoring Dashboard, an entry will be made in this log.
 
-3. pir_question_links
+3. [pir_question_links](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/pir_question_links_schema.sql)
     - Description: This schema contains information regarding questions that have been linked across time.
     - Tables:
         - linked - Contains questions that have been linked across at least two years.
         - new_questions - Contains questions that appear for the first time in any given year.
-        - proposed-link - Intermediary table for creation of unlinked view.
+        - [proposed-link](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Tables/proposed_link.sql) - Intermediary table for creation of unlinked view.
         - unlinked - Contains questions that could not be linked across at least two years.
     - Functions:
-        - addQuestionID - Add a field to a JSON array. Used to add question ID to the proposed_link JSON arrays.
-        - combineArray - Combine two JSON array columns and return the combined column.
-        - maxYearLinked - Return the maximum year in the linked table.
-        - minYearLinked - Return the minimum year in the linked table.
+        - [addQuestionID](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Functions/addQuestionID.sql) - Add a field to a JSON array. Used to add question ID to the proposed_link JSON arrays.
+        - [combineArray](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Functions/combineArray.sql) - Combine two JSON array columns and return the combined column.
+        - [maxYearLinked](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Functions/maxYearLinked.sql) - Return the maximum year in the linked table.
+        - [minYearLinked](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Functions/minYearLinked.sql) - Return the minimum year in the linked table.
     - Stored Procedures:
-        - keywordSearch - Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
-        - newQuestions - Create or update the new_questions table.
-        - reviewUnlinked - Return a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
+        - [keywordSearch](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/StoredProcedures/keywordSearch.sql) - Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
+        - [newQuestions](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/StoredProcedures/newQuestions.sql) - Create or update the new_questions table.
+        - [reviewUnlinked](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/StoredProcedures/reviewUnlinked.sql) - Return a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
     - Views:
-        - inconsistent_question_id_v - A view displaying all questions that are linked, but `question_id` varies within `uqid`.
-        - imperfect_link_v - A view combining the inconsistent_question_id_v and intermittent_link_v views.
-        - intermittent_link_v - A view displaying all questions that are linked, but do not cover the full period of years available.
-        - unlinked_v - A view of the unlinked table where proposed_link has been unpacked.
+        - [inconsistent_question_id_v](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Views/inconsistent_question_id.sql) - A view displaying all questions that are linked, but `question_id` varies within `uqid`.
+        - [imperfect_link_v](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Views/imperfect_link.sql) - A view combining the inconsistent_question_id_v and intermittent_link_v views.
+        - [intermittent_link_v](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Views/intermittent_link.sql) - A view displaying all questions that are linked, but do not cover the full period of years available.
+        - [unlinked_v](https://github.com/HHS/ACF-pir-data/blob/packaging/PIR_Pipeline/src/pir_pipeline/pir_sql/pir_question_links/Views/unlinked.sql) - A view of the unlinked table where proposed_link has been unpacked.
 
 ## PIR Monitoring Dashboard
 
