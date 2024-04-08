@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This function generates a WHERE condition for a list of columns.
+-- Description: Concatenate's a series of column names with AND to create a syntactically correct where condition.
 -- Parameters:
 --   cols VARCHAR(100) - A comma-separated list of column names.
 -- Returns: A WHERE condition for the columns.

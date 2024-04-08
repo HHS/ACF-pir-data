@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure generates a difference between two questions and stores the result in a new column.
+-- Description: Generate a new column based on a linear combination of two others.
 -- Parameters:
 --   IN operation CHAR(1) - The operation to perform (+, -, *, /)
 --   IN qid1 TEXT - The ID of the first question

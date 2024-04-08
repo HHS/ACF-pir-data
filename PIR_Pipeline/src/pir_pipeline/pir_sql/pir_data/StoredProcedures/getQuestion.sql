@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure queries the response table to get question-level data based on a question ID and kind of ID (uqid or question ID).
+-- Description: Get program-level data from the response table by question ID.
 -- Parameters:
 --  IN qid VARCHAR(255) - The question ID or unique question ID (uqid) to filter on.
 --  IN kind VARCHAR(12) - The kind of ID to filter on (uqid or question ID). If uqid, the procedure will return all responses for the questions linked to the uqid. 

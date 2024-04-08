@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This function adds the values from the question ID column as elements of a JSON object.
+-- Description: Add a field to a JSON array.
 -- Parameters:
 --   json_obj JSON - The JSON object to add the question ID to.
 --   id VARCHAR(100) - The question ID to add. Can be a column value or a string literal.

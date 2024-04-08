@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure queries a table based on a keyword search in a specified column.
+-- Description: Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used.
 -- Parameters:
 --   IN tab varchar(25) - The table to search in.
 --   IN col VARCHAR(100) - The column to search in.

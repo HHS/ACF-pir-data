@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure populates the new_questions table with questions that have not been linked in previous years.
+-- Description: Create or update the new_questions table.
 -- Parameters: None
 -- Returns: None
 -- Example: CALL pir_question_links.newQuestions();

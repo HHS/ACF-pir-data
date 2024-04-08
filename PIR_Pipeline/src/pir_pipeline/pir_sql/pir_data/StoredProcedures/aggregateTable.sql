@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: Create and populate aggregate tables based on aggregation level
+-- Description: Create a table aggregated at the specified level.
 -- Parameters:
 --   IN agg_level VARCHAR(64) - Aggregation level (state, type, region, grant, or national)
 -- Returns: None

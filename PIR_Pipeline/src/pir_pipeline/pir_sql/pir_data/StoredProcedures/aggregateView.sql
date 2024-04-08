@@ -1,14 +1,21 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure aggregates data from multiple tables to create a view for reporting purposes.
+-- Description: Create a view aggregated at the specified level.
 -- Parameters:
 --   IN view_name VARCHAR(64) - The name of the view to be created
 --   IN agg_level VARCHAR(64) - Aggregation level (state, type, region, grant, or national)
 --   IN question_id VARCHAR(64) - The ID of the question to be aggregated
 --   IN kind VARCHAR(12) - The kind of question ID (uqid or question_id)
 -- Returns: None
--- Example: CALL pir_data.aggregateView('test', 'state', '0008a5809edbdca1d1141ea1f2eb8dfa', 'question_id');
+-- Example: 
+-- CALL pir_data.aggregateView('test', 'state', '0008a5809edbdca1d1141ea1f2eb8dfa', 'question_id');
+-- SELECT * from test_state limit 1;
+-- +---------------+------+------+---------------------+------+--------------------+-------+
+-- | program_state | year | min  | mean                | max  | std                | count |
+-- +---------------+------+------+---------------------+------+--------------------+-------+
+-- | AK            | 2021 | 0    | 0.15384615384615385 | 4    | 0.7692307692307693 |    26 |
+-- +---------------+------+------+---------------------+------+--------------------+-------+
 -- =============================================
 DROP PROCEDURE IF EXISTS pir_data.aggregateView;
 

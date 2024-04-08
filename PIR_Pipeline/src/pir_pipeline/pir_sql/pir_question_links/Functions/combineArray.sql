@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This function combines two JSON arrays into a single JSON array.
+-- Description: Combine two JSON array columns and return the combined column.
 -- Parameters:
 --   column_1 JSON - The first JSON array to combine.
 --   column_2 JSON - The second JSON array to combine.

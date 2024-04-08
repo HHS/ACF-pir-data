@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure queries the program and response tables to get program-level data based on a column filter.
+-- Description: Get program-level data from the response table.
 -- Parameters:
 --  IN col TEXT - The column name to filter on. Must be a column in the response table.
 --  IN val TEXT - The value of the column to filter on.

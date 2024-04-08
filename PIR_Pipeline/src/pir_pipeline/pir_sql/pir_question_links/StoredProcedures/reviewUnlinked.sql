@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure reviews unlinked questions and provides information about the base question and comparison question.
+-- Description: Return a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
 -- Parameters:
 --   qid VARCHAR(255) - The question ID to review.
 -- Returns: None
