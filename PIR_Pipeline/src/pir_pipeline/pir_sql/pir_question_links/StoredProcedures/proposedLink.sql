@@ -1,7 +1,7 @@
 -- =============================================
 -- Author:      Reggie Gilliard
 -- Create date: 03/01/2024
--- Description: This stored procedure creates a table of proposed links for questions that have not been linked in previous years.
+-- Description: Create or update the proposed_link table.
 -- Parameters: None
 -- Returns: None
 -- Example: CALL pir_question_links.proposedLink();

@@ -15,16 +15,6 @@ CREATE TABLE `pir_question_linkage_logs` (
     PRIMARY KEY (`run`, `timestamp`)
 );
 
-CREATE TABLE `mysql_logs` (
-    `timestamp` TIMESTAMP,
-    `message` TEXT
-);
-
-CREATE TABLE `security_logs` (
-    `timestamp` TIMESTAMP,
-    `message` TEXT
-);
-
 CREATE TABLE `pir_listener_logs` (
     `run` TIMESTAMP,
     `timestamp` TIMESTAMP,
