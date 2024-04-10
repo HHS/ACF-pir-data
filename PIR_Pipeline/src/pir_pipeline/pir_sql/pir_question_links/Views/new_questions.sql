@@ -4,7 +4,7 @@
 -- Description: This view lists the first occurrence of each question
 -- =============================================
 CREATE OR REPLACE VIEW new_questions_v AS
-WITH RECURSIVE
+WITH
 qid_year AS (
 	SELECT DISTINCT `year`, question_id, question_number, question_name, question_text, category, section
 	FROM linked

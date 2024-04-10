@@ -6,11 +6,11 @@
 --   IN view_name VARCHAR(64) - The name of the view to be created
 --   IN agg_level VARCHAR(64) - Aggregation level (state, type, region, grant, or national)
 --   IN question_id VARCHAR(64) - The ID of the question to be aggregated
---   IN kind VARCHAR(12) - The kind of question ID (uqid or question_id)
+--   IN kind VARCHAR(12) - The kind of question IDs to search for (uqid or question_id)
 -- Returns: None
 -- Example: 
 -- CALL pir_data.aggregateView('test', 'state', '0008a5809edbdca1d1141ea1f2eb8dfa', 'question_id');
--- SELECT * from test_state limit 1;
+-- SELECT * FROM test_state LIMIT 1;
 -- +---------------+------+------+---------------------+------+--------------------+-------+
 -- | program_state | year | min  | mean                | max  | std                | count |
 -- +---------------+------+------+---------------------+------+--------------------+-------+
@@ -51,31 +51,51 @@ BEGIN
     
 	-- Create the question query for the view
     IF kind = 'uqid' THEN
-		SET @question_query = CONCAT(
-			'FROM response resp ',
-			'INNER JOIN (
-				SELECT DISTINCT question_id
-				FROM pir_question_links.linked a
-				INNER JOIN (
-					SELECT DISTINCT uqid 
-					FROM pir_question_links.linked 
+		IF INSTR(question_id, "-") > 0 THEN
+			SET @with_query = CONCAT(
+				'WITH
+				distinct_qid AS (
+					SELECT DISTINCT question_id
+					FROM pir_question_links.linked
+					WHERE uqid = ', QUOTE(question_id),
+				') '
+			);
+        ELSE
+			SET @with_query = CONCAT(
+				'WITH 
+				distinct_uqid AS (
+					SELECT DISTINCT uqid
+					FROM pir_question_links.linked
 					WHERE question_id = ', QUOTE(question_id),
-				') b
-				ON a.uqid = b.uqid
-			) c
-			ON resp.question_id = c.question_id ',
-            'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid AND resp.`year` = prg.`year` '
+				'),
+				distinct_qid AS (
+					SELECT DISTINCT question_id
+					FROM pir_question_links.linked
+					INNER JOIN distinct_uqid
+					ON pir_question_links.linked.uqid = distinct_uqid.uqid
+				) '
+			);
+		END IF;
+        SET @question_query = CONCAT(
+			'FROM response
+			INNER JOIN distinct_qid
+			ON response.question_id = distinct_qid.question_id
+			LEFT JOIN program
+			ON response.uid = program.uid AND response.`year` = program.`year` '
 		);
 	ELSE
+		SET @with_query = CONCAT(
+			'WITH
+            response AS (
+				SELECT *
+                FROM response
+                WHERE question_id = ', QUOTE(question_id),
+			') '
+        );
 		SET @question_query = CONCAT(
-			'FROM ( ',
-			'	SELECT * ',
-			'	FROM response',
-			'	WHERE question_id = ', QUOTE(question_id),
-			') resp ',
-			'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid AND resp.`year` = prg.`year` '
+			'FROM response 
+			LEFT JOIN program 
+			ON response.uid = program.uid AND response.`year` = program.`year` '
         );
     END IF;
 
@@ -83,20 +103,22 @@ BEGIN
 	IF agg_level = "national" THEN
 		SET @agg_query = CONCAT(
 			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS ',
-			'SELECT resp.year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+            @with_query,
+			'SELECT response.year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
 			@question_query,
-            'GROUP BY resp.year'
+            'GROUP BY response.year'
         );
     ELSE
 		SET @agg_query = CONCAT(
 			'CREATE OR REPLACE VIEW ', view_name, suffix, ' AS ',
-			'SELECT ', agg_level, ', resp.year, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
-				'count(answer) as `count` ',
+            @with_query,
+			'SELECT ', agg_level, ', response.year, min(answer) as `min`, avg(answer) as `mean`, 
+				max(answer) as `max`, std(answer) as `std`, count(answer) as `count` ',
 			@question_query,
 			'WHERE ', where_cond, ' ',
-			'GROUP BY ', agg_level, ', resp.year'
-			' ORDER BY ', agg_level, ', resp.year'
+			'GROUP BY ', agg_level, ', response.year'
+			' ORDER BY ', agg_level, ', response.year'
 		);
 	END IF;
     

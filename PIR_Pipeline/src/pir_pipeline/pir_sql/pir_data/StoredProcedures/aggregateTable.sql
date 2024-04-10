@@ -6,6 +6,12 @@
 --   IN agg_level VARCHAR(64) - Aggregation level (state, type, region, grant, or national)
 -- Returns: None
 -- Example: CALL pir_data.aggregateTable('national');
+-- SELECT * FROM response_national 
+-- +------+----------------------------------+------+--------------------+------+-------------------+-------+
+-- | year | question_id                      | min  | mean               | max  | std               | count |
+-- +------+----------------------------------+------+--------------------+------+-------------------+-------+
+-- | 2021 | 0008a5809edbdca1d1141ea1f2eb8dfa | 0    | 0.7607641859138865 | 8    | 4.420004075621334 |  3507 |
+-- +------+----------------------------------+------+--------------------+------+-------------------+-------+
 -- =============================================
 DROP PROCEDURE IF EXISTS pir_data.aggregateTable;
 
@@ -61,14 +67,14 @@ BEGIN
 		-- Create the aggregation query for the other levels
 		SET @agg_query = CONCAT(
 			'CREATE TABLE ', tname, ' AS '
-			'SELECT ', agg_level, ', resp.year, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
+			'SELECT ', agg_level, ', response.year, question_id, min(answer) as `min`, avg(answer) as `mean`, max(answer) as `max`, std(answer) as `std`, ',
 				'count(answer) as `count` ',
-			'FROM response resp ',
-			'LEFT JOIN program prg ',
-			'ON resp.uid = prg.uid AND resp.year = prg.year ',
+			'FROM response ',
+			'LEFT JOIN program ',
+			'ON response.uid = program.uid AND response.year = program.year ',
 			'WHERE ', where_cond, ' ',
-			'GROUP BY ', agg_level, ', resp.year, question_id '
-			'ORDER BY ', agg_level, ', resp.year, question_id '
+			'GROUP BY ', agg_level, ', response.year, question_id '
+			'ORDER BY ', agg_level, ', response.year, question_id '
 		);
 	END IF;
 	-- Create the index queries

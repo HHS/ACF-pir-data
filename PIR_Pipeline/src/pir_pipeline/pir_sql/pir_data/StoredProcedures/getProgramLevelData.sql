@@ -19,9 +19,9 @@ BEGIN
 
 	DECLARE where_cond TEXT DEFAULT '';
     
-  -- Add 'resp.' prefix to column name
+  -- Add 'response.' prefix to column name
   SET col = CONCAT(
-    'resp.', col
+    'response.', col
   );
 
   -- Create the WHERE condition for the query
@@ -32,13 +32,13 @@ BEGIN
 -- Create the query to get program-level data based on the column filter
 	SET @prg_query = CONCAT(
     '
-    SELECT prg.program_name, prg.grant_number, prg.program_number, prg.program_type, resp.question_id, resp.answer, resp.`year`
-    FROM pir_data.response resp
-    LEFT JOIN pir_data.program prg
-    ON resp.uid = prg.uid AND resp.year = prg.year
+    SELECT program.program_name, program.grant_number, program.program_number, program.program_type, response.question_id, response.answer, response.`year`
+    FROM response
+    LEFT JOIN pir_data.program program
+    ON response.uid = program.uid AND response.year = program.year
     ',
     where_cond, ' ',
-    'ORDER BY prg.grant_number, prg.program_number, prg.program_type, resp.year'
+    'ORDER BY program.grant_number, program.program_number, program.program_type, response.year'
   );
     
   -- Prepare and execute the query

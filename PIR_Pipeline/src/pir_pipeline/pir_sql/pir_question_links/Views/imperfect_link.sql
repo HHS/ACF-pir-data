@@ -5,11 +5,11 @@
 -- =============================================
 
 CREATE OR REPLACE VIEW pir_question_links.imperfect_link_v AS
-SELECT DISTINCT a.uqid, b.inconsistent_question_id, c.intermittent_link
-FROM pir_question_links.linked a
-LEFT JOIN pir_question_links.inconsistent_question_id_v b
-ON a.uqid = b.uqid
-LEFT JOIN pir_question_links.intermittent_link_v c
-ON a.uqid = c.uqid
-WHERE b.inconsistent_question_id IS NOT NULL OR c.intermittent_link IS NOT NULL
+SELECT DISTINCT pir_question_links.linked.uqid, inconsistent.inconsistent_question_id, intermittent.intermittent_link
+FROM pir_question_links.linked 
+LEFT JOIN pir_question_links.inconsistent_question_id_v inconsistent
+ON pir_question_links.linked.uqid = inconsistent.uqid
+LEFT JOIN pir_question_links.intermittent_link_v intermittent
+ON pir_question_links.linked.uqid = intermittent.uqid
+WHERE inconsistent.inconsistent_question_id IS NOT NULL OR intermittent.intermittent_link IS NOT NULL
 ;

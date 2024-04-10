@@ -14,37 +14,42 @@ CREATE PROCEDURE pir_question_links.reviewUnlinked(IN qid VARCHAR(255))
 BEGIN
 
     -- Query unlinked_v, linked, and unlinked tables to get information about the base question and comparison question
-    SELECT a.*, 
-        d.question_name as base_question_name,
-        COALESCE(b.question_name, c.question_name) AS comparison_question_name,
-        d.question_text as base_question_text,
-        COALESCE(b.question_text, c.question_text) AS comparison_question_text,
-        d.question_number as base_question_number,
-        COALESCE(b.question_number, c.question_number) AS comparison_question_number,
-        d.section as base_section,
-        COALESCE(b.section, c.section) AS comparison_section,
-        d.`year` as base_year,
-        COALESCE(b.`year`, c.`year`) AS comparison_year
-    FROM (
-        SELECT *
+    WITH
+	unlinked_q AS (
+		SELECT *
         FROM unlinked_v
         WHERE question_id = qid
-    ) a
-    LEFT JOIN (
+	),
+    distinct_linked AS (
         SELECT DISTINCT question_id, question_name, question_text, question_number, section, JSON_ARRAYAGG(`year`) OVER (PARTITION BY question_id) as `year`
         FROM linked
-    ) b
-    ON a.proposed_id = b.question_id
-    LEFT JOIN (
+    ),
+    distinct_unlinked AS (
         SELECT DISTINCT question_id, question_name, question_text, question_number, section, JSON_ARRAYAGG(`year`) OVER (PARTITION BY question_id) as `year`
         FROM unlinked 
-    ) c
-    ON a.proposed_id = c.question_id
-    LEFT JOIN (
-        SELECT DISTINCT question_id, question_name, question_text, question_number, section, JSON_ARRAYAGG(`year`) OVER (PARTITION BY question_id) as `year`
-        FROM unlinked 
-    ) d
-    ON a.question_id = d.question_id
+    ),
+    distinct_unlinked_base AS (
+		SELECT *
+        FROM distinct_unlinked
+	)
+    SELECT unlinked_q.*, 
+        distinct_unlinked_base.question_name as base_question_name,
+        COALESCE(distinct_linked.question_name, distinct_unlinked.question_name) AS comparison_question_name,
+        distinct_unlinked_base.question_text as base_question_text,
+        COALESCE(distinct_linked.question_text, distinct_unlinked.question_text) AS comparison_question_text,
+        distinct_unlinked_base.question_number as base_question_number,
+        COALESCE(distinct_linked.question_number, distinct_unlinked.question_number) AS comparison_question_number,
+        distinct_unlinked_base.section as base_section,
+        COALESCE(distinct_linked.section, distinct_unlinked.section) AS comparison_section,
+        distinct_unlinked_base.`year` as base_year,
+        COALESCE(distinct_linked.`year`, distinct_unlinked.`year`) AS comparison_year
+    FROM unlinked_q
+    LEFT JOIN distinct_linked
+    ON unlinked_q.proposed_id = distinct_linked.question_id
+    LEFT JOIN distinct_unlinked
+    ON unlinked_q.proposed_id = distinct_unlinked.question_id
+    LEFT JOIN distinct_unlinked_base
+    ON unlinked_q.question_id = distinct_unlinked_base.question_id
     ;
 
 END //

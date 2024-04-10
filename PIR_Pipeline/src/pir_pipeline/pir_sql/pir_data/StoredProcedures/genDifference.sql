@@ -28,21 +28,23 @@ BEGIN
 
 	-- Create the query to generate new constructed column
 	SET @construct_query = CONCAT(
-		'SELECT a.uid, a.`year`, a.answer AS ', name1, ', b.answer AS ', name2, ', a.answer ', operation,' b.answer AS ', construct_name, ' ',
-		'FROM (
+		'WITH
+        question_1 AS (
 			SELECT uid, answer, `year`
 			FROM pir_data.response
-		',
-		'	WHERE question_id = ', QUOTE(qid1),
-		') a
-		INNER JOIN (
+            WHERE question_id = ', QUOTE(qid1),
+		'),
+        question_2 AS (
 			SELECT uid, COALESCE(answer, 0) as answer, `year`
 			FROM pir_data.response
-		',
-		'	WHERE question_id = ', QUOTE(qid2),
-		') b
-		ON a.uid = b.uid AND a.`year` = b.`year`
-		ORDER BY a.uid, a.`year`'
+			WHERE question_id = ', QUOTE(qid2),
+		')
+		SELECT question_1.uid, question_1.`year`, question_1.answer AS ', name1, 
+			', question_2.answer AS ', name2, ', question_1.answer ', operation,' question_2.answer AS ', construct_name, ' 
+		FROM question_1
+		INNER JOIN question_2
+		ON question_1.uid = question_2.uid AND question_1.`year` = question_2.`year`
+		ORDER BY question_1.uid, question_1.`year`'
     );
     
     -- Prepare and execute the query
