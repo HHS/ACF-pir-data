@@ -34,10 +34,28 @@ keyword_output <- eventReactive(
       }
     )
   }
-  # df %>%
-  #   kableExtra::kable() %>%
-  #   kableExtra::kable_styling("striped") %>%
-  #   return()
+)
+
+observeEvent(
+  input$keyword_table,
+  {
+    varnames <- dbGetQuery(
+      link_conn,
+      paste(
+        "SHOW COLUMNS",
+        "FROM", input$keyword_table
+      )
+    )$Field
+
+    choices <- varnames[-which(varnames %in% c("uqid", "year", "question_id"))]
+    
+    # Update the keyword text input placeholder
+    updateSelectInput(
+      session,
+      "keyword_column",
+      choices = choices
+    )
+  }
 )
 
 # Render keyword output as a table
