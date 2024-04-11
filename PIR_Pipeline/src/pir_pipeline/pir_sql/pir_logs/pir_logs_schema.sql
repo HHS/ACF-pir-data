@@ -23,8 +23,8 @@ CREATE TABLE `pir_listener_logs` (
 );
 
 CREATE TABLE `pir_manual_question_link` (
-    `timestamp` TIMESTAMP,
     `base_id` TEXT,
     `linked_id` TEXT,
+    `timestamp` TIMESTAMP,
     `type` TEXT
 );
