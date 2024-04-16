@@ -34,6 +34,7 @@ pir-status = "pir_pipeline:pirStatus.main"
 pir-setup = "pir_pipeline:pirSetup.main"
 pir-create-directories = "pir_pipeline:createDirectories.main"
 pir-config-db = "pir_pipeline:configureDB.main"
+pir-setup-db = "pir_pipeline:setupDB.main"
 
 [tools.setuptools]
 include-package-data = true

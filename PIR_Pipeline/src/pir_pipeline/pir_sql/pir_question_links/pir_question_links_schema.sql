@@ -29,16 +29,3 @@ CREATE TABLE `unlinked` (
 );
 CREATE INDEX ix_unlinked_year ON unlinked (`year`);
 CREATE INDEX ix_unlinked_question_id ON unlinked (question_id);
-
-CREATE TABLE `new_questions` (
-	question_id varchar(255), 
-	`year` year, 
-	category varchar(255),
-	question_name TEXT, 
-	question_number varchar(55), 
-	question_text TEXT, 
-	section varchar(2),
-	PRIMARY KEY (question_id, `year`)
-);
-CREATE INDEX ix_new_questions_year ON new_questions (`year`);
-CREATE INDEX ix_new_questions_question_id ON new_questions (question_id);

@@ -143,6 +143,7 @@ Step-by-step installation instructions can be found in [Appendix A](#appendix-a-
 -   pir-setup
 -   pir-create-directories
 -   pir-config-db
+-   pir-setup-db
 -   pir-r-packages
 
 ### Relevant Scripts
