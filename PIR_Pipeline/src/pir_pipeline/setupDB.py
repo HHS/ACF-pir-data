@@ -1,6 +1,7 @@
+# Import necessary modules for database connection, file handling, pattern matching, and timing
+import mysql.connector, os, json, glob, re, time
+
 def main():
-    # Import necessary modules for database connection, file handling, pattern matching, and timing
-    import mysql.connector, os, json, glob, re, time
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_json = os.path.join(current_dir, "config.json")
     config = open(config_json)
@@ -26,6 +27,7 @@ def main():
             cursor.execute(content)
             cursor.close()
             conn.close()
+
     # Identify additional SQL files, excluding those already executed        
     files = [file for file in glob.glob(sql_dir + "/**/**/*") if os.path.isfile(file) and not file in schemas]
 
@@ -44,10 +46,10 @@ def main():
                 cursor.execute(content)
                 cursor.close()
                 conn.close()
+
                 files.pop(0)
         except Exception as e:
-            # On failure, print error message and rotate the problematic file to the end of the list for a retry
-            print("command '{}' returned with error (code {}): {}\n".format(e.msg, e.errno, e.errno))
+            # On failure, rotate the problematic file to the end of the list for a retry
             files.append(files.pop(0))
             retries += 1
             # If too many retries occur, terminate the script
@@ -56,3 +58,6 @@ def main():
 
     cursor.close()
     conn.close()
+
+if __name__ == "__main__":
+    main()

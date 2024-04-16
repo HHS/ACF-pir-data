@@ -3,14 +3,14 @@
 -- Create date: 04/09/2024
 -- Description: This view lists the first occurrence of each question
 -- =============================================
-CREATE OR REPLACE VIEW new_questions_v AS
+CREATE OR REPLACE VIEW pir_question_links.new_questions_v AS
 WITH
 qid_year AS (
 	SELECT DISTINCT `year`, question_id, question_number, question_name, question_text, category, section
-	FROM linked
+	FROM pir_question_links.linked
 	UNION 
 	SELECT DISTINCT `year`, question_id, question_number, question_name, question_text, category, section
-	FROM unlinked
+	FROM pir_question_links.unlinked
 ),
 qid_first AS (
 	SELECT question_id, min(`year`) as `year`
