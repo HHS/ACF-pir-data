@@ -28,3 +28,8 @@ CREATE TABLE `pir_manual_question_link` (
     `timestamp` TIMESTAMP,
     `type` TEXT
 );
+
+CREATE TABLE `pir_installation_logs` (
+    `timestamp` TIMESTAMP,
+    `message` TEXT
+);
