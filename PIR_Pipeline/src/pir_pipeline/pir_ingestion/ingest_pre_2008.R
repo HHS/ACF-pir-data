@@ -21,15 +21,35 @@ walk(
   list.files(here::here("_common", "R"), full.names = T, pattern = "R$"),
   source
 )
+walk(
+  list.files(here::here("pir_ingestion", "utils"), full.names = T, pattern = "R$"),
+  source
+)
+
+# Configuration (paths, db_name, etc.)
+config <- jsonlite::fromJSON(here::here("config.json"))
+dbusername <- config$dbusername
+dbpassword <- config$dbpassword
+logdir <- config$Ingestion_Logs
+
+# Begin logging
+log_file <- startLog("pir_ingestion_logs")
+
+# Establish DB connection 
+connections <- connectDB("pir_data", dbusername, dbpassword, log_file)
+conn <- connections$pir_data
+tables <- c("response", "question", "program", "unmatched_question")
+schema <- getSchemas(conn, tables)
+
 
 # Cleaning
-path <- "C:\\Users\\reggie.gilliard\\repos\\ACF-pir-data\\data\\pir_export_2007.xlsx"
-pir_2007_sheets <- readxl::excel_sheets(path)
+workbook <- "C:\\Users\\reggie.gilliard\\repos\\ACF-pir-data\\data\\pir_export_2007.xlsx"
+workbook <- extractPirSheets(workbook, log_file)
 response_list <- list()
 for (sheet in pir_2007_sheets) {
   print(sheet)
   sheet_lower <- tolower(sheet)
-  df <- readxl::read_xlsx(path, sheet = sheet)
+  df <- readxl::read_xlsx(workbook, sheet = sheet)
   if (!grepl("program|datadictionary", sheet_lower)) {
     try(
       response_list <- df %>%
@@ -111,14 +131,16 @@ question <- question %>%
   rename(
     question_number = field_name,
     question_text = description,
-    question_type = hses_field_type
+    type = hses_field_type
+    # question_type = hses_field_type
   ) %>%
   mutate(
-    question_name = coalesce(hses_field_name, pirweb_field_name),
-    section = case_when(
-      grepl("^[ABC]\\d", question_name) ~ gsub("^(\\w).*", "\\1", question_name, perl = TRUE),
-      TRUE ~ NA_character_
-    )
+    question_name = coalesce(hses_field_name, pirweb_field_name, question_text),
+    # section = case_when(
+    #   grepl("^[ABC]\\d", question_name) ~ gsub("^(\\w).*", "\\1", question_name, perl = TRUE),
+    #   TRUE ~ NA_character_
+    # ),
+    section_response = NA_character_
   )
 
 program_col_names <- lapply(names(program),
@@ -149,11 +171,13 @@ program <- program %>%
   rename(
     program_address_line_1 = program_address1,
     program_address_line_2 = program_address2,
-    program_email = agency_email,
+    program_main_email = agency_email,
     program_number = sys_hs_program_id,
     grant_number = grantno,
-    delegate_number = delegateno
+    delegate_number = delegateno,
+    program_main_phone_number = program_phone
   ) %>%
+  mutate(region = NA_integer_) %>%
   assertr::assert_rows(col_concat, is_uniq, grant_number, delegate_number)
 
 response <- response %>%
@@ -165,6 +189,7 @@ response <- response %>%
   ) %>%
   assertr::verify(merge == 3) %>%
   select(-merge) %>%
+  rename(type = program_type) %>%
   left_join_check(
     question %>%
       select(question_number, question_name),
@@ -174,3 +199,10 @@ response <- response %>%
   assertr::verify(merge == 3) %>%
   assertr::assert(not_na, question_name) %>%
   select(-merge)
+
+# Clean Data
+for (table in c("question", "response", "program")) {
+  attr(workbook, table) <- get(table)
+}
+
+workbooks <- cleanPirData(list(workbook), schema, log_file)
