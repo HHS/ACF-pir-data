@@ -51,7 +51,7 @@ pirIngestOld <- function(workbook) {
     }
   )
   
-  # Append sections into response data
+  # Clean question data
   tryCatch(
     {
       wb <- cleanQuestion(wb, log_file)
@@ -69,7 +69,7 @@ pirIngestOld <- function(workbook) {
     }
   )
   
-  # Merge reference sheet to section sheets
+  # Clean program data
   tryCatch(
     {
       wb <- cleanProgram(wb, log_file)
@@ -87,6 +87,7 @@ pirIngestOld <- function(workbook) {
     }
   )
   
+  # Clean response data
   tryCatch(
     {
       wb <- cleanResponse(wb, log_file)
@@ -121,8 +122,6 @@ pirIngestOld <- function(workbook) {
       errorMessage(cnd, log_file)
     }
   )
-
-  # Write to DB ----
   
   # Write data
   tryCatch(

@@ -1,8 +1,11 @@
 # Deduplicate questions
 deduplicate_question <- function(list_of_errors, data) {
+  # Original variables
   orig_vars <- names(data)
+
   data %>%
     arrange(pirweb_field_name) %>%
+    # Logic for deduplication
     mutate(
       row = row_number(),
       has_field_name = !is.na(pirweb_field_name),
@@ -24,8 +27,10 @@ deduplicate_question <- function(list_of_errors, data) {
 # Move questions to unmatched question table
 identifyUnmatched <- function(list_of_errors, data) {
   
+  # Get calling environment
   parent_env <- parent.env(environment())
   
+  # Identify unmatched questions
   unmatched_question <- data %>%
     filter(merge != 3) %>%
     distinct(question_number, question_name, merge) %>%
@@ -39,8 +44,10 @@ identifyUnmatched <- function(list_of_errors, data) {
       type = NA_character_
     )
   
+  # Assign unmatched questions to parent environment
   assign("unmatched_question", unmatched_question, parent_env)
   
+  # Return matched questions
   data %>%
     filter(merge == 3) %>%
     return()
@@ -48,9 +55,13 @@ identifyUnmatched <- function(list_of_errors, data) {
 
 # Merge by only grant and delegate number
 grantDelegateMerge <- function(list_of_errors, data) {
+  #' If program_number doesn't exist in the data or is always NA,
+  #' then the merge by grant_number and delegate_number only
   data %>%
+    # Keep only records in the response data
     filter(merge == 1) %>%
     select(-c(merge, program_type, program_number)) %>%
+    # Merge by grant_number and delegate_number
     left_join_check(
       program %>%
         select(grant_number, delegate_number, program_number, program_type),
@@ -62,16 +73,22 @@ grantDelegateMerge <- function(list_of_errors, data) {
   
 }
 
+# Load the PIR data
 loadData <- function(workbooks, log_file) {
   
   workbooks <- purrr::map(
     workbooks,
     function(workbook) {
+      # Get the sheets from the workbook
       sheets <- attr(workbook, "sheets")
+      # Create a list to store the response data
       response_list <- list()
+      # Loop through the sheets
       for (sheet in sheets) {
         sheet_lower <- tolower(sheet)
         df <- readxl::read_xlsx(workbook, sheet = sheet)
+        # If the sheet does not contain program, datadictionary, or grantees, then consider it a response sheet
+        # and check for duplicates on the GRNUM and DELNUM columns. If this check passes, append to the response_list
         if (!grepl("program|datadictionary|grantees", sheet_lower)) {
           try(
             response_list <- df %>%
@@ -80,18 +97,23 @@ loadData <- function(workbooks, log_file) {
             silent = TRUE
           )
         }
+        # If the sheet contains the words program or grantees, consider this a program sheet and check for duplicates
+        # on the GRNUM and DELNUM columns. 
         else if (grepl("program|grantees", sheet_lower)) {
           program <- df %>%
             assertr::assert_rows(assertr::col_concat, assertr::is_uniq, GRNUM, DELNUM)
         }
+        # If the sheet contains the word datadictionary, consider this a question sheet
         else if (grepl("datadictionary", sheet_lower)) {
           question <- df %>%
             janitor::clean_names()
         }
       }
+      # Set the data as attributes of the workbook
       attr(workbook, "question") <- question
       attr(workbook, "program") <- program
       
+      # Merge all of the response data into a single dataframe
       response <- purrr::reduce(
         response_list, 
         function (x, y) {
@@ -108,14 +130,17 @@ loadData <- function(workbooks, log_file) {
   return(workbooks)
 }
 
+# Clean the question data
 cleanQuestion <- function(workbooks, log_file) {
   workbooks <- purrr::map(
     workbooks,
     function(workbook) {
+      # Get the question data
       question <- attr(workbook, "question")
       
       question <- question %>%
         group_by(field_name) %>%
+        # Handle case where pirweb_field_name is missing
         {
           if ("pirweb_field_name" %in% names(question)) {
             distinct(., field_name, pirweb_field_name, description, .keep_all = TRUE)
@@ -138,15 +163,19 @@ cleanQuestion <- function(workbooks, log_file) {
           type = hses_field_type
         ) %>%
         mutate(
+          # Generate question name from the available field names and question_text
           question_name = coalesce(hses_field_name, pirweb_field_name, question_text),
           question_number = field_name,
+          # Split question number
           question_number = gsub(
             "(\\w)(\\d{1,2})(\\w)?(\\w)?(\\w)?",
             "\\1.\\2.\\3.\\4-\\5",
             question_number,
             perl = T
           ),
+          # Remove any trailing non-word characters (i.e. punctuation)
           question_number = gsub("\\W(?=\\W)|\\W$", "", question_number, perl = T),
+          # Remove leading 0s in e.g. C.01 -> C.1
           question_number = gsub("\\.0(\\d)", ".\\1", question_number, perl = T),
           section_response = NA_character_
         )
@@ -159,6 +188,7 @@ cleanQuestion <- function(workbooks, log_file) {
   return(workbooks)
 }
 
+# Clean program data
 cleanProgram <- function(workbooks, log_file) {
   workbooks <- purrr::map(
     workbooks,
@@ -166,6 +196,7 @@ cleanProgram <- function(workbooks, log_file) {
       question <- attr(workbook, "question")
       program <- attr(workbook, "program")
       
+      # Get the column names from the question data
       program_col_names <- lapply(names(program),
         function(x){
           index <- question$field_name == x
@@ -186,6 +217,7 @@ cleanProgram <- function(workbooks, log_file) {
         rename_with(
           ~ gsub("pgm", "program", .)
         ) %>%
+        # Generate sys_hs_program_id if it doesn't exist
         {
           if ("sys_hs_program_id" %in% names(.)) {
             .
@@ -193,6 +225,7 @@ cleanProgram <- function(workbooks, log_file) {
             mutate(., sys_hs_program_id = -1)
           }
         } %>%
+        # Rename columns according to what is present in the data
         {
           if ("program_zip" %in% names(.)) {
             rename(
@@ -219,12 +252,14 @@ cleanProgram <- function(workbooks, log_file) {
             )
           }
         } %>%
+        # Split 9 digit zip code into 5 and 4 digit parts
         tidyr::separate(
           program_zip,
           c("program_zip_code", "program_zip_4"),
           5
         ) %>%
         assertr::assert_rows(col_concat, is_uniq, grant_number, delegate_number) %>%
+        # Generate program type if it doesn't exist
         {
           if ("program_type" %in% names(.)) {
             .
@@ -242,6 +277,7 @@ cleanProgram <- function(workbooks, log_file) {
   return(workbooks)
 }
 
+# Clean response data
 cleanResponse <- function(workbooks, log_file) {
   workbooks <- purrr::map(
     workbooks,
@@ -251,13 +287,17 @@ cleanResponse <- function(workbooks, log_file) {
       program <- attr(workbook, "program")
       
       response <- response %>%
+        # Remove duplicated variables
         select(
           -ends_with(c(".y"))
         ) %>%
+        # Remove trailing .x from variable names
         rename_with(
           ~ gsub("\\.x", "", ., perl = TRUE), ends_with(".x")
         ) %>%
+        # Remove variables that start with q
         select(-starts_with("q")) %>%
+        # Add SYS_HS_PROGRAM_ID if it doesn't exist
         {
           if ("SYS_HS_PROGRAM_ID" %in% names(.)) {
             .
@@ -271,9 +311,11 @@ cleanResponse <- function(workbooks, log_file) {
           program_number = SYS_HS_PROGRAM_ID,
           region = RegionNumber
         ) %>%
+        # Select only identifying variables and survey questions
         select(
           grant_number, delegate_number, region, program_number, matches("\\w\\d")
         ) %>%
+        # Confirm that the data is unique at the appropriate level
         {
           if (any(!is.na(.$program_number))) {
             assertr::assert_rows(., col_concat, is_uniq, grant_number, delegate_number, program_number)
@@ -283,6 +325,7 @@ cleanResponse <- function(workbooks, log_file) {
         }
       
       program <- program %>%
+        # Merge region on to program data
         left_join_check(
           response %>%
             select(grant_number, delegate_number, region),
@@ -295,6 +338,7 @@ cleanResponse <- function(workbooks, log_file) {
       
       response <- response %>%
         mutate(across(everything(), as.character)) %>%
+        # Reshape response data
         pivot_longer(
           -c("grant_number", "delegate_number", "region", "program_number"),
           names_to = "question_number",
@@ -303,6 +347,7 @@ cleanResponse <- function(workbooks, log_file) {
         mutate(
           delegate_number = as.numeric(delegate_number),
           program_number = as.numeric(program_number),
+          # Generate question_number
           question_number = gsub(
             "(\\w)(\\d{1,2})(\\w)?(\\w)?(\\w)?",
             "\\1.\\2.\\3.\\4-\\5",
@@ -314,6 +359,7 @@ cleanResponse <- function(workbooks, log_file) {
         )
       
       response <- response %>%
+        # Add program type
         left_join_check(
           program %>%
             select(grant_number, delegate_number, program_number, program_type),
@@ -321,20 +367,24 @@ cleanResponse <- function(workbooks, log_file) {
           relationship = "many-to-one"
         ) %>%
         assertr::verify(merge %in% c(1, 3)) %>%
+        # Confirm that at least one record merges, if not, conduct merge again without program_number
         assertr::verify(any(merge == 3), error_fun = grantDelegateMerge) %>%
         filter(merge == 3) %>%
         select(-merge) %>%
         rename(type = program_type) %>%
+        # Add question name
         left_join_check(
           question %>%
             select(question_number, question_name),
           by = c("question_number"),
           relationship = "many-to-one"
         ) %>%
+        # Identify any unmatched questions
         assertr::verify(merge == 3, error_fun = identifyUnmatched) %>%
         assertr::assert(not_na, question_name) %>%
         select(-merge)
       
+      # Update workbook attributes
       attr(workbook, "response") <- response
       attr(workbook, "program") <- program
       rm(program, envir = .GlobalEnv)
