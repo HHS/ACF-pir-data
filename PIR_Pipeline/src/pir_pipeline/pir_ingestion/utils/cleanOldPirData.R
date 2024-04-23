@@ -76,7 +76,8 @@ loadData <- function(workbooks, log_file) {
           try(
             response_list <- df %>%
               assertr::assert_rows(col_concat, assertr::is_uniq, GRNUM, DELNUM) %>%
-              {append(response_list, list(.))}
+              {append(response_list, list(.))},
+            silent = TRUE
           )
         }
         else if (grepl("program|grantees", sheet_lower)) {
@@ -99,11 +100,6 @@ loadData <- function(workbooks, log_file) {
         }
       )
       attr(workbook, "response") <- response
-      
-      logMessage(
-        paste0("Successfully extracted PIR sheets from ", workbook, "."),
-        log_file
-      )
       
       return(workbook)
     }
@@ -154,11 +150,6 @@ cleanQuestion <- function(workbooks, log_file) {
           question_number = gsub("\\.0(\\d)", ".\\1", question_number, perl = T),
           section_response = NA_character_
         )
-      
-      logMessage(
-        paste0("Successfully cleaned question data from ", workbook, "."),
-        log_file
-      )
       
       attr(workbook, "question") <- question
       return(workbook)
@@ -243,11 +234,6 @@ cleanProgram <- function(workbooks, log_file) {
         }
       
       attr(workbook, "program") <- program
-      
-      logMessage(
-        paste0("Successfully cleaned program data from ", workbook, "."),
-        log_file
-      )
       
       return(workbook)
     }
@@ -364,11 +350,6 @@ cleanResponse <- function(workbooks, log_file) {
         attr(workbook, "question") <- question
         rm(unmatched_question, inherits = TRUE)
       }
-      
-      logMessage(
-        paste0("Successfully cleaned response data from ", workbook, "."),
-        log_file
-      )
       
       return(workbook)
     }
