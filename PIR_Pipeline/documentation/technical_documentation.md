@@ -504,6 +504,8 @@ A series of ad-hoc linking steps are performed after iterating through
 every year available. Those steps can be reviewed (and modified) in
 *adHocLinks.R*. This set of ad-hoc links, like those made or destroyed in
 the dashboard, are recorded in *pir_logs.pir_manual_question_link*.
+Please see [adHocLinks.R](../src/pir_pipeline/pir_question_links/utils/adHocLinks.R)
+for further details on the current set of ad-hoc links.
 
 ## PIR Database
 
