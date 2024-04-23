@@ -1,4 +1,4 @@
-import pyodbc, argparse, json, os, re
+import pyodbc, argparse, json, os, re, shutil
 import pandas as pd
 
 def main():
@@ -62,6 +62,13 @@ def main():
 
         # Save the Excel file
         writer._save()
+
+    # If the file is in the Raw directory, move it to the Processed directory
+    if os.path.normpath(config["Raw"]) in os.path.normpath(file_path):
+        shutil.move(file_path, os.path.join(config["Processed"], os.path.basename(file_path)))
+    else:
+        # Copy the file to the Processed directory
+        shutil.copy(file_path, os.path.join(config["Processed"], os.path.basename(file_path)))
 
 if __name__ == "__main__":
     main()
