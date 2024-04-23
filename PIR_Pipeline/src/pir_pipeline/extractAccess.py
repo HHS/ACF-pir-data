@@ -44,18 +44,19 @@ def main():
     # Create a new Excel writer object
     for year in years:
         current_table_list = [table for table in table_list if re.match(f"tbl{year}", table)]
-        if int(year) <= 8:
+        if int(year) < 8:
             year_str = f"20{year}"
+        elif int(year) == 8:
+            continue
         else:
             year_str = f"19{year}"
-        path = os.path.join("C:/Users/reggie.gilliard/repos/ACF-pir-data/data/", f"pir_export_{year_str}.xlsx")
+        path = os.path.join(config["Raw"], f"pir_export_{year_str}.xlsx")
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
 
         # Loop through the list of tables and write each to a sheet in the Excel file
         for table in current_table_list:
             query = f"SELECT * FROM [{table}]"
             df = pd.read_sql(query, cnxn)
-            # df = df.map(lambda x: x.encode('unicode_escape').decode('utf-8') if isinstance(x, str) else x)
             table = table[0:30:1]
             df.to_excel(writer, sheet_name=table, index=False)
 

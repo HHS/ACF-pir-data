@@ -34,14 +34,12 @@ loadData <- function(workbooks, log_file) {
           try(
             response_list <- df %>%
               assertr::assert_rows(col_concat, assertr::is_uniq, GRNUM, DELNUM) %>%
-              # janitor::clean_names() %>%
               {append(response_list, list(.))}
           )
         }
         else if (grepl("program|grantees", sheet_lower)) {
           program <- df %>%
             assertr::assert_rows(assertr::col_concat, assertr::is_uniq, GRNUM, DELNUM)
-          # janitor::clean_names()
         }
         else if (grepl("datadictionary", sheet_lower)) {
           question <- df %>%
@@ -50,7 +48,7 @@ loadData <- function(workbooks, log_file) {
       }
       attr(workbook, "question") <- question
       attr(workbook, "program") <- program
-      print(response_list)
+      
       response <- purrr::reduce(
         response_list, 
         function (x, y) {
@@ -59,6 +57,12 @@ loadData <- function(workbooks, log_file) {
         }
       )
       attr(workbook, "response") <- response
+      
+      logMessage(
+        paste0("Successfully extracted PIR sheets from ", workbook, "."),
+        log_file
+      )
+      
       return(workbook)
     }
   )
@@ -96,6 +100,11 @@ cleanQuestion <- function(workbooks, log_file) {
           question_number = gsub("\\.0(\\d)", ".\\1", question_number, perl = T),
           section_response = NA_character_
         )
+      
+      logMessage(
+        paste0("Successfully cleaned question data from ", workbook, "."),
+        log_file
+      )
       
       attr(workbook, "question") <- question
       return(workbook)
@@ -149,6 +158,12 @@ cleanProgram <- function(workbooks, log_file) {
         assertr::assert_rows(col_concat, is_uniq, grant_number, delegate_number)
       
       attr(workbook, "program") <- program
+      
+      logMessage(
+        paste0("Successfully cleaned program data from ", workbook, "."),
+        log_file
+      )
+      
       return(workbook)
     }
   )
@@ -235,6 +250,12 @@ cleanResponse <- function(workbooks, log_file) {
       
       attr(workbook, "response") <- response
       attr(workbook, "program") <- program
+      
+      logMessage(
+        paste0("Successfully cleaned response data from ", workbook, "."),
+        log_file
+      )
+      
       return(workbook)
     }
   )
