@@ -1,3 +1,4 @@
+# Deduplicate questions
 deduplicate_question <- function(list_of_errors, data) {
   orig_vars <- names(data)
   data %>%
@@ -18,6 +19,47 @@ deduplicate_question <- function(list_of_errors, data) {
     select(all_of(orig_vars)) %>%
     ungroup() %>%
     return()
+}
+
+# Move questions to unmatched question table
+identifyUnmatched <- function(list_of_errors, data) {
+  
+  parent_env <- parent.env(environment())
+  
+  unmatched_question <- data %>%
+    filter(merge != 3) %>%
+    distinct(question_number, question_name, merge) %>%
+    mutate(
+      reason = case_when(
+        merge == 1 ~ "In response, but not question.",
+        merge == 2 ~ "In question, but not response."
+      ),
+      question_name = ifelse(is.na(question_name), question_number, question_name),
+      section_response = NA_character_,
+      type = NA_character_
+    )
+  
+  assign("unmatched_question", unmatched_question, parent_env)
+  
+  data %>%
+    filter(merge == 3) %>%
+    return()
+}
+
+# Merge by only grant and delegate number
+grantDelegateMerge <- function(list_of_errors, data) {
+  data %>%
+    filter(merge == 1) %>%
+    select(-c(merge, program_type, program_number)) %>%
+    left_join_check(
+      program %>%
+        select(grant_number, delegate_number, program_number, program_type),
+      by = c("grant_number", "delegate_number"),
+      relationship = "many-to-one"
+    ) %>%
+    assertr::verify(any(merge == 3)) %>%
+    return()
+  
 }
 
 loadData <- function(workbooks, log_file) {
@@ -78,9 +120,21 @@ cleanQuestion <- function(workbooks, log_file) {
       
       question <- question %>%
         group_by(field_name) %>%
-        distinct(field_name, pirweb_field_name, description, .keep_all = TRUE) %>%
+        {
+          if ("pirweb_field_name" %in% names(question)) {
+            distinct(., field_name, pirweb_field_name, description, .keep_all = TRUE)
+          } else {
+            distinct(., field_name, description, .keep_all = TRUE) %>%
+              mutate(
+                pirweb_field_name = NA_character_,
+                hses_field_type = NA_character_,
+                hses_field_name = NA_character_
+              )
+          }
+        } %>%
         mutate(n = n()) %>%
-        assertr::verify(n == 1, error_fun = deduplicate_question)
+        assertr::verify(n == 1, error_fun = deduplicate_question) %>%
+        ungroup()
       
       question <- question %>%
         rename(
@@ -141,21 +195,52 @@ cleanProgram <- function(workbooks, log_file) {
         rename_with(
           ~ gsub("pgm", "program", .)
         ) %>%
+        {
+          if ("sys_hs_program_id" %in% names(.)) {
+            .
+          } else {
+            mutate(., sys_hs_program_id = -1)
+          }
+        } %>%
+        {
+          if ("program_zip" %in% names(.)) {
+            rename(
+              .,
+              program_address_line_1 = program_address1,
+              program_address_line_2 = program_address2,
+              program_main_email = agency_email,
+              program_number = sys_hs_program_id,
+              grant_number = grantno,
+              delegate_number = delegateno,
+              program_main_phone_number = program_phone
+            )
+          } else {
+            rename(
+              .,
+              program_address_line_1 = q05,
+              program_address_line_2 = q06,
+              program_main_email = q14,
+              program_number = sys_hs_program_id,
+              grant_number = grnum,
+              delegate_number = delnum,
+              program_main_phone_number = q10,
+              program_zip = q09
+            )
+          }
+        } %>%
         tidyr::separate(
           program_zip,
           c("program_zip_code", "program_zip_4"),
           5
         ) %>%
-        rename(
-          program_address_line_1 = program_address1,
-          program_address_line_2 = program_address2,
-          program_main_email = agency_email,
-          program_number = sys_hs_program_id,
-          grant_number = grantno,
-          delegate_number = delegateno,
-          program_main_phone_number = program_phone
-        ) %>%
-        assertr::assert_rows(col_concat, is_uniq, grant_number, delegate_number)
+        assertr::assert_rows(col_concat, is_uniq, grant_number, delegate_number) %>%
+        {
+          if ("program_type" %in% names(.)) {
+            .
+          } else {
+            mutate(., program_type = "Unknown")
+          }
+        }
       
       attr(workbook, "program") <- program
       
@@ -187,6 +272,13 @@ cleanResponse <- function(workbooks, log_file) {
           ~ gsub("\\.x", "", ., perl = TRUE), ends_with(".x")
         ) %>%
         select(-starts_with("q")) %>%
+        {
+          if ("SYS_HS_PROGRAM_ID" %in% names(.)) {
+            .
+          } else {
+            mutate(., SYS_HS_PROGRAM_ID = -1)
+          }
+        } %>%
         rename(
           grant_number = GRNUM,
           delegate_number = DELNUM,
@@ -195,7 +287,14 @@ cleanResponse <- function(workbooks, log_file) {
         ) %>%
         select(
           grant_number, delegate_number, region, program_number, matches("\\w\\d")
-        )
+        ) %>%
+        {
+          if (any(!is.na(.$program_number))) {
+            assertr::assert_rows(., col_concat, is_uniq, grant_number, delegate_number, program_number)
+          } else {
+            assertr::assert_rows(., col_concat, is_uniq, grant_number, delegate_number)
+          }
+        }
       
       program <- program %>%
         left_join_check(
@@ -206,6 +305,7 @@ cleanResponse <- function(workbooks, log_file) {
         ) %>%
         assertr::verify(merge == 3) %>%
         select(-c(merge))
+      assign("program", program, envir = .GlobalEnv)
       
       response <- response %>%
         mutate(across(everything(), as.character)) %>%
@@ -235,6 +335,7 @@ cleanResponse <- function(workbooks, log_file) {
           relationship = "many-to-one"
         ) %>%
         assertr::verify(merge %in% c(1, 3)) %>%
+        assertr::verify(any(merge == 3), error_fun = grantDelegateMerge) %>%
         filter(merge == 3) %>%
         select(-merge) %>%
         rename(type = program_type) %>%
@@ -244,12 +345,25 @@ cleanResponse <- function(workbooks, log_file) {
           by = c("question_number"),
           relationship = "many-to-one"
         ) %>%
-        assertr::verify(merge == 3) %>%
+        assertr::verify(merge == 3, error_fun = identifyUnmatched) %>%
         assertr::assert(not_na, question_name) %>%
         select(-merge)
       
       attr(workbook, "response") <- response
       attr(workbook, "program") <- program
+      rm(program, envir = .GlobalEnv)
+
+      if (exists("unmatched_question", environment())) {
+        attr(workbook, "unmatched_question") <- unmatched_question
+        question <- question %>%
+          full_join(
+            unmatched_question %>%
+              select(question_number, question_name),
+            by = c("question_number", "question_name")
+          )
+        attr(workbook, "question") <- question
+        rm(unmatched_question, inherits = TRUE)
+      }
       
       logMessage(
         paste0("Successfully cleaned response data from ", workbook, "."),
