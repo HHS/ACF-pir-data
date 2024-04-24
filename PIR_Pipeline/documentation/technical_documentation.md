@@ -76,6 +76,7 @@
             - [Review Unlinked Questions](#review-unlinked-questions)
             - [Review Intermittent Links](#review-intermittent-links)
             - [Review Inconsistent Links](#review-inconsistent-links)
+- [Appendix B: Entity Relationship Diagram](#appendix-b-entity-relationship-diagram)
 
 ## Project Overview
 
@@ -839,6 +840,13 @@ The PIR package includes an R Shiny dashboard for reviewing logs, viewing data, 
 4. A series of messages will print, culminating with a message that says *Listening on \<url>*. Navigate to this url in a browser to view the dashboard.
 
 To close the dashboard simply close the browser tab.
+
+## Appendix B: Entity Relationship Diagram
+
+![PIR Database: pir_data](../images/ERD-pir_data_tables.png)
+![PIR Database: pir_question_links_tables](../images/ERD-pir_question_links_tables.png)
+![PIR Database: pir_question_links_views](../images/ERD-pir_question_links_views.png)
+![PIR Database: pir_logs](../images/ERD-pir_logs_tables.png)
 
 [^1]: [Program Information Report (PIR) \| ECLKC
     (hhs.gov)](https://eclkc.ohs.acf.hhs.gov/data-ongoing-monitoring/article/program-information-report-pir)
