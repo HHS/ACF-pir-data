@@ -11,7 +11,7 @@ This package is designed to streamline PIR survey data analysis. The pipeline ac
     - [Linking Questions](./documentation/technical_documentation.md#linking-questions)
     - [Using the PIR Monitoring Dashboard](./documentation/technical_documentation.md#using-the-pir-monitoring-dashboard)
 - [View PIR Pipeline Diagram](./documentation/technical_documentation.md#pipeline-diagram)
-- [View PIR Database Entity Relationship Diagram](./documentation/technical_documentation.md#entity-relationship-diagram)
+- [View PIR Database Entity Relationship Diagram](./documentation/technical_documentation.md#appendix-b-entity-relationship-diagram)
 
 
 
