@@ -177,7 +177,7 @@ cleanQuestion <- function(workbooks, log_file) {
           question_number = gsub("\\W(?=\\W)|\\W$", "", question_number, perl = T),
           # Remove leading 0s in e.g. C.01 -> C.1
           question_number = gsub("\\.0(\\d)", ".\\1", question_number, perl = T),
-          section_response = NA_character_
+          section_response = "NA"
         )
       
       attr(workbook, "question") <- question

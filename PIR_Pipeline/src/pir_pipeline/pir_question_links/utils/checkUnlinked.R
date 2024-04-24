@@ -24,10 +24,14 @@ checkUnlinked <- function(df_list) {
   
   # Extract the current year
   lower <- unique(df_list$lower_year$year)
+  unlinked_identical <- identical(
+    unlinked[c("question_id", "year")],
+    unlinked_db[c("question_id", "year")]
+  )
   
   # If there are records in unlinked and in unlinked_db, string distance check
   # against unlinked_db
-  if (!is.null(unlinked) && nrow(unlinked) > 0 && nrow(unlinked_db) > 0) {
+  if (!is.null(unlinked) && nrow(unlinked) > 0 && nrow(unlinked_db) > 0 && !unlinked_identical) {
   
     separated <- cross_join(unlinked, unlinked_db) %>%
       filter(year.x != year.y)
