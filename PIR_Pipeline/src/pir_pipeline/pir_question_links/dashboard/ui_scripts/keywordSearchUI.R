@@ -26,7 +26,7 @@ dash_meta$keyword_choices <- varnames[-which(varnames %in% c("uqid", "year", "qu
 
 # Define a tab named "Search for Questions By Keyword"
 keyword_search <- tabPanel(
-  "Search for Questions By Keyword",
+  "Search for Questions by Keyword",
   fluidPage(
     tags$head(
       tags$style(
