@@ -31,7 +31,14 @@ home_unique_obs <- dbGetQuery(
   relocate(Table)
 
 # Assign the table to output so we can call it in UI
-output$home_uniq_obs <- renderTable(home_unique_obs)
+home_uniq_obs <- datatable(
+  home_unique_obs,
+  options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
+  rownames = FALSE,
+  class = 'cell-border compact stripe',
+  colnames = c('Table', 'Count')
+)
+output$home_uniq_obs <- renderDT(home_uniq_obs)
 
 # Create a table of total linked and unlinked questions
 home_tot_obs <- dbGetQuery(
@@ -58,7 +65,14 @@ home_tot_obs <- dbGetQuery(
   relocate(Table)
 
 # Assign the table to output so we can call it in UI
-output$home_tot_obs <- renderTable(home_tot_obs)
+home_tot_obs <- datatable(
+  home_tot_obs,
+  options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
+  rownames = FALSE,
+  class = 'cell-border compact stripe',
+  colnames = c('Table', 'Count')
+)
+output$home_tot_obs <- renderDT(home_tot_obs)
 
 # Query to get most recent results
 ingestion_query <- dbGetQuery(
