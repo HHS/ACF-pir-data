@@ -46,7 +46,5 @@ observeEvent(
       choices = dash_meta$inconsistent_uqid_choices,
       selected = "None"
     )
-    # Refresh the page
-    js$refresh_page()
   }
 )
