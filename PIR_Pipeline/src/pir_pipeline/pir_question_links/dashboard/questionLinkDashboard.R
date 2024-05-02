@@ -35,19 +35,26 @@ question_review <- tabPanel(
 # Define UI
 if (unlinked_count > 0) {
   tabs <- tabsetPanel(
+    id = "tabs",
     home,
     keyword_search,
-    question_review
+    question_review,
+    manual_review,
+    tabPanel("Shutdown", value = "close"),
   )
 } else {
   tabs <- tabsetPanel(
+    id = "tabs",
     home,
-    keyword_search
+    keyword_search,
+    manual_review,
+    tabPanel("Shutdown", value = "close"),
   )
 }
 ui <- fluidPage(
   useShinyjs(),
-  extendShinyjs(text = jscode, functions = "refresh_page"),
+  extendShinyjs(text = js_refresh, functions = "refresh_page"),
+  extendShinyjs(text = js_close, functions = "closeWindow"),
   tabs
 )
 
@@ -56,9 +63,12 @@ server <- function(input, output, session) {
   for (script in server_scripts) {
     source(script, local = T)$value
   }
-  session$onSessionEnded(function() {
-    map(connections, DBI::dbDisconnect)
-    stopApp()
+  observeEvent(input$tabs, {
+    if (input$tabs == "close") {
+      js$closeWindow()
+      map(connections, DBI::dbDisconnect)
+      stopApp()
+    }
   })
 }
 

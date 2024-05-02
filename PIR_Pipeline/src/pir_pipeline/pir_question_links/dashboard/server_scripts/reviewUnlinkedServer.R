@@ -190,6 +190,14 @@ observeEvent(
       FROM unlinked;
       "
     )
+    shiny::showModal(
+      shiny::modalDialog(
+        paste0(
+          "Link created between ", input$review_question_id, " and ", input$review_proposed_link, "!"
+        ),
+        easyClose = TRUE
+      )
+    )
     updateSelectInput(
       session,
       "review_question_id",

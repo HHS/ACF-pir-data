@@ -39,6 +39,16 @@ observeEvent(
   {
     # Delete link
     deleteLink(link_conn, input$inconsistent_uqid, input$inconsistent_question_id)
+    
+    shiny::showModal(
+      shiny::modalDialog(
+        paste0(
+          "Removed link between ", input$inconsistent_uqid, " and ", input$inconsistent_question_id, "!"
+        ),
+        easyClose = TRUE
+      )
+    )
+    
     # Update select input and reset to default
     updateSelectInput(
       session,

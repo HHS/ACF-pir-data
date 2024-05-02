@@ -102,6 +102,16 @@ observeEvent(
   {
     # Generate intermittent link
     genIntermittentLink(input$intermittent_uqid, input$intermittent_proposed_link, conn, link_conn)
+    
+    shiny::showModal(
+      shiny::modalDialog(
+        paste0(
+          "Link created between between ", input$intermittent_uqid, " and ", input$intermittent_proposed_link, "!"
+        ),
+        easyClose = TRUE
+      )
+    )
+    
     # Get unique IDs with intermittent links
     choices <- dbGetQuery(
       link_conn,
