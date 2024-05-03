@@ -47,7 +47,7 @@ observeEvent(
       )
     )$Field
 
-    choices <- varnames[-which(varnames %in% c("uqid", "year", "question_id"))]
+    choices <- varnames
     
     # Update the keyword text input placeholder
     updateSelectInput(

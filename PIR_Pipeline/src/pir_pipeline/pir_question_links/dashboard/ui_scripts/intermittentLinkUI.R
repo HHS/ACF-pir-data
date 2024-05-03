@@ -43,19 +43,4 @@ intermittent_id <- tabPanel(
       tableOutput("intermittent_link")
     )
   )
-  # sidebarPanel(
-  #   selectInput(
-  #     inputId = "intermittent_uqid", label = "Unique Question ID", 
-  #     choices = dash_meta$intermittent_uqid_choices
-  #   ),
-  #   selectInput(
-  #     inputId = "intermittent_proposed_link", label = "Proposed Link", choices = "None"
-  #   ),
-  #   actionButton(
-  #     inputId = "intermittent_create_link", label = "Link"
-  #   )
-  # ),
-  # mainPanel(
-  #   tableOutput("intermittent_link")
-  # )
 )

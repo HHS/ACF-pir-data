@@ -43,13 +43,13 @@
     - [Details](#details-7)
 - [PIR Database](#pir-database)
     - [pir_data](#pir_data)
-        - [Tables](#_Toc183747121)
+        - [Tables](#tables)
         - [Functions](#functions)
         - [Stored Procedures](#stored-procedures)
     - [pir_logs](#pir_logs)
-        - [Tables](#tables)
-    - [pir_question_links](#pir_question_links)
         - [Tables](#tables-1)
+    - [pir_question_links](#pir_question_links)
+        - [Tables](#tables-2)
         - [Functions](#functions-1)
         - [Stored Procedures](#stored-procedures-1)
         - [Views](#views)
@@ -76,6 +76,7 @@
             - [Review Unlinked Questions](#review-unlinked-questions)
             - [Review Intermittent Links](#review-intermittent-links)
             - [Review Inconsistent Links](#review-inconsistent-links)
+- [Appendix B: Entity Relationship Diagram](#appendix-b-entity-relationship-diagram)
 
 ## Project Overview
 
@@ -504,6 +505,8 @@ A series of ad-hoc linking steps are performed after iterating through
 every year available. Those steps can be reviewed (and modified) in
 *adHocLinks.R*. This set of ad-hoc links, like those made or destroyed in
 the dashboard, are recorded in *pir_logs.pir_manual_question_link*.
+Please see [adHocLinks.R](../src/pir_pipeline/pir_question_links/utils/adHocLinks.R)
+for further details on the current set of ad-hoc links.
 
 ## PIR Database
 
@@ -837,6 +840,13 @@ The PIR package includes an R Shiny dashboard for reviewing logs, viewing data, 
 4. A series of messages will print, culminating with a message that says *Listening on \<url>*. Navigate to this url in a browser to view the dashboard.
 
 To close the dashboard simply close the browser tab.
+
+## Appendix B: Entity Relationship Diagram
+
+![PIR Database: pir_data](../images/ERD-pir_data_tables.png)
+![PIR Database: pir_question_links_tables](../images/ERD-pir_question_links_tables.png)
+![PIR Database: pir_question_links_views](../images/ERD-pir_question_links_views.png)
+![PIR Database: pir_logs](../images/ERD-pir_logs_tables.png)
 
 [^1]: [Program Information Report (PIR) \| ECLKC
     (hhs.gov)](https://eclkc.ohs.acf.hhs.gov/data-ongoing-monitoring/article/program-information-report-pir)

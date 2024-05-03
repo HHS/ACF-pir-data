@@ -7,7 +7,11 @@
 # Fetch data for the Intermittent links tab of the dashboard
 output$intermittent_link <- function() {
   # Get intermittent matches
-  intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches
+  if (length(dash_meta$intermittent_uqid_choices) > 0){
+    intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches 
+  } else {
+    intermittent <- data.frame()
+  }
   # Get unique question IDs and corresponding unique IDs from linked table
   uqids <- dbGetQuery(
     link_conn,
@@ -76,7 +80,11 @@ observeEvent(
   input$intermittent_uqid,
   {
     # Get intermittent matches
-    intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches
+    if (length(dash_meta$intermittent_uqid_choices) > 0){
+      intermittent <- jaccardIDMatch(link_conn, input$intermittent_uqid, "intermittent")$matches 
+    } else {
+      intermittent <- data.frame()
+    }
     # Filter unique proposed question IDs
     choices <- unique(intermittent$question_id_proposed)
     # Update select input
