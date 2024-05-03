@@ -30,6 +30,8 @@ pir-r-packages = "pir_pipeline:installPackages.main"
 pir-dashboard = "pir_pipeline:startDashboard.main"
 pir-status = "pir_pipeline:pirStatus.main"
 pir-training = "pir_pipeline:startTraining.main"
+pir-extract = "pir_pipeline:extractAccess.main"
+
 
 [project.gui-scripts]
 pir-setup = "pir_pipeline:pirSetup.main"

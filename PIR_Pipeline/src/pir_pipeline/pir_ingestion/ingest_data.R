@@ -59,7 +59,14 @@ wb_list <- args
 map(
   wb_list,
   function(workbook) {
-    pirIngest(workbook)
+    year <- stringr::str_extract(workbook, "(\\d+).(csv|xlsx?)", group = 1)
+    year <- as.numeric(year)
+    # If year is 2008 or later, use the standard PIR ingestion, otherwise use the function for older data
+    if (year >= 2008) {
+      pirIngest(workbook)
+    } else {
+      pirIngestOld(workbook)
+    }
     gc()
   }
 )
