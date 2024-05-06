@@ -1,6 +1,8 @@
 # PIR Pipeline Training
 
-This book is a walk-through of the setup and use of the PIR Pipeline. Code samples in the training assume a Windows environment, and the default terminal is assumed to be the command prompt.
+This documentation provides a walk-through of the setup and use of the PIR Pipeline. Code samples in the training assume a Windows environment, and the default terminal is assumed to be the command prompt.
+
+## Table of Contents
 
 1. [Pre-installation](#pre-installation)
 2. [Installation](#installation)
@@ -23,7 +25,7 @@ or `where python`:
 
 ![Fig. 1.2: Find Python Location](../images/python_location.png)
 
-If Python is not on PATH, follow the instructions [for adding python to PATH](https://realpython.com/add-python-to-path/).
+If Python is not on PATH, follow these instructions [for adding python to PATH](https://realpython.com/add-python-to-path/).
 
 ### Software Requirements
 
@@ -57,7 +59,7 @@ This will create a `venv` directory into which you will install the PIR Pipeline
 
 ### Activating the Virtual Environment
 
-It is crucial to activate the virtual environment before installing the package. This prevents conflicts with other Python packages/installations on your computer. To activate, still working in a terminal, type `venv\Scripts\Activate`. (To later deactivate the virtual environment, type `deactivate` in the terminal.) You will know that you've successfully activated the virtual environment, because its name will appear adjacent to the command prompt.
+It is crucial to activate the virtual environment before installing the package. This prevents conflicts with other Python packages/installations on your computer. To activate, still working in a terminal, type `venv\Scripts\Activate`. (To later deactivate the virtual environment, type `deactivate` in the terminal.) You will know that you've successfully activated the virtual environment if its name appears adjacent to the command prompt.
 
 ![Fig. 2.1: Activated Virtual Environment](../images/venv_activated.png)
 
@@ -85,11 +87,11 @@ A window will appear requesting the directory at which you wish to store PIR dat
 
 ![Fig. 3.1: Path GUI](../images/setup_paths.png)
 
-Click finish when ready to move on. Another window will appear requesting database credentials.
+Click `Finish` when ready to move on. Another window will appear requesting database credentials.
 
 ![Fig. 3.2: Config GUI](../images/pir_setup_config.PNG?raw=true "Config GUI")
 
-Click finish after providing your credentials. This will prompt setup to continue: the configuration file will be generated; the database populated with relevant schemas, views, and stored procedures; and R packages installed.
+Click `Finish` after providing your credentials. This will prompt setup to continue: the configuration file will be generated; the database populated with relevant schemas, views, and stored procedures; and R packages installed.
 
 ## Ingesting Data
 
@@ -118,7 +120,9 @@ There will be a corresponding batch file in the *PIR\Listener_bats* directory as
 If instead immediate ingestion is desired, `pir-ingest` has a few options:
 
 - `--now`: Immediately trigger ingestion.
-- `--files`: Combine with `--now` to trigger immediate ingestion only for specific files (note that you must specify the absolute path to the file). Using the test data:
+- `--files`: Combine with `--now` to trigger immediate ingestion only for specific files (note that you must specify the absolute path to the file). 
+
+Using the test data:
 
 `pir-ingest --now --files "<full-path-to-files>\PIR\PIR_data_repository\Raw\pir_export_2019.xlsx"`
 
@@ -142,7 +146,7 @@ This returns JSON formatted log output:
 
 #### Reviewing Logs
 
-Alternatively, one can open MySQL from the command line or via MySQL Workbench and review the logs and/or tables in pir_question_links in this way.
+Alternatively, one can open MySQL from the command line or via MySQL Workbench and review the pir_ingestion_logs in this way.
 
 *Only the most recent logs*
 ```
@@ -162,53 +166,51 @@ FROM pir_logs.pir_ingestion_logs;
 
 ## Linking Questions
 
-### Introduction
-
-One way in which the PIR pipeline package adds value for PIR users is by performing inter-temporal question links by default. This training details 1) the algorithm used in linking questions, 2) the process for beginning question links, and 3) the process for reviewing question links.
-
 ### Question Linking Algorithm
 
 #### Base Linking Algorithm
 
-When question linking is triggered, the script begins by identifying the greatest year available and initially treating all questions as questions to match (QTM). The set of questions is first checked against the extant set of linked questions and the set of unlinked questions. 
+When question linking is triggered, the script begins by identifying the most recent year available and initially treating all questions as questions to match (QTM).
 
 First, the algorithm searches for direct matches on question_id in either the pir_question_links.linked or pir_question_links.unlinked tables. Questions with identical question_id are assumed to be the same across years. Such questions are removed from QTM and prepared for insertion into pir_question_links.linked. If any of these questions matched with a question in pir_question_links.unlinked, that question is also prepared for insertion into pir_question_links.linked (and removed from pir_question_links.unlinked).
 
 An attempt is then made to match the remaining questions in QTM to those in pir_question_links.linked using a string distance algorithm. The string distance between the question_name, question_number, section, and question_text of each question in QTM and each question in pir_question_links.linked is calculated using a variation of the Levenshtein distance. Matches must come from the same section: a question in Section A cannot be linked to a question in Section B. Two questions are considered linked when two of the remaining three string distances are equal to 0. That is, if question_name_dist and question_text_dist are both 0 then the two questions are linked and so on for the other possible two-choice combinations of question_name, question_number, and question_text. Any questions linked in this way are also removed from QTM and added to the data frame being prepared for insertion into pir_question_links.linked.
 
-The same approach is used to determine whether there are links between the questions remaining in QTM and any questions in the pir_question_links.unlinked. When all potential links have been made, linked questions are inserted into pir_question_links.linked and unlinked questions from QTM are inserted into pir_question_links.unlinked.
+The same approach is used to determine whether there are links between the questions remaining in QTM and any questions in the pir_question_links.unlinked table. When all potential links have been made, linked questions are inserted into pir_question_links.linked and unlinked questions from QTM are inserted into pir_question_links.unlinked.
 
 #### Ad-hoc Links
 
-Through review of the linked and unlinked questions, the PIR pipeline team identified a set of questions which we believe are missed by the base linking algorithm. These manually curated links, which we call ad-hoc links, are made during the standard linking process, but they are tracked in the pir_logs.pir_manual_question_link table for easy link destruction and review.
+Through review of the linked and unlinked questions, the PIR Pipeline team identified a set of questions which we believe are missed by the base linking algorithm. These manually curated links, which we call ad-hoc links, are made during the standard linking process, but they are tracked in the pir_logs.pir_manual_question_link table for easy link review and destruction.
 
 There are two sources of ad-hoc links: 1) adHocLinks.R and 2) ad_hoc_links.RDS. In adHocLinks.R are systematic linkages: cases in which entire series of questions are renamed to resemble questions in other years. ad_hoc_links.RDS contains a handful of links that cannot be systematized. Ad-hoc links can be updated by modifying either the R script or .RDS file.
 
 #### Dashboard Linking
 
-The PIR dashboard enables review of unlinked questions. In addition to presenting a list of proposed links for a given unlinked question as produced by the base matching algorithm detailed above, we also present a list of proposed links employing the [weighted Jaccard](https://cran.r-project.org/web/packages/fedmatch/vignettes/Fuzzy-matching.html#Weighted%20Jaccard%20Similarity) (follow link or see `vignette("Fuzzy-matching", "fedmatch")` for additional details). This presents reviewers with a broader range of potential matches to review. We recommend beginning by reviewing the Jaccard matches for questions of interest.
+The PIR dashboard enables review of unlinked questions. In addition to presenting a list of proposed links for a given unlinked question as produced by the base matching algorithm detailed above, we also present a list of proposed links employing the [weighted Jaccard algorithm](https://cran.r-project.org/web/packages/fedmatch/vignettes/Fuzzy-matching.html#Weighted%20Jaccard%20Similarity). This presents reviewers with a broader range of potential matches to review. We recommend beginning by reviewing the Jaccard matches for questions of interest.
 
 ### Triggering Question Linking
 
-Linking is triggered from the command line as follows:
+Continuing in the terminal:
 
 ```
 pir-link
 ```
 
+Will link questions from the data ingested earlier.
+
 ### Verifying Linking Success
 
-The PIR pipeline package provides a command line facility for checking the latest logs in pir_logs.pir_question_linkage_logs:
+As with ingestion, `pir-status --link` can be used for checking the latest logs in pir_logs.pir_question_linkage_logs:
 
 ```
 pir-status --link
 ```
 
-This, as in the ingestion case, returns JSON formatted log output.
+The output will resemble the output from `pir-status --ingestion`.
 
 #### Reviewing Logs
 
-Again, one can open MySQL from the command line or via MySQL Workbench and review the logs and/or tables in pir_question_links in this way.
+Again, one can open MySQL from the command line or via MySQL Workbench and review the pir_question_linkage_logs in this way.
 
 *Only the most recent logs*
 ```
@@ -228,7 +230,7 @@ FROM pir_logs.pir_question_linkage_logs;
 
 #### Reviewing Tables
 
-One can perform quick sanity checks such as confirming that the expected years are in the linked table
+One can also perform quick sanity checks such as confirming that the expected years are in the linked table
 
 ```
 SELECT distinct(year)
@@ -246,36 +248,31 @@ ON pir_question_links.linked.question_id = pir_question_links.unlinked.question_
 
 ## Using the PIR Pipeline Dashboard
 
-### Introduction
-
-Managing the PIR database can be done directly using MySQL, either from the command line or
-through an integrated development environment (IDE) such as MySQL workbench. For question linking in particular, however, sifting through all of the linked and unlinked questions in SQL can be challenging. The PIR Pipeline Dashboard is provided to lessen the challenge of reviewing and revising question links. We provide lists of questions that either fail to be linked across all years, are linked to inconsistent questions over time, or simply are unlinked and some simple facilities for redressing these issues.
-
 ### Launching the Dashboard
 
-To launch the PIR Pipeline Dashboard, begin by opening a terminal. Once there, the following command will launch the dashboard, which will be hosted locally on your computer:
+Continuing in the terminal:
 
 ```
 pir-dashboard
 ```
 
-Some dialogue will print and ultimately you will see something like the following: 
+will launch the dashboard, which will be hosted locally on your computer. Some dialogue will print to the console culminating in something like 
 
 ![Fig. 6.1: Dashboard URL](../images/dashboard_triggering.png)
 
-Navigate to the highlighted URL (yours will be different).
+Navigate to the highlighted URL (this will vary each time the command is run).
 
 ### Navigating Dashboard Tabs
 
 #### Question Link Overview
 
-Upon launching the dashboard users are presented with the Overview tab. Here, the latest result for each of the listener, ingestion, and question linking logs is presented. An additional table, displaying the count of questions that are linked/unlinked is also included here.
+Upon launching the dashboard users are presented with the Overview tab. Here, the latest result for each of the listener, ingestion, and question linkage logs is presented. An additional table, displaying the count of questions that are linked/unlinked is also included here.
 
-![Fig. 6.2: Overview Tab](../images/dashboard_home.jpeg)
+![Fig. 6.2: Overview Tab](../images/db_overview_pre_link.png)
 
 #### Search for Questions by Keyword
 
-The second tab of the dashboard enables users to search for questions in the pir_question_links database by keywords. In the PIR database, all questions are identified by a *question_id* which is a hashed version of their question_name and question_number. These IDs are useful for storing the data, but not particularly meaningful to humans. This tab can help users get from a question name, number, or bits of question text to *question_id*s.
+The second tab of the dashboard enables users to search for questions in the pir_question_links database by keyword(s). In the PIR database, all questions are identified by a *question_id* which is a hashed version of their *question_name* and *question_number*. These IDs are useful for storing the data, but not particularly meaningful to humans. This tab can help users get from a question name, number, or bits of question text to *question_id*s.
 
 ![Fig. 6.3: Keyword Search Tab](../images/dashboard_keyword_search.png)
 
@@ -283,13 +280,13 @@ This tab is calling the [keywordSearch](../src/pir_pipeline/pir_sql/pir_question
 
 #### Review Links
 
-This tab, composed of three sub-tabs, is the heart of the PIR Pipeline Dashboard. Each of the three tabs corresponds to one of the three scenarios discussed in the introduction: **Review Unlinked** enables review of unlinked questions; **Review Intermittent Links** allows users to review questions that are not linked for the entirety of the period for which users have PIR data; **Review Inconsistent Links** enables users to review questions which link to different *question_id*s over time, and break those links as necessary.
+This tab, composed of three sub-tabs, is the heart of the PIR Pipeline Dashboard. Each of the three sub-tabs corresponds to one of the three scenarios under which questions might warrant review: **Review Unlinked** enables review of unlinked questions; **Review Intermittent Links** allows users to review questions that are not linked for the entirety of the period for which users have PIR data; **Review Inconsistent Links** enables users to review questions which link to different *question_id*s over time, and break those links as necessary.
 
 ##### Review Unlinked
 
-This tab presents all of the questions in the *pir_question_links.unlinked* table and potential matches for them. The proposed matches are generated by two algorithms: the base PIR matching algorithm 
-![Fig. 6.4: Review Unlinked: Base Algorithm](../images/dashboard_review_unlinked_base.jpeg), 
-and the Weighted Jaccard algorithm proposed by the authors of the **fedmatch** package. 
+This tab presents all of the questions in the *pir_question_links.unlinked* table and potential matches for them. The proposed matches are generated by two algorithms: the base PIR matching algorithm, 
+![Fig. 6.4: Review Unlinked: Base Algorithm](../images/dashboard_review_unlinked_base.jpeg)
+and the Weighted Jaccard algorithm proposed by the authors of the *fedmatch* package. 
 ![Fig. 6.5: Review Unlinked: Base Algorithm](../images/dashboard_review_unlinked_jaccard.jpeg) 
 (See [Linking Questions](#linking-questions) for further details about these algorithms).
 
@@ -303,19 +300,23 @@ This tab presents all questions that are linked during some subset of the period
 
 ![Fig. 6.6: Review Intermittent Links](../images/dashboard_review_intermittent.jpeg)
 
-The list of questions with intermittent links is acquired from the *pir_question_links.imperfect_link_v*. Proposed matches are generated using the [jaccardIDMatch](../src/pir_pipeline/pir_question_links/utils/jaccardIDMatch.R) function and links are created using the [genIntermittentLink](../src/pir_pipeline/pir_question_links/utils/genIntermittentLink.R) function.
+The list of questions with intermittent links is acquired from the *pir_question_links.imperfect_link_v* view. Proposed matches are generated using the [jaccardIDMatch](../src/pir_pipeline/pir_question_links/utils/jaccardIDMatch.R) function and links are created using the [genIntermittentLink](../src/pir_pipeline/pir_question_links/utils/genIntermittentLink.R) function.
 
 ##### Review Inconsistent Links
 
-This tab presents all questions that are linked to multiple *question_id*s over time. For example, if a question with ID A is linked to a question with ID B as well as a question with ID C, this question will appear in this tab.
+This tab presents all questions that are linked to multiple *question_id*s over time. For example, if a question with ID A is linked to a question with ID B, this question will appear in this tab.
 
 ![Fig. 6.7: Review Inconsistent Links](../images/dashboard_review_inconsistent.jpeg)
 
-The list of questions with inconsistent IDs is acquired from the *pir_question_links.imperfect_link_v*. The table shown in the tab, which lists the offending question and all of its extant links, is created by the [inconsistentIDMatch](../src/pir_pipeline/pir_question_links/utils/inconsistentIDMatch.R) function. The [deleteLink](../src/pir_pipeline/pir_question_links/utils/deleteLink.R) function is used to destroy links.
+The list of questions with inconsistent IDs is acquired from the *pir_question_links.imperfect_link_v* view. The table shown in the tab, which lists the offending question and all of its extant links, is created by the [inconsistentIDMatch](../src/pir_pipeline/pir_question_links/utils/inconsistentIDMatch.R) function. The [deleteLink](../src/pir_pipeline/pir_question_links/utils/deleteLink.R) function is used to destroy links.
 
-#### Example Question Review
+### Closing the Dashboard
 
-First we start up the dashboard:
+To close the dashboard, simply click the *Shutdown* tab.
+
+### Example Question Review
+
+Continuing in the terminal, begin by starting the dashboard:
 
 ```
 pir-dashboard
@@ -332,7 +333,7 @@ And navigate to the **Review Links** tab. Scanning through the unlinked question
 But switching to the Jaccard algorithm, reveals that ID "d4b37412954e4da887413fd85d280715" is quite a close match.
 
 ![Fig. 6.10: Review Unlinked Jaccard Algorithm](../images/db_review_unlinked_jaccard.png)
-To proceed with linking, click the link button. After linking, the tab will reset the "question_id" to blank like so:
+To proceed with linking, click the `Link` button. After linking, the tab will reset the "question_id" to blank like so:
 
 ![Fig. 6.11: Review Unlinked Post Link](../images/db_review_unlinked_link_clicked.png)
 
@@ -352,19 +353,21 @@ Find this question in the *Review Inconsistent Links* tab:
 
 ![Fig. 6.15: Review Inconsistent Links Pre Unlink](../images/db_review_inconsistent_pre.png)
 
-Clicking unlink will send "06dae44fe183c592f4134a8cfc6d37c8" back to the unlinked table. You can confirm this by checking the *Search for Questions by Keyword* or *Question Link Overview* tabs again.
+Clicking `Unlink` will send "06dae44fe183c592f4134a8cfc6d37c8" back to the unlinked table. You can confirm this by checking the *Search for Questions by Keyword* or *Question Link Overview* tabs again.
 
 ![Fig. 6.16: Search for Question Post Unlink](../images/db_search_unlinked_post.png)
 
-### Closing the Dashboard
-
-To close the dashboard, simply click the *Shutdown* tab.
-
 ## Managing the PIR Database
 
-### Introduction
+This section of the training can be done either in the terminal, or in MySQL Workbench. To continue in the terminal:
 
-The [PIR Pipeline Dashboard](#using-the-pir-pipeline-dashboard) is included so that users can get some value from the PIR Pipeline package's question linking functionality without needing to know SQL syntax. To harness the full utility of the pipeline, however, using SQL is necessary. This portion of the training gets you started with understanding the structure of the PIR database and how to interact with the data.
+```
+mysql -u <your-username> -p
+```
+
+You will be prompted for your password. Enter it, and then press enter again to sign in to MySQL.
+
+![Fig. 7.1: MySQL Command Line Sign-In](../images/mysql_command_line.png)
 
 ### PIR Database Entity Relationship Diagram
 
@@ -374,8 +377,7 @@ The [PIR Pipeline Dashboard](#using-the-pir-pipeline-dashboard) is included so t
 use pir_data;
 ```
 
-
-![Fig 7.1: PIR Data Schema](../images/ERD-pir_data_tables.png)
+![Fig 7.2: PIR Data Schema](../images/ERD-pir_data_tables.png)
 
 There are four tables in the *pir_data* schema: response, program, question, and unmatched_question. The key table here is the response table, this is where the responses to the PIR survey are stored. The program and question tables contain meta-data and can be linked to the response table n:1 using the combination of year and either uid or question_id respectively. For example:
 
@@ -386,7 +388,7 @@ LEFT JOIN question
 ON response.question_id = question.question_id and response.`year` = question.`year`
 LIMIT 10;
 ```
-![Fig. 7.2: Response and Question Query](../images/db_response_to_question.png)
+![Fig. 7.3: Response and Question Query](../images/db_response_to_question.png)
 
 *OR*
 
@@ -398,7 +400,7 @@ ON response.uid = program.uid and response.`year` = program.`year`
 LIMIT 10;
 ```
 
-![Fig. 7.3: Response and Program Query](../images/db_response_to_program.png)
+![Fig. 7.4: Response and Program Query](../images/db_response_to_program.png)
 
 The question table contains all of the information in the unmatched_question table, except for the reason that a question is considered unmatched. Given this, we will forego further discussion of the unmatched_question table in this training.
 
@@ -410,9 +412,9 @@ use pir_question_links;
 
 ##### Tables
 
-![Fig. 7.4: PIR Question Links - Tables](../images/ERD-pir_question_links_tables.png)
+![Fig. 7.5: PIR Question Links - Tables](../images/ERD-pir_question_links_tables.png)
 
-There are three tables in the *pir_question_links* schema: *linked*, *unlinked*, and *proposed_link*. The *linked* table contains all questions that have been linked across time, the *unlinked* table contains questions that are never linked across time. The *proposed_link* table is derived from the unlinked table and is simply a truncated version.
+There are three tables in the *pir_question_links* schema: *linked*, *unlinked*, and *proposed_link*. The *linked* table contains all questions that have been linked across any length of time, the *unlinked* table contains questions that are never linked across time. The *proposed_link* table is derived from the unlinked table and is simply a truncated version.
 
 *Linked* and *unlinked* are the tables that will be queried directly most often. *Linked* is unique in that there are two IDs for each question: 1) question_id, the same unique identifier used in *pir_data.response* and *pir_data.question* to uniquely identify questions (within a year); 2) uqid (unique question ID) which is an identifier unique to *linked* that can identify questions across time. Questions sharing a uqid do not need to share a question_id. Two available IDs means *linked* can be queried on ID in two ways:
 
@@ -422,7 +424,7 @@ FROM linked
 WHERE uqid = "01fbd4fe-3a59-4016-8f83-6a727c58dda4"; -- NOTE THAT THIS uqid WILL CHANGE
 ```
 
-![Fig. 7.5: Linked Query with uqid](../images/db_linked_uqid.png)
+![Fig. 7.6: Linked Query with uqid](../images/db_linked_uqid.png)
 
 OR
 
@@ -442,11 +444,11 @@ FROM unlinked
 WHERE question_id = "184047b683ff56a3dc38c71d15f785cb";
 ```
 
-![Fig. 7.6: Unlinked query](../images/db_unlinked.png)
+![Fig. 7.7: Unlinked query](../images/db_unlinked.png)
 
 ##### Views
 
-![Fig. 7.7: PIR Question Links - views](../images/ERD-pir_question_links_views.png)
+![Fig. 7.8: PIR Question Links - views](../images/ERD-pir_question_links_views.png)
 
 There are six views in the *pir_question_links* schema:
 
@@ -465,7 +467,7 @@ FROM imperfect_link_v
 WHERE uqid = "02ac5893-df25-40e8-85d7-606d4e8d971b"; -- NOTE THAT THIS uqid WILL CHANGE
 ```
 
-![Fig. 7.8: Imperfect Link Query](../images/db_imperfect_link.png)
+![Fig. 7.9: Imperfect Link Query](../images/db_imperfect_link.png)
 
 *linked_question_v* is a direct view onto the *linked* table. This view, therefore, can be queried in the same ways that *linked* can.
 
@@ -477,7 +479,7 @@ FROM new_questions_v
 WHERE question_id = "19dc665526fd8b4e253214a1bcfb1da8";
 ```
 
-![Fig. 7.9: New Questions Query](../images/db_new_questions.png)
+![Fig. 7.10: New Questions Query](../images/db_new_questions.png)
 
 Finally, *unlinked_v* is similar to the *unlinked* table. For the view version of unlinked, some columns have been removed and the proposed_link column has been unpacked such that there can be more than one row per unlinked question_id. This also yields new columns which give the distances calculated by the [base matching algorithm](#base-linking-algorithm). Query it as you would *unlinked*:
 
@@ -487,11 +489,11 @@ FROM unlinked_v
 WHERE question_id = "184047b683ff56a3dc38c71d15f785cb";
 ```
 
-![Fig. 7.10: Unlinked View Query](../images/db_unlinked_v.png)
+![Fig. 7.11: Unlinked View Query](../images/db_unlinked_v.png)
 
 #### PIR Logs
 
-![Fig 7.11: PIR Logs Schema](../images/ERD-pir_logs_tables.png)
+![Fig 7.12: PIR Logs Schema](../images/ERD-pir_logs_tables.png)
 
 The *pir_logs* schema consists of 4 tables:
 
@@ -543,7 +545,7 @@ ON response.question_id = distinct_qid.question_id;
 ```
 
 which both yield 
-![Fig 7.12: Getting Response Data Across Years](../images/db_getQuestion_query.png)
+![Fig 7.13: Getting Response Data Across Years](../images/db_getQuestion_query.png)
 
 ### Using Stored Procedures
 
@@ -598,7 +600,7 @@ CALL pir_data.aggregateTable('national');
 SELECT * FROM pir_data.response_national LIMIT 10;
 ```
 
-![Fig. 7.13: aggregateTable Result](../images/db_aggregateTable.png)
+![Fig. 7.14: aggregateTable Result](../images/db_aggregateTable.png)
 
 - aggregateView - Create a view aggregated at the specified level. This procedure is useful for analyses on a particular question.
 
@@ -607,7 +609,7 @@ CALL pir_data.aggregateView('test', 'state', '4204a9701b894bb9ecd39865c6b30cc8',
 SELECT * FROM test_state;
 ```
 
-![Fig. 7.14: aggregateView Result](../images/db_aggregateView.png)
+![Fig. 7.15: aggregateView Result](../images/db_aggregateView.png)
 
 - genDifference - Generate a new column based on a linear combination of two others. Users can use this procedure to derive new constructs, or to recreate variables that have been combined or disaggregated over time.
 
@@ -622,7 +624,7 @@ CALL pir_data.genDifference(
 );
 ```
 
-![Fig. 7.15: genDifference Result](../images/db_genDifference.png)
+![Fig. 7.16: genDifference Result](../images/db_genDifference.png)
 
 - getProgramLevelData - Get program-level data from the response table. This is a shortcut for querying both the response and program tables by question_id.
 
@@ -630,7 +632,7 @@ CALL pir_data.genDifference(
 CALL pir_data.getProgramLevelData('question_id', '4204a9701b894bb9ecd39865c6b30cc8');
 ```
 
-![Fig. 7.16: getProgramLevelData Result](../images/db_getProgramLevelData.png)
+![Fig. 7.17: getProgramLevelData Result](../images/db_getProgramLevelData.png)
 
 - getQuestion - Get program-level data from the response table by question ID. This procedure queries across the pir_data and pir_question_links schemas enabling users to get data for a question across years, even when the question ID associated with that question changes over time.
 
@@ -638,7 +640,7 @@ CALL pir_data.getProgramLevelData('question_id', '4204a9701b894bb9ecd39865c6b30c
 CALL pir_data.getQuestion('4204a9701b894bb9ecd39865c6b30cc8', 'uqid');
 ```
 
-![Fig. 7.17: getQuestion Result](../images/db_getQuestion.png)
+![Fig. 7.18: getQuestion Result](../images/db_getQuestion.png)
 
 - keywordSearch - Search table, on column, by string. This uses REGEX behind the scenes so some wildcards can be used. This procedure is useful for finding records when only one piece of information about the records is known. It also underlies the keyword search functionality in the dashboard.
 
@@ -646,7 +648,7 @@ CALL pir_data.getQuestion('4204a9701b894bb9ecd39865c6b30cc8', 'uqid');
 CALL pir_data.keywordSearch("question", "question_name", "cumulative", 0);
 ```
 
-![Fig. 7.18: keywordSearch Result](../images/db_keywordSearch.png)
+![Fig. 7.19: keywordSearch Result](../images/db_keywordSearch.png)
 
 #### Procedures: PIR Question Links
 
@@ -656,7 +658,7 @@ CALL pir_data.keywordSearch("question", "question_name", "cumulative", 0);
 CALL pir_question_links.keywordSearch("linked", "question_name", "cumulative", 0);
 ```
 
-![Fig. 7.19: keywordSearch Result](../images/db_keywordSearch_link.png)
+![Fig. 7.20: keywordSearch Result](../images/db_keywordSearch_link.png)
 
 - reviewUnlinked - Return a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
 
@@ -664,7 +666,7 @@ CALL pir_question_links.keywordSearch("linked", "question_name", "cumulative", 0
 CALL pir_question_links.reviewUnlinked("184047b683ff56a3dc38c71d15f785cb");
 ```
 
-![Fig. 7.20: reviewUnlinked Result](../images/db_reviewUnlinked.png)
+![Fig. 7.21: reviewUnlinked Result](../images/db_reviewUnlinked.png)
 
 ### [Creating Views](https://dev.mysql.com/doc/refman/8.0/en/create-view.html)
 
