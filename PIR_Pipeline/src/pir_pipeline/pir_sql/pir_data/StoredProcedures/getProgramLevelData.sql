@@ -5,15 +5,21 @@
 -- Parameters:
 --  IN col TEXT - The column name to filter on. Must be a column in the response table.
 --  IN val TEXT - The value of the column to filter on.
+-- 	IN view_name VARCHAR(64) - The name of the view to be created. Specify NULL if no view is desired.
 -- Returns: None
--- Example: CALL pir_data.getProgramLevelData('question_id', '4fbac59c868a7255a0acb42bd6e2ec54');
+-- 	Optionally: View
+-- Examples: 
+-- 	CALL pir_data.getProgramLevelData('question_id', '4fbac59c868a7255a0acb42bd6e2ec54', NULL);
+-- 	CALL pir_data.getProgramLevelData('question_id', '4fbac59c868a7255a0acb42bd6e2ec54', 'tot_cumul_enr_v');
 -- =============================================
 DROP PROCEDURE IF EXISTS pir_data.getProgramLevelData;
 
 DELIMITER //
 
 CREATE PROCEDURE pir_data.getProgramLevelData(
-	IN col TEXT, IN val TEXT
+	IN col TEXT, 
+    IN val TEXT,
+    IN view_name VARCHAR(64)
 )
 BEGIN
 
@@ -40,6 +46,13 @@ BEGIN
     where_cond, ' ',
     'ORDER BY program.grant_number, program.program_number, program.program_type, response.year'
   );
+    
+    -- If view_name is specified, create a view
+	IF (view_name IS NOT NULL) THEN
+		SET @prg_query = CONCAT(
+			'CREATE OR REPLACE VIEW ', view_name, ' AS ', @prg_query
+        );
+    END IF;
     
   -- Prepare and execute the query
   SELECT @prg_query;

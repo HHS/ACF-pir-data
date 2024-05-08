@@ -6,11 +6,13 @@
 --  IN qid VARCHAR(255) - The question ID or unique question ID (uqid) to filter on.
 --  IN kind VARCHAR(12) - The kind of ID to filter on (uqid or question ID). If uqid, the procedure will return all responses for the questions linked to the uqid. 
 -- If question ID, the procedure will return all responses for the specified question ID.
+-- 	IN view_name VARCHAR(64) - The name of the view to be created. Specify NULL if no view is desired.
 -- Returns: None
+-- 	Optionally: View
 -- Examples: 
---	CALL pir_data.getQuestion('4fbac59c868a7255a0acb42bd6e2ec54', 'question_id');
---	CALL pir_data.getQuestion('0addede781364f83866353b43a90fe34', 'uqid');
--- 	CALL pir_data.getQuestion('00e4f2d1-adaf-4f1c-8bf2-3ffb8445d960', 'uqid');
+--	CALL pir_data.getQuestion('4fbac59c868a7255a0acb42bd6e2ec54', 'question_id', NULL);
+--	CALL pir_data.getQuestion('0addede781364f83866353b43a90fe34', 'uqid', NULL);
+-- 	CALL pir_data.getQuestion('0addede781364f83866353b43a90fe34', 'uqid', 'a22_pregnant_women_v');
 -- =============================================
 
 DROP PROCEDURE IF EXISTS pir_data.getQuestion;
@@ -19,7 +21,8 @@ DELIMITER //
 
 CREATE PROCEDURE pir_data.getQuestion(
 	IN qid VARCHAR(255),
-    IN kind VARCHAR(12)
+    IN kind VARCHAR(12),
+    IN view_name VARCHAR(64)
 )
 BEGIN
 	
@@ -75,9 +78,15 @@ BEGIN
         
 	END IF;
 
-	-- Prepare and execute the query    
-    SELECT @question_query;
-    
+    -- If view_name is specified, create a view
+	IF (view_name IS NOT NULL) THEN
+		SET @question_query = CONCAT(
+			'CREATE OR REPLACE VIEW ', view_name, ' AS ', @question_query
+        );
+    END IF;
+
+	-- Prepare and execute the query
+    select @question_query;
     PREPARE statement FROM @question_query;
     EXECUTE statement;
     DEALLOCATE PREPARE statement;
