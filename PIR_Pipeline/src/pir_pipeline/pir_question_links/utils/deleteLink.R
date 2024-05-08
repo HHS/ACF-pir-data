@@ -1,6 +1,6 @@
 ################################################################################
 ## Written by: Reggie Gilliard
-## Date: 01/02/2023
+## Date: 01/02/2024
 ## Description: Script to delete question links
 ################################################################################
 
@@ -48,6 +48,8 @@ deleteLink <- function(conn, uqid, question_id_list) {
   replaceInto(conn, newly_unlinked, "unlinked")
   # Delete target records
   DBI::dbExecute(conn, delete_query)
+  # Remove records from linked which now have no links
+  updateLinked(conn, uqid)
   # Remove any records in unlinked that are actually still present in the linked table
   updateUnlinked(conn)
   purrr::map(
