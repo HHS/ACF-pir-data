@@ -174,7 +174,7 @@ When question linking is triggered, the script begins by identifying the most re
 
 First, the algorithm searches for direct matches on question_id in either the pir_question_links.linked or pir_question_links.unlinked tables. Questions with identical question_id are assumed to be the same across years. Such questions are removed from QTM and prepared for insertion into pir_question_links.linked. If any of these questions matched with a question in pir_question_links.unlinked, that question is also prepared for insertion into pir_question_links.linked (and removed from pir_question_links.unlinked).
 
-An attempt is then made to match the remaining questions in QTM to those in pir_question_links.linked using a string distance algorithm. The string distance between the question_name, question_number, section, and question_text of each question in QTM and each question in pir_question_links.linked is calculated using a variation of the Levenshtein distance. Matches must come from the same section: a question in Section A cannot be linked to a question in Section B. Two questions are considered linked when two of the remaining three string distances are equal to 0. That is, if question_name_dist and question_text_dist are both 0 then the two questions are linked and so on for the other possible two-choice combinations of question_name, question_number, and question_text. Any questions linked in this way are also removed from QTM and added to the data frame being prepared for insertion into pir_question_links.linked.
+An attempt is then made to match the remaining questions in QTM to those in pir_question_links.linked using a string distance algorithm. The string distance between the question_name, question_number, section, and question_text of each question in QTM and each question in pir_question_links.linked is calculated using a variation of the (Levenshtein distance)[https://en.wikipedia.org/wiki/Levenshtein_distance]. Matches must come from the same section: a question in Section A cannot be linked to a question in Section B. Two questions are considered linked when two of the remaining three string distances are equal to 0. That is, if question_name_dist and question_text_dist are both 0 then the two questions are linked and so on for the other possible two-choice combinations of question_name, question_number, and question_text. Any questions linked in this way are also removed from QTM and added to the data frame being prepared for insertion into pir_question_links.linked.
 
 The same approach is used to determine whether there are links between the questions remaining in QTM and any questions in the pir_question_links.unlinked table. When all potential links have been made, linked questions are inserted into pir_question_links.linked and unlinked questions from QTM are inserted into pir_question_links.unlinked.
 
@@ -709,6 +709,23 @@ There are limitations to what can be changed working with the standard installat
     copy venv\Lib\site-packages\pir_pipeline\config.json .venv\Lib\site-packages\pir_pipeline\
     ```
 You now have a fully customizable PIR Pipeline installation. Some changes, specifically those involving adding or removing command-line scripts from the package, will not be reflected until the package is installed again. Running `pip install -e .` will make those changes available.
+
+### Rebuilding the package
+
+Within the newly created virtual environment, upgrade [pip](https://packaging.python.org/en/latest/key_projects/#pip) with `py -m pip install --upgrade pip` and upgrade [build](https://packaging.python.org/en/latest/key_projects/#build) with `py -m pip install --upgrade build`.
+
+To rebuild the distribution packages with your latest changes:
+
+```
+cd PIR_pipeline
+py -m build
+```
+
+This command needs to be run from the same directory at which pyproject.toml is located. Note that if the package is rebuilt without changing the version, users will have to [force reinstall](https://pip.pypa.io/en/latest/ux-research-design/research-results/pip-force-reinstall/) the package to apply the changes. To avoid this, when adding new features update the version in pyproject.toml.
+
+![Fig. 8.2: Versioning the Package](../images/pyproject_version.png)
+
+Reinstalling or updating the package will only change files that pip itself creates. This means that users will not need to recreate the config.json, pir_pipeline.Rproj, or reinstall R packages after each package update.
 
 ### Helpful Links
 
