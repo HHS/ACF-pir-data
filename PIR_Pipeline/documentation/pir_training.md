@@ -544,7 +544,8 @@ INNER JOIN distinct_qid
 ON response.question_id = distinct_qid.question_id;
 ```
 
-which both yield 
+which both yield :
+
 ![Fig 7.13: Getting Response Data Across Years](../images/db_getQuestion_query.png)
 
 ### Using Stored Procedures
@@ -660,13 +661,21 @@ CALL pir_question_links.keywordSearch("linked", "question_name", "cumulative", 0
 
 ![Fig. 7.20: keywordSearch Result](../images/db_keywordSearch_link.png)
 
-- reviewUnlinked - Return a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
+- reviewUnlinked - View a question and its proposed links. Used in the Monitoring Dashboard for reviewing unlinked questions.
 
 ```
 CALL pir_question_links.reviewUnlinked("184047b683ff56a3dc38c71d15f785cb");
 ```
 
 ![Fig. 7.21: reviewUnlinked Result](../images/db_reviewUnlinked.png)
+
+- reviewManual - View information about manually linked and unlinked questions. Used in the Monitoring Dashboard for reviewing manually links.
+
+```
+CALL pir_question_links.reviewManual('linked');
+```
+
+![Fig. 7.22: reviewManual Result](../images/db_reviewManual.png)
 
 ### [Creating Views](https://dev.mysql.com/doc/refman/8.0/en/create-view.html)
 

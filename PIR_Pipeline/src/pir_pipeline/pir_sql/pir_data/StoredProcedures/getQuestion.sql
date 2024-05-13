@@ -35,7 +35,7 @@ BEGIN
                 distinct_qid AS (
 					SELECT DISTINCT question_id
                     FROM pir_question_links.linked b
-                    WHERE uqid IN (', qid, ') ',
+                    WHERE uqid = ', QUOTE(qid),
                 ') 
 				SELECT response.*
                 FROM response
@@ -51,7 +51,7 @@ BEGIN
                 distinct_uqid AS (
 					SELECT DISTINCT uqid
                     FROM pir_question_links.linked
-                    WHERE question_id IN (', qid, ') ',
+                    WHERE question_id = ', QUOTE(qid),
                 '),
                 distinct_qid AS (
 					SELECT DISTINCT question_id
@@ -73,7 +73,7 @@ BEGIN
         SET @question_query = CONCAT(
 			'SELECT * ',
             'FROM response ',
-            'WHERE question_id IN (', qid, ') '
+            'WHERE question_id = ', QUOTE(qid), ' '
         );
         
 	END IF;
