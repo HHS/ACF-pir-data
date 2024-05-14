@@ -1,6 +1,6 @@
 # PIR Pipeline Training
 
-This documentation provides a walk-through of the setup and use of the PIR Pipeline. Code samples in the training assume a Windows environment, and the default terminal is assumed to be the command prompt.
+This documentation provides a walk-through of the setup and use of the PIR Pipeline. Code samples in the training assume a Windows environment, and the default terminal is assumed to be the Command Prompt (cmd).
 
 ## Table of Contents
 
@@ -17,11 +17,11 @@ This documentation provides a walk-through of the setup and use of the PIR Pipel
 
 ### Getting Python on PATH
 
-You can confirm whether Python is on PATH by opening a terminal and typing `py --version`:
+You can confirm whether Python is on PATH by opening a Command Prompt and typing `py --version`:
 
 ![Fig. 1.1: Find Python Version](../images/python_version.png)
 
-or `where python`:
+or `where python.exe`:
 
 ![Fig. 1.2: Find Python Location](../images/python_location.png)
 
@@ -43,7 +43,7 @@ If RScript is not on PATH, apply the instructions for adding Python to PATH for 
 
 Currently the PIR Pipeline is distributed via GitHub. Clone the [ACF-pir-data repository](https://github.com/HHS/ACF-pir-data) to install the pacakge (you can also fork the repository instead). Instructions for cloning repositories are provided at the links below:
 
-- [Cloning a repository using the terminal](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui)
+- [Cloning a repository using the Command Prompt](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui)
 - [Cloning a repository using GitHub Desktop](https://docs.github.com/en/desktop/adding-and-cloning-repositories/cloning-and-forking-repositories-from-github-desktop)
 
 ### Creating a Virtual Environment
@@ -59,7 +59,7 @@ This will create a `venv` directory into which you will install the PIR Pipeline
 
 ### Activating the Virtual Environment
 
-It is crucial to activate the virtual environment before installing the package. This prevents conflicts with other Python packages/installations on your computer. To activate, still working in a terminal, type `venv\Scripts\Activate`. (To later deactivate the virtual environment, type `deactivate` in the terminal.) You will know that you've successfully activated the virtual environment if its name appears adjacent to the command prompt.
+It is crucial to activate the virtual environment before installing the package. This prevents conflicts with other Python packages/installations on your computer. To activate, still working in a Command Prompt, type `venv\Scripts\Activate`. (To later deactivate the virtual environment, type `deactivate` in the Command Prompt.) You will know that you've successfully activated the virtual environment if its name appears adjacent to the Command Prompt.
 
 ![Fig. 2.1: Activated Virtual Environment](../images/venv_activated.png)
 
@@ -71,7 +71,7 @@ Once the virtual environment is activated, the package can be installed as follo
 pip install PIR_Pipeline\dist\pir_pipeline-1.0.0-py3-none-any.whl
 ```
 
-A slew of messages will be printed to the console. If you see that mysql-connector-python, pir-pipeline, and pywin32 were successfully installed, then installation is complete.
+A slew of messages will be printed to the console. If you see that mysql-connector-python, pir-pipeline, and pywin32 were successfully installed, then installation is complete. (Note that if you are working within a GFE context, you may need to disconnect from the VPN to install the package dependencies.)
 
 ![Fig 2.2: Installation Success](../images/installation_success.png)
 
@@ -79,7 +79,7 @@ A slew of messages will be printed to the console. If you see that mysql-connect
 
 PIR Pipeline installation requires administrative rights to the target database. It will be helpful to have database credentials on hand before beginning this process.
 
-Still working from the same terminal:
+Still working from the same Command Prompt:
 
 `pir-setup`
 
@@ -190,7 +190,7 @@ The PIR dashboard enables review of unlinked questions. In addition to presentin
 
 ### Triggering Question Linking
 
-Continuing in the terminal:
+Continuing in the Command Prompt:
 
 ```
 pir-link
@@ -250,7 +250,7 @@ ON pir_question_links.linked.question_id = pir_question_links.unlinked.question_
 
 ### Launching the Dashboard
 
-Continuing in the terminal:
+Continuing in the Command Prompt:
 
 ```
 pir-dashboard
@@ -316,7 +316,7 @@ To close the dashboard, simply click the *Shutdown* tab.
 
 ### Example Question Review
 
-Continuing in the terminal, begin by starting the dashboard:
+Continuing in the Command Prompt, begin by starting the dashboard:
 
 ```
 pir-dashboard
@@ -359,7 +359,7 @@ Clicking `Unlink` will send "06dae44fe183c592f4134a8cfc6d37c8" back to the unlin
 
 ## Managing the PIR Database
 
-This section of the training can be done either in the terminal, or in MySQL Workbench. To continue in the terminal:
+This section of the training can be done either in the Command Prompt, or in MySQL Workbench. To continue in the Command Prompt:
 
 ```
 mysql -u <your-username> -p
