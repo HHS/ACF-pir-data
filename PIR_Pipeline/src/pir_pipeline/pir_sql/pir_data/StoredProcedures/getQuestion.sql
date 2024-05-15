@@ -86,7 +86,6 @@ BEGIN
     END IF;
 
 	-- Prepare and execute the query
-    select @question_query;
     PREPARE statement FROM @question_query;
     EXECUTE statement;
     DEALLOCATE PREPARE statement;

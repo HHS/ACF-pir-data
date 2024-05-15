@@ -55,7 +55,6 @@ BEGIN
     END IF;
     
   -- Prepare and execute the query
-  SELECT @prg_query;
   PREPARE statement FROM @prg_query;
   EXECUTE statement;
   DEALLOCATE PREPARE statement;
