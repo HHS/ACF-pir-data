@@ -266,7 +266,7 @@ will launch the dashboard, which will be hosted locally on your computer. Some d
 
 #### Question Link Overview
 
-Upon launching the dashboard users are presented with the Overview tab. Here, the latest result for each of the listener, ingestion, and question linkage logs is presented. An additional table, displaying the count of questions that are linked/unlinked is also included here.
+Upon launching the dashboard users are presented with the Question Link Overview tab. Here, the latest results for each of the listener, ingestion, and question linkage logs are presented. An additional table, displaying the count of questions that are linked/unlinked is also included here.
 
 ![Fig. 6.2: Overview Tab](../images/db_overview_pre_link.png)
 
