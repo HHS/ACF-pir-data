@@ -161,7 +161,7 @@ question_logs <- datatable(
   options = list(dom = 'Bfrtip', buttons = c('copy', 'excel', 'pdf', 'print')),
   rownames = FALSE,
   class = 'cell-border compact stripe',
-  colnames = c('Run', 'Date', 'Timestamp', 'Message')
+  colnames = c('Run', 'Date', 'Message', 'Status')
 )
 
 # Assign every object to output so we can use it in the UI scripts
