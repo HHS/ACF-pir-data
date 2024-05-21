@@ -8,3 +8,4 @@ include src/pir_pipeline/renv/activate.R
 include src/pir_pipeline/renv/settings.json
 include src/pir_pipeline/renv/.gitignore
 recursive-include src/pir_pipeline/test_data *
+exclude *getQuestions.sql
