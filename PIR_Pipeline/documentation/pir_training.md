@@ -256,11 +256,11 @@ Continuing in the Command Prompt:
 pir-dashboard
 ```
 
-will launch the dashboard, which will be hosted locally on your computer. Some dialogue will print to the console culminating in something like 
+will launch the dashboard, which will be hosted locally on your computer. Some dialogue will print to the console culminating in something like:
 
 ![Fig. 6.1: Dashboard URL](../images/dashboard_triggering.png)
 
-Navigate to the highlighted URL (this will vary each time the command is run).
+. The dashboard will launch in your default web browser.
 
 ### Navigating Dashboard Tabs
 
