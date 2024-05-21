@@ -7,7 +7,7 @@
 CREATE OR REPLACE VIEW pir_question_links.inconsistent_question_id_v AS
 WITH
 lag_qid AS (
-	SELECT uqid, question_id, lag(question_id) over (PARTITION BY uqid) as lag_question_id
+	SELECT uqid, question_id, lag(question_id) OVER (PARTITION BY uqid) as lag_question_id
 	FROM pir_question_links.linked
 ),
 inconsistent AS (
