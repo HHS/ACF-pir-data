@@ -20,7 +20,7 @@ DROP PROCEDURE IF EXISTS pir_data.getQuestion;
 DELIMITER //
 
 CREATE PROCEDURE pir_data.getQuestion(
-	IN qid VARCHAR(255),
+	IN qid TEXT,
     IN kind VARCHAR(12),
     IN view_name VARCHAR(64)
 )
@@ -35,13 +35,8 @@ BEGIN
                 distinct_qid AS (
 					SELECT DISTINCT question_id
                     FROM pir_question_links.linked b
-                    WHERE uqid = ', QUOTE(qid),
-                ') 
-				SELECT response.*
-                FROM response
-                INNER JOIN distinct_qid
-                ON response.question_id = distinct_qid.question_id
-                '
+                    WHERE uqid IN (', qid, ') ',
+                ')'
             );
         -- If passed a question ID, identify the uqid associated with that question ID and get all responses for the questions linked to the uqid
         ELSE
@@ -51,33 +46,43 @@ BEGIN
                 distinct_uqid AS (
 					SELECT DISTINCT uqid
                     FROM pir_question_links.linked
-                    WHERE question_id = ', QUOTE(qid),
+                    WHERE question_id IN (', qid, ') ',
                 '),
                 distinct_qid AS (
 					SELECT DISTINCT question_id
                     FROM pir_question_links.linked
                     INNER JOIN distinct_uqid
                     ON pir_question_links.linked.uqid = distinct_uqid.uqid
-				)
-                SELECT response.*
-                FROM response
-                INNER JOIN distinct_qid
-                ON response.question_id = distinct_qid.question_id
-                '
+				)'
 			);
         
         END IF;
+		-- Merge in question data
+		SET @question_query = CONCAT(
+			@question_query,
+            '
+            SELECT response.*, question.question_number, question.question_name, question.question_text
+			FROM response
+			INNER JOIN distinct_qid
+			ON response.question_id = distinct_qid.question_id
+			',
+            'LEFT JOIN question ',
+            'ON response.question_id = question.question_id & response.year = question.year '
+		);
+
     -- If passed a question ID, get all responses for the specified question ID
 	ELSE
 		
         SET @question_query = CONCAT(
-			'SELECT * ',
+			'SELECT response.*, question.question_number, question.question_name, question.question_text ',
             'FROM response ',
-            'WHERE question_id = ', QUOTE(qid), ' '
+            'LEFT JOIN question ',
+            'ON response.question_id = question.question_id & response.year = question.year '
+            'WHERE response.question_id IN (', qid, ') '
         );
         
 	END IF;
-
+    
     -- If view_name is specified, create a view
 	IF (view_name IS NOT NULL) THEN
 		SET @question_query = CONCAT(
@@ -86,6 +91,7 @@ BEGIN
     END IF;
 
 	-- Prepare and execute the query
+    -- select @question_query;
     PREPARE statement FROM @question_query;
     EXECUTE statement;
     DEALLOCATE PREPARE statement;

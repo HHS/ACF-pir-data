@@ -1,67 +1,71 @@
 library(here)
-source(here("link-questions", "tests", "testSetup.R"))
+source(here("pir_question_links", "tests", "testSetup.R"))
 
 dbExecute(
   test_conn,
-  "call copyTables('question_links_test')"
+  "call copyTables('pir_question_links')"
 )
+
+question_id_list <- c("806e5ea40f2ea4c1c27d931451c955e9", "00f8984c004df31c96b3732c75363b98")
 
 to_unlink <- dbGetQuery(
   test_conn,
-  "
-  SELECT uqid, question_id
-  FROM linked
-  WHERE uqid IN (
-    SELECT uqid
-    FROM inconsistent_question_id_v
+  paste0(
+    "
+    SELECT uqid, question_id
+    FROM linked
+    WHERE question_id IN (",
+      paste0("'", question_id_list, "'", collapse = ", "),
+    ")"
   )
-  LIMIT 1
-  "
 )
 target_uqid <- to_unlink$uqid
 target_qid <- to_unlink$question_id
 
-initial_linked_count <- dbGetQuery(
-  test_conn,
-  "SELECT COUNT(*) FROM linked"
-)
-initial_unlinked_count <- dbGetQuery(
-  test_conn,
-  "SELECT COUNT(*) FROM unlinked"
-)
-obs_count <- dbGetQuery(
-  test_conn,
-  paste0(
-    "SELECT COUNT(*) 
-    FROM linked
-    WHERE uqid = '", target_uqid, "' AND question_id = '", target_qid, "'" 
-  )
+results <- purrr::map(
+  seq(length(target_qid)),
+  function (x) {
+    qid <- target_qid[[x]]
+    uqid <- target_uqid[[x]]
+    print(qid)
+    print(uqid)
+    deleteLink(
+      test_conn,
+      uqid,
+      qid
+    )
+    post_linked_count <- dbGetQuery(
+      test_conn,
+      paste0(
+        "SELECT COUNT(*) AS COUNT FROM linked WHERE uqid = '", uqid, "'"
+      )
+    )$COUNT
+    post_unlinked_count <- dbGetQuery(
+      test_conn,
+      paste0(
+        "SELECT COUNT(*) AS COUNT FROM unlinked where question_id = '", qid, "'"
+      )
+    )$COUNT
+    return(list(post_linked_count, post_unlinked_count))
+  }
 )
 
-deleteLink(
-  test_conn,
-  target_uqid,
-  target_qid
-)
-
-post_linked_count <- dbGetQuery(
-  test_conn,
-  "SELECT COUNT(*) FROM linked"
-)
-post_unlinked_count <- dbGetQuery(
-  test_conn,
-  "SELECT COUNT(*) FROM unlinked"
-)
+print(results)
 test_that(
+  "Variable no longer exists in linked",
   expect_equal(
-    initial_linked_count - obs_count, post_linked_count
+    results[2][[1]][[1]], 0
   )
 )
 
-
+test_that(
+  "Variable is in unlinked",
+  expect_equal(
+    results[1][[1]][[2]], 1 
+  )
+)
 
 dbExecute(
   test_conn,
-  "call dropTables('question_links_test')"
+  "call dropTables('pir_question_links')"
 )
-rm(log_file)

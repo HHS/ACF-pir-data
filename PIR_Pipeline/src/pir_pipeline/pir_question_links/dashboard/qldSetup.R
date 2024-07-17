@@ -62,7 +62,9 @@ link_conn <- connections$pir_question_links
 log_conn <- connections$pir_logs
 
 # JavaScript code for refreshing page
-jscode <- "shinyjs.refresh_page = function() { history.go(0); }"
+js_refresh <- "shinyjs.refresh_page = function() { history.go(0); }"
+js_close <- "shinyjs.closeWindow = function() { window.close(); }"
+
 
 # Number of unlinked records
 unlinked_count <- dbGetQuery(

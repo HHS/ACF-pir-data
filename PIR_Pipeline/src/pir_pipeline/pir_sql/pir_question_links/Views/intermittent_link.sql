@@ -10,7 +10,7 @@ intermittent AS (
     SELECT uqid
     FROM pir_question_links.linked
     GROUP BY uqid
-    HAVING min(year) != pir_question_links.minYearLinked() and max(year) != pir_question_links.maxYearLinked()
+    HAVING min(year) != pir_question_links.minYearLinked() OR max(year) != pir_question_links.maxYearLinked()
 )
 SELECT DISTINCT pir_question_links.linked.uqid, 1 AS intermittent_link
 FROM pir_question_links.linked

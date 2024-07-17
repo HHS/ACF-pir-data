@@ -1,6 +1,6 @@
 ################################################################################
 ## Written by: Reggie Gilliard
-## Date: 01/02/2023
+## Date: 01/02/2024
 ## Description: Update the unlinked table.
 ################################################################################
 
@@ -17,7 +17,7 @@ updateUnlinked <- function(conn) {
     "DELETE a",
     "FROM unlinked a",
     "INNER JOIN",
-    "(select distinct question_id, year from linked) b",
+    "(SELECT DISTINCT question_id, year from linked) b",
     "ON a.question_id = b.question_id AND a.year = b.year",
     "WHERE a.question_id = b.question_id"
   )

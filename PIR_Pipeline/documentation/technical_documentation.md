@@ -753,8 +753,10 @@ It will be helpful to have a few pieces of information on hand:
     - In the directory where `venv` was created, type `venv\Scripts\activate` into the command prompt and press `enter`
         - With Anaconda `conda activate venv`
 4.  Install the PIR Pipeline Package using the Python wheel file. The `dist` folder contains the relevant `.whl` file. Enter the following commands:
-    - `cd PIR_pipeline\dist`
-    - `pip install pir_pipeline-1.0.0-py3-none-any.whl`
+    ```
+    cd PIR_pipeline\dist
+    pip install pir_pipeline-1.0.0-py3-none-any.whl
+    ```
 
 Package installation should now be complete.
 

@@ -11,7 +11,7 @@ def main():
     # The R executable path is retrieved from the configuration file.
     # "-e" flag is used to execute the given expression in R.
     try:
-        subprocess.run([config['R_Path'], "-e", "{}".format("shiny::runApp('pir_question_links/dashboard/questionLinkDashboard.R')")], check=True, cwd=current_dir)
+        subprocess.run([config['R_Path'], "-e", "{}".format("shiny::runApp('pir_question_links/dashboard/questionLinkDashboard.R', launch.browser = TRUE)")], check=True, cwd=current_dir)
     except Exception as e:
         # In case of an exception, print the traceback information for debugging.
         print(dir(e.__traceback__))
