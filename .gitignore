@@ -9,6 +9,13 @@
 *.geojson
 *.zip
 *.xls
-
+*.odg
+*.json
 */output/*
 !pir_clean_2019_2022.csv
+config.R
+*/backups/*
+logs/
+data_repository/
+*/_misc/
+*__pycache__/
