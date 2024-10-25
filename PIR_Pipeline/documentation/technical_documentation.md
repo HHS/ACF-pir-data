@@ -749,10 +749,15 @@ It will be helpful to have a few pieces of information on hand:
         - If working with Anaconda `conda create --name <name-of-venv-directory>` should work. 
 
     This will create a virtual environment named `venv` in the current directory. A virtual environment is a self-contained directory tree that contains a Python installation for a particular version of Python, plus a number of additional packages. It allows you to work on the PIR Pipeline project in isolation from other projects.
-3.  Activate the virtual environment.
+
+> [!NOTE]  
+> When building your virtual environment, it is recommended to build it within the repository folder.
+> For example, `~/ACF-pir-data/venv`
+
+4.  Activate the virtual environment.
     - In the directory where `venv` was created, type `venv\Scripts\activate` into the command prompt and press `enter`
         - With Anaconda `conda activate venv`
-4.  Install the PIR Pipeline Package using the Python wheel file. The `dist` folder contains the relevant `.whl` file. Enter the following commands:
+5.  Install the PIR Pipeline Package using the Python wheel file. The `dist` folder contains the relevant `.whl` file. Enter the following commands:
     ```
     cd PIR_pipeline\dist
     pip install pir_pipeline-1.0.0-py3-none-any.whl
