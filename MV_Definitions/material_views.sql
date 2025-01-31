@@ -22,7 +22,7 @@ where
 		"5d7884f8e8f8735b3fc1d3d4426b68c2", -- Total Head Start Staff
 		"862cf4c97a3e31652bbd1a67c0c7b25e", -- Total Contracted Staff
 		"b9d40068777efa56512992700f548b11" -- Total Head Start Parent Staff
-	) 
+	)
 group by
 	response.`year`,
 	question.question_name,
@@ -65,7 +65,7 @@ where
 		"f9d7a0aa9625b7f0cdff6600cf04ca66", -- Less than 1 Year Old
 		"bae5e02ba246ccc54798351f4616c648", -- Less than 1 Year Old
 		"5b4f53b70ddbca37ff42b8760e11c186" -- Less than 1 Year Old
-	) 
+	)
 group by
 	response.`year`,
 	question.question_name,
@@ -122,4 +122,130 @@ group by
 	question.question_name,
 	program.program_state,
 	program.program_type;
-    
+
+drop table if exists mv_race_ethnicity_counts;
+
+create table
+	mv_race_ethnicity_counts as
+select
+	response.`year`,
+	question.question_name,
+	program.program_state,
+	program.program_type,
+	SUM(response.answer) as answer
+from
+	response
+	left join question on response.question_id = question.question_id
+	and response.`year` = question.`year`
+	left join program on response.uid = program.uid
+	and response.`year` = program.`year`
+where
+	response.question_id in (
+		"334f34de03b1fab8daaa94768e317055", -- American Indian/Alaska Native
+		"7e450d0f527cf012fb8856908a637eb8", -- American Indian/Alaska Native
+		"80b618ad5fcda27aeca5523ed906b981", -- American Indian/Alaska Native
+		"adb51179718ab5e741076cc0f393cb7b", -- American Indian/Alaska Native
+		"ebc1325e649f3fb822012444dc5d4708", -- American Indian/Alaska Native - Hispanic or Latino origin
+		"0bccc3dff75644744e1143b99b10ceeb", -- American Indian/Alaska Native - Non-Hispanic or Non-Latino origin
+		"259ddc565bb0435a96cd6b230eced95b", -- Asian
+		"2ff01f908520b7edabc2f214ea2c7027", -- Asian
+		"35f050b0620ab406597520e6b1604f81", -- Asian
+		"721850595082e3ac31bad34af891255a", -- Asian
+		"7581ea65dc41f28e315de5badd296b74", -- Asian - Hispanic or Latino origin
+		"c8aed7708cd5a0e1720213d12d761e9c", -- Asian - Non-Hispanic or Non-Latino origin
+		"442a69db5643870f6f66174a81e23712", -- Biracial or Multi-Racial
+		"899674343b13424851965babb532419f", -- Biracial or Multi-Racial
+		"a6a0a8cebeff9ea49c61212d50506045", -- Biracial or Multi-Racial
+		"e0608e227075f65aa42b9ce224c9ec80", -- Biracial or Multi-Racial
+		"ec0e6f5aa685459235f036fb1c38100c", -- Biracial or Multi-Racial - Hispanic or Latino origin
+		"bac96b312080f184172035a092b6420a", -- Biracial or Multi-Racial - Non-Hispanic or Non-Latino origin
+		"0ef77fa5d1baf76ee61e3dad5ae35c24", -- Black or African American
+		"664497236ed281d56cd68c0de44fe955", -- Black or African American
+		"7b89620d2cc00e3bd3c347d7d4b9cc69", -- Black or African American
+		"be702f0cd1896c56e625eec5b50bd7d8", -- Black or African American
+		"4f037f5037551d63db2c8873b2f39e61", -- Black or African American - Hispanic or Latino origin
+		"97d70a275220f81662c1e1f34420aa8e", -- Black or African American - Non-Hispanic or Non-Latino origin
+		"0fe4fd93da5126ac18d3665838f25ea1", -- Hispanic or Latino Origin
+		"45f7acd064e4b3e015b8326db32af3b8", -- Hispanic or Latino Origin
+		"835d6cab970c2eecc29720e473bc8e01", -- Hispanic or Latino Origin
+		"957969b0c62308313b8826c7d876274f", -- Hispanic or Latino Origin
+		"274125dc419b8d6f193ab34cf66954d8", -- Native Hawaiian/Pacific Islander
+		"7af5cee74fc433229e6bfb96f86dc86c", -- Native Hawaiian/Pacific Islander
+		"7c9a349be011f525cf0c216a4fb39b22", -- Native Hawaiian/Pacific Islander
+		"eb411cdef421965940c5ff2f06245d90", -- Native Hawaiian/Pacific Islander
+		"2ea5306ef01b86fe40a03c5791b63068", -- Native Hawaiian/Pacific Islander - Hispanic or Latino origin
+		"d9713b02e0acc4fd58e07b21ab663916", -- Native Hawaiian/Pacific Islander - Non-Hispanic or Non-Latino origin
+		"292d359a9077f5313d1ca8f0116d0d34", -- Other Race
+		"2fcfece4f82f79a9147432232cd4dbee", -- Other Race
+		"cd15f505ec1c244ffff8c65ef98c7460", -- Other Race
+		"ce593a9df20483401f482462c0a01b33", -- Other Race
+		"f9fd10b3edb0e28b013b37b3df996f9a", -- Other Race - Hispanic or Latino origin
+		"b035ca5990959a6edbfbf4cb7433fa9f", -- Other Race - Non-Hispanic or Non-Latino origin
+		"6cfeb8631fbad64ecf6334a1e19c0b06", -- White
+		"82fd92aff9a3b9d118667cd5282afe73", -- White
+		"9c30539bbbeafa7ff8339ce23048bcd3", -- White
+		"ac69401c182fa077af054f2eb1f4ccd7", -- White
+		"72f7e808ed397b2c3c5a44abf7c70826", -- White - Hispanic or Latino origin
+		"d34f71c1ea0fa35cbfb0eff09d1b6082" -- White - Non-Hispanic or Non-Latino origin
+	)
+group by
+	response.`year`,
+	question.question_id, -- for cleaning in Tableau
+	question.question_name,
+	program.program_state,
+	program.program_type;
+
+drop table if exists mv_teacher_qual_counts;
+
+create table
+	mv_teacher_qual_counts as
+select
+	response.`year`,
+	question.question_name,
+	program.program_state,
+	program.program_type,
+	SUM(response.answer) as answer
+from
+	response
+	left join question on response.question_id = question.question_id
+	and response.`year` = question.`year`
+	left join program on response.uid = program.uid
+	and response.`year` = program.`year`
+where
+	response.question_id in (
+		"8a3b01c962afd744cb40e04bec6db092", -- A baccalaureate degree in early childhood education, any field and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children, or any field and is part of the Teach for America program and passed a rigorous early childhood content exam - Classroom Teachers
+		"fce9916509357801ff8b20ecc5a86d0a", -- A baccalaureate degree in early childhood education, any field and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children, or any field and is part of the Teach for America program and passed a rigorous early childhood content exam - Classroom Teachers
+		"4f33a647901ef815541489be1c45d98d", -- A Child Development Associate (CDA) credential or state-awarded certification, credential, or licensure that meets or exceeds CDA requirements - Classroom Teachers
+		"4b303dc2d927fa36669167ebd108be35", -- Advanced Degree Classroom Teachers
+		"f96b44b6179da17a5dde10d11865cf1a", -- Advanced Degree in Any Related Field - Classroom Teachers
+		"05562101247a0239137d7920c07398e8", -- Advanced Degree in Any Related Field - Preschool Classroom Teachers
+		"c8da3f38e5e069dbd9ad54f12eb86379", -- Advanced Degree in ECE - Classroom Teachers
+		"902ebc2fd3e6cce55a4b6850bb1321aa", -- Advanced Degree in ECE - Preschool Classroom Teachers
+		"2bdf3cae3fe7ca779bf07666f60e5840", -- An Advanced degree in early childhood education or any field and coursework equivalent to a major relating to early childhood education, with experience teaching preschool-age children - Classroom Teachers
+		"7dd304b105b5de568543d01ea096fc7d", -- An Advanced degree in early childhood education or any field and coursework equivalent to a major relating to early childhood education, with experience teaching preschool-age children - Classroom Teachers
+		"264f740cb9d003954d3cc29d4831b507", -- An associate degree in early childhood education or a field related to early childhood education and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children - Classroom Teachers
+		"db86ef0a61ce11c94046d58a2e072409", -- An associate degree in early childhood education or a field related to early childhood education and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children - Classroom Teachers
+		"cc2fcd60facf755613426840eaa317b2", -- Associate Degree Classroom Teachers
+		"bb510f185313c5b5548c57005a2bbbae", -- Associate Degree in Any Related Field - Classroom Teachers
+		"cb61946796561ec7a6d4d3684e046c64", -- Associate Degree in Any Related Field - Preschool Classroom Teachers
+		"7402ff8a88daa654ad662378dca3a811", -- Associate Degree in ECE - Classroom Teachers
+		"094cd70cda320265ba85d53773288a64", -- Associate Degree in ECE - Preschool Classroom Teachers
+		"f2daefe80e8b543f9fbcc76b1bcf35b8", -- Baccalaureate Degree Classroom Teachers
+		"34ee8d5acb53673833e1d0f9b8e2aee0", -- Baccalaureate Degree in Any Related Field - Classroom Teachers
+		"7f5f0045b70033e66431579103b7ea2e", -- Baccalaureate Degree in Any Related Field - Preschool Classroom Teachers
+		"373ef01ad92e37c4ec9e84c46a676fda", -- Baccalaureate Degree in ECE - Classroom Teachers
+		"7310fc2ba014c1e0396bdfc1fb6ba095", -- Baccalaureate Degree in ECE - Preschool Classroom Teachers
+		"9c25361865086b5007f3546e31211d9b", -- CDA Classroom Teachers
+		"4c507f1939533c3a67e7f5a865705b92", -- Child Development Associate (CDA) - Classroom Teachers
+		"577c84d8e7242c10e66ab624069f0a2e", -- Child Development Associate (CDA) - Preschool Classroom Teachers
+		"dbc3ca1c3a830ebd1719c6f6c57aa56b", -- No Credential - Classroom Teachers
+		"58e0ab10ae3eb0f3609d3d93d9f664bc", -- No ECE Credential - Preschool Classroom Teachers
+		"77c02252c376a9f7d12de63256805a5b", -- None of the qualifications listed in B.3.a through B.3.d  - Classroom Teachers
+		"13bb48f30d145b35a1442ca33ab22dd3", -- Unqualified Classroom Teachers
+	)
+group by
+	response.`year`,
+	question.question_id, -- for cleaning in Tableau
+	question.question_name,
+	program.program_state,
+	program.program_type;
