@@ -217,31 +217,43 @@ where
 		"fce9916509357801ff8b20ecc5a86d0a", -- A baccalaureate degree in early childhood education, any field and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children, or any field and is part of the Teach for America program and passed a rigorous early childhood content exam - Classroom Teachers
 		"4f33a647901ef815541489be1c45d98d", -- A Child Development Associate (CDA) credential or state-awarded certification, credential, or licensure that meets or exceeds CDA requirements - Classroom Teachers
 		"4b303dc2d927fa36669167ebd108be35", -- Advanced Degree Classroom Teachers
+		"8a25f39c1c027e7e64841d9136a6326d", -- Advanced Degree Infant and Toddler Classroom Teachers
 		"f96b44b6179da17a5dde10d11865cf1a", -- Advanced Degree in Any Related Field - Classroom Teachers
 		"05562101247a0239137d7920c07398e8", -- Advanced Degree in Any Related Field - Preschool Classroom Teachers
+		"e136cd06b8d7f26905f1b8ab25121ccb", -- Advanced Degree in Any Related Field - Infant and Toddler Classroom Teachers
 		"c8da3f38e5e069dbd9ad54f12eb86379", -- Advanced Degree in ECE - Classroom Teachers
 		"902ebc2fd3e6cce55a4b6850bb1321aa", -- Advanced Degree in ECE - Preschool Classroom Teachers
+		"50d087642c1982e48f49c906b9243b00", -- Advanced Degree in ECE - Infant and Toddler Classroom Teachers
 		"2bdf3cae3fe7ca779bf07666f60e5840", -- An Advanced degree in early childhood education or any field and coursework equivalent to a major relating to early childhood education, with experience teaching preschool-age children - Classroom Teachers
 		"7dd304b105b5de568543d01ea096fc7d", -- An Advanced degree in early childhood education or any field and coursework equivalent to a major relating to early childhood education, with experience teaching preschool-age children - Classroom Teachers
 		"264f740cb9d003954d3cc29d4831b507", -- An associate degree in early childhood education or a field related to early childhood education and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children - Classroom Teachers
 		"db86ef0a61ce11c94046d58a2e072409", -- An associate degree in early childhood education or a field related to early childhood education and coursework equivalent to a major relating to early childhood education with experience teaching preschool-age children - Classroom Teachers
 		"cc2fcd60facf755613426840eaa317b2", -- Associate Degree Classroom Teachers
+		"b75920b7844eab013e9a257c1a19e393", -- Associate Degree Infant and Toddler Classroom Teachers
 		"bb510f185313c5b5548c57005a2bbbae", -- Associate Degree in Any Related Field - Classroom Teachers
 		"cb61946796561ec7a6d4d3684e046c64", -- Associate Degree in Any Related Field - Preschool Classroom Teachers
+		"3e9f06cc66f6b5d80ddeb9ccbc4c0c90", -- Associate Degree in Any Related Field - Infant and Toddler Classroom Teachers
 		"7402ff8a88daa654ad662378dca3a811", -- Associate Degree in ECE - Classroom Teachers
 		"094cd70cda320265ba85d53773288a64", -- Associate Degree in ECE - Preschool Classroom Teachers
+		"1fc0ee6d7f4fa63d6a2d855f675a5306", -- Associate Degree in ECE - Infant and Toddler Classroom Teachers
 		"f2daefe80e8b543f9fbcc76b1bcf35b8", -- Baccalaureate Degree Classroom Teachers
+		"c5c337d039743f83c28d9d321e5b9b13", -- Baccalaureate Degree Infant and Toddler Classroom Teachers
 		"34ee8d5acb53673833e1d0f9b8e2aee0", -- Baccalaureate Degree in Any Related Field - Classroom Teachers
 		"7f5f0045b70033e66431579103b7ea2e", -- Baccalaureate Degree in Any Related Field - Preschool Classroom Teachers
+		"b1a5cfff78f45bc841ebb30055e06451", -- Baccalaureate Degree in Any Related Field - Infant and Toddler Classroom Teachers
 		"373ef01ad92e37c4ec9e84c46a676fda", -- Baccalaureate Degree in ECE - Classroom Teachers
 		"7310fc2ba014c1e0396bdfc1fb6ba095", -- Baccalaureate Degree in ECE - Preschool Classroom Teachers
+		"5d1662bbe4b5cecfbb43b77a60049939", -- Baccalaureate Degree in ECE - Infant and Toddler Classroom Teachers
 		"9c25361865086b5007f3546e31211d9b", -- CDA Classroom Teachers
 		"4c507f1939533c3a67e7f5a865705b92", -- Child Development Associate (CDA) - Classroom Teachers
 		"577c84d8e7242c10e66ab624069f0a2e", -- Child Development Associate (CDA) - Preschool Classroom Teachers
+		"9e2b2c3322cf1713f2a6683d51950718", -- Child Development Associate (CDA) - Infant and Toddler Classroom Teachers
 		"dbc3ca1c3a830ebd1719c6f6c57aa56b", -- No Credential - Classroom Teachers
 		"58e0ab10ae3eb0f3609d3d93d9f664bc", -- No ECE Credential - Preschool Classroom Teachers
+		"9d3749f4ef6ccdfdc63457b024eac59d", -- No ECE Credential - Infant and Toddler Classroom Teachers
 		"77c02252c376a9f7d12de63256805a5b", -- None of the qualifications listed in B.3.a through B.3.d  - Classroom Teachers
 		"13bb48f30d145b35a1442ca33ab22dd3", -- Unqualified Classroom Teachers
+		"4b155476722eacf4b9bcecee7e8b02ef" -- Unqualified Infant and Toddler Classroom Teachers
 	)
 group by
 	response.`year`,
