@@ -13,7 +13,8 @@ classifiers = [
     "PRIVATE :: Do Not Upload"
 ]
 dependencies = [
-    "pywin32", "mysql-connector-python", "sphinx", "pandas", "fuzzywuzzy"
+    "pywin32", "mysql-connector-python", "sphinx", "pandas", 
+    "fuzzywuzzy", "pytest", "openpyxl"
 ]
 
 [build-system]
