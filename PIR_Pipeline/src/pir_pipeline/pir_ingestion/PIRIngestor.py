@@ -1,6 +1,5 @@
 import hashlib
 import os
-import random
 import re
 from typing import Self
 
@@ -8,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 from pir_pipeline.utils.MySQLUtils import MySQLUtils
-from pir_pipeline.utils.paths import INPUT_DIR
 
 
 class PIRIngestor:
@@ -63,7 +61,6 @@ class PIRIngestor:
         return ""
 
     def hash_columns(self, row: pd.Series) -> str:
-        random.seed(4298)
         string = "".join([str(item) for item in row])
         byte_string = string.encode()
 
@@ -315,9 +312,12 @@ class PIRIngestor:
             .clean_pir_data()
         )
 
+        return self
+
 
 if __name__ == "__main__":
     from pir_pipeline.config import db_config
+    from pir_pipeline.utils.paths import INPUT_DIR
 
     files = os.listdir(INPUT_DIR)
     for file in files:
