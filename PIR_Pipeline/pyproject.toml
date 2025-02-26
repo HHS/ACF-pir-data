@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     "pywin32", "mysql-connector-python", "sphinx", "pandas", 
-    "fuzzywuzzy", "pytest", "openpyxl", "xlrd"
+    "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd"
 ]
 
 [build-system]
