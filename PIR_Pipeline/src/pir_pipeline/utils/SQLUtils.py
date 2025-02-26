@@ -26,3 +26,6 @@ class SQLUtils(ABC):
             connection.close()
 
         return self
+
+    @abstractmethod
+    def get_records(self, connection, query): ...

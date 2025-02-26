@@ -19,23 +19,35 @@ class MySQLUtils(SQLUtils):
         self._connections = connections
         return self
 
+    def close_db_connections(self):
+        return super().close_db_connections()
+
+    def get_header(self, cursor):
+        description = cursor.description
+        header = [row[0] for row in description]
+
+        return header
+
     def get_schemas(self, connection: str, tables: list[str]) -> Self:
         cursor = self._connections[connection].cursor(buffered=True)
         schemas = {}
         for table in tables:
             query = "SHOW COLUMNS FROM %s" % (table)
             cursor.execute(query)
-            description = cursor.description
-            header = [row[0] for row in description]
+            header = self.get_header(cursor)
             values = cursor.fetchall()
-            values.insert(0, header)
-            schemas[table] = values
-
-        for schema, array in schemas.items():
-            schemas[schema] = pd.DataFrame.from_records(array[1:], columns=array[0])
+            schemas[table] = pd.DataFrame.from_records(values, columns=header)
 
         self._schemas = schemas
+        cursor.close()
         return self
 
-    def close_db_connections(self):
-        return super().close_db_connections()
+    def get_records(self, connection, query) -> pd.DataFrame:
+        cursor = self._connections[connection].cursor(buffered=True)
+        cursor.execute(query)
+        records = cursor.fetchall()
+        header = self.get_header(cursor)
+        df = pd.DataFrame.from_records(records, columns=header)
+        cursor.close()
+
+        return df
