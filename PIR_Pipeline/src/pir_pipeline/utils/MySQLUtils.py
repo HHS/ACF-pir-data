@@ -51,3 +51,20 @@ class MySQLUtils(SQLUtils):
         cursor.close()
 
         return df
+
+    def get_columns(self, connection: str, table: str, query: str = None):
+        cursor = self._connections[connection].cursor(buffered=True)
+        base_query = """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '%s'
+        """ % (
+            table
+        )
+        if query:
+            base_query += query
+
+        cursor.execute(base_query)
+        columns = cursor.fetchall()
+        columns = [column[0] for column in columns]
+        return columns

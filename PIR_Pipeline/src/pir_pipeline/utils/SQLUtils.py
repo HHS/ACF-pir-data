@@ -17,10 +17,6 @@ class SQLUtils(ABC):
     @abstractmethod
     def make_db_connections(self, databases: list[str]): ...
 
-    @abstractmethod
-    def get_schemas(self, connection, tables: list[str]) -> dict[list | tuple]: ...
-
-    @abstractmethod
     def close_db_connections(self):
         for connection in self._connections.values():
             connection.close()
@@ -28,4 +24,10 @@ class SQLUtils(ABC):
         return self
 
     @abstractmethod
+    def get_schemas(self, connection, tables: list[str]) -> dict[list | tuple]: ...
+
+    @abstractmethod
     def get_records(self, connection, query): ...
+
+    @abstractmethod
+    def get_columns(self, connection: str, table: str, query: str = None): ...

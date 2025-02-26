@@ -44,6 +44,19 @@ class TestMySQLUtils:
         assert isinstance(df, pd.DataFrame)
         assert df.shape == (10, 8)
 
+    def test_get_columns(self):
+        connection = "pir_question_links"
+        columns = self._sql.make_db_connections([connection]).get_columns(
+            connection, "linked", "AND column_name LIKE '%question%'"
+        )
+        columns.sort()
+        assert columns == [
+            "question_id",
+            "question_name",
+            "question_number",
+            "question_text",
+        ], f"Incorrect columns: {columns}"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
