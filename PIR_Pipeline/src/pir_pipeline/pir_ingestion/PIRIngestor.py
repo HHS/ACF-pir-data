@@ -7,19 +7,22 @@ from typing import Self
 import numpy as np
 import pandas as pd
 
-from pir_pipeline.utils import mysql_utils
+from pir_pipeline.utils.MySQLUtils import MySQLUtils
 from pir_pipeline.utils.paths import INPUT_DIR
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike, db_config: dict):
+    def __init__(
+        self, workbook: str | os.PathLike, db_config: dict, databases: list[str]
+    ):
         """Initialize a PIRIngestor object
 
         Args:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
         self._data: dict[pd.DataFrame] = {}
-        self._db_config: dict = db_config
+        self._sql = MySQLUtils(**db_config)
+        self._databases = databases
 
         self._workbook = workbook
 
@@ -65,27 +68,6 @@ class PIRIngestor:
         byte_string = string.encode()
 
         return hashlib.md5(byte_string).hexdigest()
-
-    def make_db_connections(self) -> Self:
-        self._connections = mysql_utils.make_db_connections(**self._db_config)
-
-        return self
-
-    def close_db_connections(self) -> Self:
-        for connection in self._connections.values():
-            connection.close()
-
-        return self
-
-    def get_schemas(self) -> Self:
-        schemas = mysql_utils.get_schemas(
-            self._connections["pir_data"], ["question", "response", "program"]
-        )
-        for schema, array in schemas.items():
-            schemas[schema] = pd.DataFrame.from_records(array[1:], columns=array[0])
-
-        self._schemas = schemas
-        return self
 
     def extract_sheets(self) -> Self:
         """Load the workbook, and extract sheets and year."""
@@ -274,7 +256,9 @@ class PIRIngestor:
 
             return None
 
-        self.make_db_connections().get_schemas()
+        self._sql.make_db_connections(self._databases).get_schemas(
+            "pir_data", ["response", "program", "question"]
+        )
         uid_columns = ["grant_number", "program_number", "program_type"]
         qid_columns = ["question_number", "question_name"]
 
@@ -311,7 +295,7 @@ class PIRIngestor:
 
         # Add year, subset to relevant variables only
         for frame in ["response", "program", "question"]:
-            final_columns = self._schemas[frame]["Field"]
+            final_columns = self._sql._schemas[frame]["Field"]
             df = eval(frame)
             df["year"] = self._year
             missing_variables = set(final_columns) - set(df.columns)
@@ -320,7 +304,7 @@ class PIRIngestor:
             df = df[final_columns]
             self._data[frame] = df
 
-        self.close_db_connections()
+        self._sql.close_db_connections()
 
     def ingest(self):
         (
@@ -335,7 +319,6 @@ class PIRIngestor:
 if __name__ == "__main__":
     from pir_pipeline.config import db_config
 
-    db_config.update({"databases": ["pir_data"]})
     files = os.listdir(INPUT_DIR)
     for file in files:
         year = re.search(r"\d{4}", file).group(0)
@@ -345,4 +328,6 @@ if __name__ == "__main__":
         elif year == 2008 and file.endswith(".xlsx"):
             continue
 
-        PIRIngestor(os.path.join(INPUT_DIR, file), db_config).ingest()
+        PIRIngestor(
+            os.path.join(INPUT_DIR, file), db_config, databases=["pir_data"]
+        ).ingest()
