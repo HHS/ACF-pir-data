@@ -141,7 +141,7 @@ if __name__ == "__main__":
     import os
 
     from pir_pipeline.config import db_config
-    from pir_pipeline.pir_ingestion.PIRIngestor import PIRIngestor
+    from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
     from pir_pipeline.utils.paths import INPUT_DIR
 
     pir_data = PIRIngestor(
