@@ -30,3 +30,6 @@ class SQLUtils(ABC):
 
     @abstractmethod
     def get_columns(self, table: str, query: str = None): ...
+
+    @abstractmethod
+    def insert_records(self): ...

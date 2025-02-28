@@ -55,12 +55,26 @@ class MySQLUtils(SQLUtils):
             FROM information_schema.columns
             WHERE table_name = '%s' AND table_schema = '%s'
         """ % (
-            table, self._connection.database
+            table,
+            self._connection.database,
         )
         if query:
             base_query += query
 
         cursor.execute(base_query)
         columns = cursor.fetchall()
+        cursor.close()
+
         columns = [column[0] for column in columns]
         return columns
+
+    def insert_records(self, df: pd.DataFrame, table: str):
+        columns = tuple(df.columns.tolist())
+        query = """REPLACE INTO %s %s VALUES""" % (table, columns)
+        query += " (%s)"
+        records = df.to_records()
+
+        exit()
+        cursor = self._connection.cursor(buffered=True)
+        cursor.executemany(query, records)
+        cursor.close()
