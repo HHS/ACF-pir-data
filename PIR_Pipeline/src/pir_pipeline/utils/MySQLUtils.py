@@ -10,17 +10,13 @@ class MySQLUtils(SQLUtils):
     def __init__(self, user: str, password: str, host: str, port: int):
         super().__init__(user, password, host, port)
 
-    def make_db_connections(self, databases: list[str]) -> Self:
-        connections = {}
-        for database in databases:
-            connection = mysql.connector.connect(**self._db_config, database=database)
-            connections[database] = connection
+    def make_connection(self, database: str) -> Self:
+        self._connection = mysql.connector.connect(**self._db_config, database=database)
 
-        self._connections = connections
         return self
 
-    def close_db_connections(self):
-        return super().close_db_connections()
+    def close_connection(self):
+        return super().close_connection()
 
     def get_header(self, cursor):
         description = cursor.description
@@ -28,8 +24,8 @@ class MySQLUtils(SQLUtils):
 
         return header
 
-    def get_schemas(self, connection: str, tables: list[str]) -> Self:
-        cursor = self._connections[connection].cursor(buffered=True)
+    def get_schemas(self, tables: list[str]) -> Self:
+        cursor = self._connection.cursor(buffered=True)
         schemas = {}
         for table in tables:
             query = "SHOW COLUMNS FROM %s" % (table)
@@ -42,8 +38,8 @@ class MySQLUtils(SQLUtils):
         cursor.close()
         return self
 
-    def get_records(self, connection, query) -> pd.DataFrame:
-        cursor = self._connections[connection].cursor(buffered=True)
+    def get_records(self, query) -> pd.DataFrame:
+        cursor = self._connection.cursor(buffered=True)
         cursor.execute(query)
         records = cursor.fetchall()
         header = self.get_header(cursor)
@@ -52,14 +48,14 @@ class MySQLUtils(SQLUtils):
 
         return df
 
-    def get_columns(self, connection: str, table: str, query: str = None):
-        cursor = self._connections[connection].cursor(buffered=True)
+    def get_columns(self, table: str, query: str = None):
+        cursor = self._connection.cursor(buffered=True)
         base_query = """
             SELECT column_name
             FROM information_schema.columns
-            WHERE table_name = '%s'
+            WHERE table_name = '%s' AND table_schema = '%s'
         """ % (
-            table
+            table, self._connection.database
         )
         if query:
             base_query += query
