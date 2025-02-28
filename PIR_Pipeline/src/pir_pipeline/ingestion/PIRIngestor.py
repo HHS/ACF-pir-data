@@ -5,14 +5,13 @@ from typing import Self
 
 import numpy as np
 import pandas as pd
+from fuzzywuzzy import fuzz
 
 from pir_pipeline.utils.MySQLUtils import MySQLUtils
 
 
 class PIRIngestor:
-    def __init__(
-        self, workbook: str | os.PathLike, db_config: dict, databases: list[str]
-    ):
+    def __init__(self, workbook: str | os.PathLike, db_config: dict, database: str):
         """Initialize a PIRIngestor object
 
         Args:
@@ -20,7 +19,7 @@ class PIRIngestor:
         """
         self._data: dict[pd.DataFrame] = {}
         self._sql = MySQLUtils(**db_config)
-        self._databases = databases
+        self._database = database
 
         self._workbook = workbook
 
@@ -253,8 +252,8 @@ class PIRIngestor:
 
             return None
 
-        self._sql.make_db_connections(self._databases).get_schemas(
-            "pir_data", ["response", "program", "question"]
+        self._sql.make_connection(self._database).get_schemas(
+            ["response", "program", "question"]
         )
         uid_columns = ["grant_number", "program_number", "program_type"]
         qid_columns = ["question_number", "question_name"]
@@ -301,7 +300,134 @@ class PIRIngestor:
             df = df[final_columns]
             self._data[frame] = df
 
-        self._sql.close_db_connections()
+        return self
+        
+    def get_question_data(self):
+        question_columns = self._sql.get_columns(
+            "question",
+            "AND (column_name LIKE '%question%' OR column_name IN ('section', 'uqid'))",
+        )
+        question_columns = ",".join(question_columns)
+        self._question = self._sql.get_records(
+            f"SELECT DISTINCT {question_columns} FROM question WHERE year != {self._year}",
+        )
+
+        return self
+
+    def link(self):
+        # Look in question table (exclude the current year of data)
+        # If question has a match, look for uqid in linked.
+        #   If no uqid in linked, generate
+        #   Otherwise apply
+
+        # Look for a direct match on question_id
+        self.get_question_data()
+        df = self._data["question"].copy()
+        df = df.merge(
+            self._question[["question_id", "uqid"]].drop_duplicates(),
+            how="left",
+            on="question_id",
+            indicator=True,
+        )
+
+        df["linked_id"] = df["question_id"]
+        df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
+        df.drop(["uqid_x", "uqid_y"], axis=1, inplace=True)
+
+        self._linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        self._unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
+
+        assert not self._linked.duplicated(["question_id"]).any()
+
+        # Look for a fuzzy match on question_name, question_number, or question_text
+        self._cross = self._unlinked.merge(self._question, how="cross")
+        if not self._cross.empty:
+            self.fuzzy_link()
+        self.prepare_for_insertion()
+
+        return self
+
+    def fuzzy_link(self):
+        def confirm_link(row: pd.Series):
+            scores = [item == 100 for item in row.filter(like="score")]
+            section = row["section_x"] == row["section_y"]
+            return sum(scores) >= 2 and section
+
+        # Add similarity score variables
+        for column in ["question_name", "question_number", "question_text"]:
+            y = f"{column}_y"
+            x = f"{column}_x"
+            score = f"{column}_score"
+            for var in [x, y]:
+                self._cross[var] = self._cross[var].fillna("")
+
+            self._cross[score] = self._cross[[x, y]].apply(
+                lambda row: fuzz.ratio(row[x], row[y]), axis=1
+            )
+
+        # Determine whether score meets threshold for match
+        self._cross["confirmed"] = self._cross.filter(regex="score|section").apply(
+            confirm_link, axis=1
+        )
+        self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
+
+        confirmed = self._cross[self._cross["confirmed"]].copy()
+
+        # In the event of duplicates, choose the record with the highest combined score
+        confirmed = (
+            confirmed.sort_values(["question_id_x", "combined_score"])
+            .groupby(["question_id_x"])
+            .sample(1)
+        )
+
+        # Truncate confirmed data frame
+        confirmed["question_id"], confirmed["linked_id"] = (
+            confirmed["question_id_x"],
+            confirmed["question_id_y"],
+        )
+        confirmed["uqid"] = confirmed.combine_first(confirmed.filter(like="uqid"))
+        confirmed = confirmed[["question_id", "linked_id", "uqid"]]
+
+        # Update linked and unlinked
+        df = self._unlinked.merge(
+            confirmed, how="left", on="question_id", indicator=True
+        )
+        linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
+
+        assert not self._linked.duplicated(["question_id"]).any()
+        self._linked = pd.concat([self._linked, linked])
+        assert not self._linked.duplicated(["question_id"]).any()
+        self._unlinked = unlinked
+
+        del self._cross
+
+        return self
+
+    def prepare_for_insertion(self):
+        df = self._data["question"]
+        df = df.merge(
+            self._linked[["question_id", "linked_id"]], how="left", on="question_id"
+        )
+        assert self._linked.shape[0] == df["linked_id"].notna().sum()
+        assert self._unlinked.shape[0] == df["linked_id"].isna().sum()
+
+        df["uqid"] = df.apply(lambda row: self.gen_uqid(row), axis=1)
+        df.drop(["linked_id"], inplace=True, axis=1)
+
+        return self
+
+    def gen_uqid(self, row: pd.Series):
+        if isinstance(row["uqid"], str):
+            return row["uqid"]
+
+        if not isinstance(row["linked_id"], str):
+            assert np.isnan(
+                row["linked_id"]
+            ), f"Unexpected value of linked_id: {row["linked_id"]}"
+            return row["linked_id"]
+
+        return hashlib.md5(row["linked_id"].encode()).hexdigest()
 
     def ingest(self):
         (
@@ -310,8 +436,11 @@ class PIRIngestor:
             .append_sections()
             .merge_response_question()
             .clean_pir_data()
+            .link()
         )
 
+        self._sql.close_connection()
+        
         return self
 
 
@@ -329,5 +458,5 @@ if __name__ == "__main__":
             continue
 
         PIRIngestor(
-            os.path.join(INPUT_DIR, file), db_config, databases=["pir_data"]
+            os.path.join(INPUT_DIR, file), db_config, database="pir"
         ).ingest()
