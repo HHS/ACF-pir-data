@@ -81,7 +81,7 @@ class PIRIngestor:
             if not (section_condition or reference_condition or program_condition):
                 continue
 
-            df = pd.read_excel(self._workbook, sheet)
+            df = pd.read_excel(self._workbook, sheet, dtype="object")
 
             if section_condition:
                 df = pd.read_excel(self._workbook, sheet, header=None)
@@ -270,10 +270,10 @@ class PIRIngestor:
         program = self._data["program"]
         program.rename(
             columns={
-                "program_zip1": "program_zip_code",
-                "program_zip2": "program_zip_4",
-                "program_phone": "program_main_phone_number",
-                "program_email": "program_main_email",
+                "program_zip_code": "program_zip1",
+                "program_zip_4": "program_zip2",
+                "program_main_phone_number": "program_phone",
+                "program_main_email": "program_email",
             },
             inplace=True,
         )
@@ -301,7 +301,7 @@ class PIRIngestor:
             self._data[frame] = df
 
         return self
-        
+
     def get_question_data(self):
         question_columns = self._sql.get_columns(
             "question",
@@ -429,6 +429,10 @@ class PIRIngestor:
 
         return hashlib.md5(row["linked_id"].encode()).hexdigest()
 
+    def insert_data(self):
+        for table, df in self._data.items():
+            self._sql.insert_records(df, table)
+
     def ingest(self):
         (
             self.extract_sheets()
@@ -437,10 +441,11 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .link()
+            .insert_data()
         )
 
         self._sql.close_connection()
-        
+
         return self
 
 
@@ -457,6 +462,4 @@ if __name__ == "__main__":
         elif year == 2008 and file.endswith(".xlsx"):
             continue
 
-        PIRIngestor(
-            os.path.join(INPUT_DIR, file), db_config, database="pir"
-        ).ingest()
+        PIRIngestor(os.path.join(INPUT_DIR, file), db_config, database="pir").ingest()
