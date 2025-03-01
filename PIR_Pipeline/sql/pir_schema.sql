@@ -30,7 +30,7 @@ CREATE TABLE `program` (
   `program_state` varchar(255),
   `program_zip1` varchar(255),
   `program_zip2` varchar(255),
-  `region` varchar(255),
+  `region` int,
   PRIMARY KEY (`uid`, `year`)
 );
 CREATE INDEX ix_program_uid ON program (uid);
@@ -39,36 +39,19 @@ CREATE INDEX ix_program_year ON program (`year`);
 CREATE TABLE `question` (
   `question_id` varchar(255),
   `year` year,
+  `uqid` varchar(255),
   `category` varchar(255),
   `question_name` text,
   `question_number` varchar(255),
-  `question_order` varchar(255),
+  `question_order` float,
   `question_text` text,
   `question_type` varchar(255),
   `section` varchar(255),
   `subsection` varchar(255),
-  `uqid` varchar(255),
   PRIMARY KEY (`question_id`, `year`)
 );
 CREATE INDEX ix_question_question_id ON question (question_id);
 CREATE INDEX ix_question_year ON question (`year`);
-
-CREATE TABLE `unmatched_question` (
-  `question_id` varchar(255),
-  `year` year,
-  `category` varchar(255),
-  `question_name` text,
-  `question_number` varchar(255),
-  `question_order` varchar(255),
-  `question_text` text,
-  `question_type` varchar(255),
-  `reason` varchar(255),
-  `section` varchar(255),
-  `subsection` varchar(255),
-  PRIMARY KEY (`question_id`, `year`)
-);
-CREATE INDEX ix_unmatched_question_question_id ON unmatched_question (question_id);
-CREATE INDEX ix_unmatched_question_year ON unmatched_question (`year`);
 
 ALTER TABLE `response` ADD FOREIGN KEY (`uid`, `year`) REFERENCES `program` (`uid`, `year`);
 ALTER TABLE `response` ADD FOREIGN KEY (`question_id`, `year`) REFERENCES `question` (`question_id`, `year`);
