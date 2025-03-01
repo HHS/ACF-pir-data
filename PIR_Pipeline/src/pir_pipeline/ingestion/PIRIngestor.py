@@ -1,12 +1,14 @@
 import hashlib
 import os
 import re
+from datetime import datetime
 from typing import Self
 
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
 
+from pir_pipeline.models import pir_models
 from pir_pipeline.utils.MySQLUtils import MySQLUtils
 
 
@@ -127,7 +129,7 @@ class PIRIngestor:
                     validate="many_to_one",
                 )
                 df["section"] = df["question_number"].map(self.get_section)
-                df = df.iloc[2:, :]
+                df = df[df["Region"] != "Region"]
                 df = df[df["Grant Number"].notna()]
 
                 assert df[
@@ -265,6 +267,7 @@ class PIRIngestor:
         assert duplicates.empty, f"Some duplicated records:\n{duplicates}"
         response["uid"] = response[uid_columns].apply(self.hash_columns, axis=1)
         response["question_id"] = response[qid_columns].apply(self.hash_columns, axis=1)
+        response["answer"] = response["answer"].map(self.stringify)
 
         # Program
         program = self._data["program"]
@@ -301,6 +304,18 @@ class PIRIngestor:
             self._data[frame] = df
 
         return self
+
+    def stringify(self, value) -> str:
+        if isinstance(value, str):
+            return value
+        elif isinstance(value, datetime):
+            return value.strftime("%m/%d/%Y")
+        elif np.isnan(value):
+            return np.nan
+        elif isinstance(value, (int, float)):
+            return str(value)
+
+        return value
 
     def get_question_data(self):
         question_columns = self._sql.get_columns(
@@ -431,6 +446,12 @@ class PIRIngestor:
 
     def insert_data(self):
         for table, df in self._data.items():
+            df.replace({np.nan: None}, inplace=True)
+            model = getattr(pir_models, f"{table.title()}Model")
+            records = df.to_dict(orient="records")
+            for record in records:
+                model.model_validate(record)
+
             self._sql.insert_records(df, table)
 
     def ingest(self):
@@ -445,6 +466,7 @@ class PIRIngestor:
         )
 
         self._sql.close_connection()
+        exit()
 
         return self
 
