@@ -70,11 +70,11 @@ class MySQLUtils(SQLUtils):
 
     def insert_records(self, df: pd.DataFrame, table: str):
         columns = tuple(df.columns.tolist())
-        query = """REPLACE INTO %s %s VALUES""" % (table, columns)
-        query += " (%s)"
-        records = df.to_records()
+        query = f"""REPLACE INTO %s ({', '.join(columns)}) VALUES""" % (table)
+        query += f" ({', '.join(["%s"] * len(columns))})"
+        records = df.to_records(index=False).tolist()
 
-        exit()
         cursor = self._connection.cursor(buffered=True)
         cursor.executemany(query, records)
+        self._connection.commit()
         cursor.close()
