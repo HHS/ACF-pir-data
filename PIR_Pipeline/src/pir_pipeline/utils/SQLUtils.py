@@ -33,3 +33,6 @@ class SQLUtils(ABC):
 
     @abstractmethod
     def insert_records(self): ...
+
+    @abstractmethod
+    def update_records(self): ...

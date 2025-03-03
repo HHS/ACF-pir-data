@@ -68,13 +68,59 @@ class MySQLUtils(SQLUtils):
         columns = [column[0] for column in columns]
         return columns
 
-    def insert_records(self, df: pd.DataFrame, table: str):
-        columns = tuple(df.columns.tolist())
-        query = f"""REPLACE INTO %s ({', '.join(columns)}) VALUES""" % (table)
-        query += f" ({', '.join(["%s"] * len(columns))})"
-        records = df.to_records(index=False).tolist()
+    def insert_records(self, columns: tuple[str], records: list[dict], table: str):
+        def insertion_query(columns, records, table):
+            query = f"""REPLACE INTO %s ({', '.join(columns)}) VALUES """ % (table)
+            escape_string = ", ".join(["%s"] * len(columns))
+            escape_string = f"({escape_string})"
+            escape_string = ", ".join([escape_string] * len(records))
+            query += escape_string
+
+            to_insert = []
+            for record in records:
+                for value in record.values():
+                    to_insert.append(value)
+
+            to_insert = tuple(to_insert)
+
+            cursor = self._connection.cursor(buffered=True, write_timeout=0)
+            cursor.execute(query, to_insert)
+            self._connection.commit()
+            cursor.close()
+
+        if len(records) < 20000:
+            insertion_query(columns, records, table)
+        else:
+            num_records = len(records)
+            upper_bound = 20000
+            lower_bound = 0
+            batches = []
+            while upper_bound < num_records:
+                if lower_bound == 0:
+                    pass
+                else:
+                    lower_bound += 20000
+                    upper_bound += 20000
+
+                batches.append(records[lower_bound:upper_bound])
+
+            for batch in batches:
+                insertion_query(columns, batch, table)
+
+    def update_records(self, table, set: dict[str], where: str):
+        query = "UPDATE %s" % (table)
+        set = ", ".join([f"{key} = '{value}'" for key, value in set.items()])
+        query = query + " SET " + set
+        query += " WHERE %s" % (where)
 
         cursor = self._connection.cursor(buffered=True)
-        cursor.executemany(query, records)
+        cursor.execute(query)
+
+        try:
+            assert cursor.rowcount == 1, "More than one row affected"
+        except AssertionError:
+            self._connection.rollback()
+            raise
+
         self._connection.commit()
         cursor.close()
