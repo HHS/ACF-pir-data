@@ -358,6 +358,7 @@ class PIRIngestor:
         self._cross = self._unlinked.merge(self._question, how="cross")
         if not self._cross.empty:
             self.fuzzy_link()
+
         self.prepare_for_insertion()
 
         return self
@@ -400,7 +401,7 @@ class PIRIngestor:
             confirmed["question_id_x"],
             confirmed["question_id_y"],
         )
-        confirmed["uqid"] = confirmed.combine_first(confirmed.filter(like="uqid"))
+        confirmed["uqid"] = confirmed["uqid_x"].combine_first(confirmed["uqid_y"])
         confirmed = confirmed[["question_id", "linked_id", "uqid"]]
 
         # Update linked and unlinked
@@ -427,13 +428,19 @@ class PIRIngestor:
         assert self._linked.shape[0] == df["linked_id"].notna().sum()
         assert self._unlinked.shape[0] == df["linked_id"].isna().sum()
 
+        del self._linked
+        del self._unlinked
+
         df["uqid"] = df.apply(lambda row: self.gen_uqid(row), axis=1)
-        df.drop(["linked_id"], inplace=True, axis=1)
+
+        self._data["question"] = df
+        self.update_unlinked()
+        self._data["question"].drop(["linked_id"], inplace=True, axis=1)
 
         return self
 
     def gen_uqid(self, row: pd.Series):
-        if isinstance(row["uqid"], str):
+        if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
         if not isinstance(row["linked_id"], str):
@@ -448,11 +455,37 @@ class PIRIngestor:
         for table, df in self._data.items():
             df.replace({np.nan: None}, inplace=True)
             model = getattr(pir_models, f"{table.title()}Model")
-            records = df.to_dict(orient="records")
-            for record in records:
-                model.model_validate(record)
+            initial_records = df.to_dict(orient="records")
+            cleaned_records = []
+            for record in initial_records:
+                cleaned = model.model_validate(record).model_dump()
+                cleaned_records.append(cleaned)
 
-            self._sql.insert_records(df, table)
+            columns = tuple(df.columns.to_list())
+            self._sql.insert_records(columns, cleaned_records, table)
+
+        if not self._unlinked.empty:
+            self._unlinked.apply(
+                lambda row: self._sql.update_records(
+                    "question",
+                    {"uqid": row["uqid"]},
+                    f"question_id = '{row["question_id"]}'",
+                ),
+                axis=1,
+            )
+
+    def update_unlinked(self):
+        unlinked = self._sql.get_records("SELECT DISTINCT question_id FROM unlinked")
+        unlinked = unlinked.merge(
+            self._data["question"][["linked_id", "uqid"]],
+            how="inner",
+            left_on="question_id",
+            right_on="linked_id",
+        )
+
+        self._unlinked = unlinked
+
+        return self
 
     def ingest(self):
         (
@@ -466,7 +499,6 @@ class PIRIngestor:
         )
 
         self._sql.close_connection()
-        exit()
 
         return self
 
@@ -482,6 +514,8 @@ if __name__ == "__main__":
         if year < 2008:
             continue
         elif year == 2008 and file.endswith(".xlsx"):
+            continue
+        elif year != 2010:
             continue
 
         PIRIngestor(os.path.join(INPUT_DIR, file), db_config, database="pir").ingest()
