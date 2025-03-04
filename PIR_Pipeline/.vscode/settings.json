@@ -1,0 +1,52 @@
+{
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        },
+        "editor.rulers": [
+            88
+        ],
+    },
+    // environment variables stored in .env at the root of the directory will automatically be injected 
+    // into all Python files at runtime when run through VS Code.
+    "python.envFile": "${workspaceFolder}/.env",
+    "notebook.formatOnSave.enabled": true,
+    // these are files that you don't feel like seeing in your file explorer
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true,
+        "**/.ruff_cache": true,
+        "**/.pytest_cache": true,
+    },
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportShadowedImports": "none",
+        "reportInvalidTypeForm": "none"
+    },
+    "python.testing.pytestArgs": [
+        "tests",
+        "--log-cli-level=INFO"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    // exclude the main heading from Markdown table of contents
+    "markdown.extension.toc.levels": "2..3",
+    // enable spell checking in markdown files
+    "cSpell.enableFiletypes": [
+        "markdown",
+        // "python",
+    ],
+    // "[yaml]": {
+    //     "editor.insertSpaces": true,
+    //     "editor.tabSize": 2,
+    //     "editor.formatOnSave": true,
+    //     "editor.defaultFormatter": "redhat.vscode-yaml"
+    // },
+    // "[sql]": {
+    //     "editor.formatOnSave": true,
+    //     "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
+    // },
+    // "Prettier-SQL.keywordCase": "upper"
+}
