@@ -26,6 +26,14 @@ class PIRIngestor:
         self._workbook = workbook
 
     def make_snake_name(self, name: str) -> str:
+        """Convert a name to snake case
+
+        Args:
+            name (str): A name to convert
+
+        Returns:
+            str: Snake-cased name
+        """
         snake_name = re.sub(r"\W", "_", name.lower())
         snake_name = re.sub(r"_+", "_", snake_name)
         return snake_name
@@ -33,6 +41,18 @@ class PIRIngestor:
     def duplicated_question_error(
         self, df: pd.DataFrame, columns: list[str]
     ) -> pd.DataFrame:
+        """Resolve duplicated questions
+
+        This function is run when a duplicate question appears in the data. In that case,
+        the data are sorted, grouped, and the first record in each group is taken.
+
+        Args:
+            df (pd.DataFrame): A data frame containing duplicates
+            columns (list[str]): A list of columns to group on
+
+        Returns:
+            pd.DataFrame: A deduplicated data frame
+        """
         df.sort_values(columns + ["question_order"], inplace=True)
         df = df.groupby(columns).sample(1).reset_index().drop(columns="index")
         return df
@@ -40,6 +60,16 @@ class PIRIngestor:
     def missing_question_error(
         self, response: pd.DataFrame, question: pd.DataFrame, missing_questions: set
     ) -> pd.DataFrame:
+        """Add missing questions to the question data
+
+        Args:
+            response (pd.DataFrame): Response data frame
+            question (pd.DataFrame): Question data frame
+            missing_questions (set): A set of missing questions
+
+        Returns:
+            pd.DataFrame: Question data frame, updated to contain missing questions
+        """
         response = (
             response[["question_number", "question_name", "section"]][
                 response["question_number"].isin(missing_questions)
@@ -52,6 +82,14 @@ class PIRIngestor:
         return question
 
     def get_section(self, question_number: str) -> str:
+        """Extract the section from a question number
+
+        Args:
+            question_number (str): A string question number
+
+        Returns:
+            str: The section in which the question appears
+        """
         if not isinstance(question_number, str):
             return ""
 
@@ -62,19 +100,36 @@ class PIRIngestor:
         return ""
 
     def hash_columns(self, row: pd.Series) -> str:
+        """Return the md5 hash of a series of columns
+
+        Args:
+            row (pd.Series): A series of columns to hash
+
+        Returns:
+            str: Hashed columns
+        """
         string = "".join([str(item) for item in row])
         byte_string = string.encode()
 
         return hashlib.md5(byte_string).hexdigest()
 
     def extract_sheets(self) -> Self:
-        """Load the workbook, and extract sheets and year."""
+        """Load the workbook, and extract sheets and year.
+
+        Returns:
+            Self: PIRIngestor object
+        """
         self._year = re.search(r"(\d{4})\.(csv|xlsx?)$", self._workbook).group(1)
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
         return self
 
     def load_data(self) -> Self:
+        """Load data from each sheet of the workbook
+
+        Returns:
+            Self: PIRIngestor object
+        """
         for sheet in self._sheets:
             name = self.make_snake_name(sheet)
             section_condition = sheet.find("Section") > -1
@@ -502,6 +557,19 @@ class PIRIngestor:
 
         return self
 
+    # def linked_checks(self, df: pd.DataFrame):
+    #     """Method for confirming that, upon reingestion, uqid remains consistent.
+
+    #     Args:
+    #         df (pd.DataFrame): Data frame that will ultimately become re-ingested question.
+    #     """
+    #     query = "SELECT * FROM linked WHERE year = %s" % self._year
+    #     linked = self._sql.get_records(query)
+    #     merged = df.merge(linked, on="question_id", how="right", indicator=True)
+
+    #     assert merged["_merge"].map(lambda x: x == "both").all()
+    #     assert merged.apply(lambda row: row["uqid_x"] == row["uqid_y"], axis=1).all()
+
 
 if __name__ == "__main__":
     from pir_pipeline.config import db_config
@@ -515,7 +583,7 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2010:
+        elif year > 2009:
             continue
 
         PIRIngestor(os.path.join(INPUT_DIR, file), db_config, database="pir").ingest()
