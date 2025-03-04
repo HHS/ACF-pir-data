@@ -1,17 +1,6 @@
 CREATE DATABASE IF NOT EXISTS pir;
 USE pir;
 
-CREATE TABLE `response` (
-  `uid` varchar(255),
-  `question_id` varchar(255),
-  `year` year,
-  `answer` text,
-  PRIMARY KEY (`uid`, `question_id`, `year`)
-);
-CREATE INDEX ix_response_uid ON response (uid);
-CREATE INDEX ix_response_question_id ON response (question_id);
-CREATE INDEX ix_response_year ON response (`year`);
-
 CREATE TABLE `program` (
   `uid` varchar(255),
   `year` year,
@@ -31,10 +20,10 @@ CREATE TABLE `program` (
   `program_zip1` varchar(255),
   `program_zip2` varchar(255),
   `region` int,
-  PRIMARY KEY (`uid`, `year`)
+  PRIMARY KEY (`uid`, `year`),
+  INDEX ix_program_uid (`uid`),
+  INDEX ix_program_year (`year`)
 );
-CREATE INDEX ix_program_uid ON program (uid);
-CREATE INDEX ix_program_year ON program (`year`);
 
 CREATE TABLE `question` (
   `question_id` varchar(255),
@@ -48,10 +37,24 @@ CREATE TABLE `question` (
   `question_type` varchar(255),
   `section` varchar(255),
   `subsection` varchar(255),
-  PRIMARY KEY (`question_id`, `year`)
+  PRIMARY KEY (`question_id`, `year`),
+  INDEX ix_question_question_id (`question_id`),
+  INDEX ix_question_year (`year`)
 );
-CREATE INDEX ix_question_question_id ON question (question_id);
-CREATE INDEX ix_question_year ON question (`year`);
 
-ALTER TABLE `response` ADD FOREIGN KEY (`uid`, `year`) REFERENCES `program` (`uid`, `year`);
-ALTER TABLE `response` ADD FOREIGN KEY (`question_id`, `year`) REFERENCES `question` (`question_id`, `year`);
+CREATE TABLE `response` (
+  `uid` varchar(255),
+  `question_id` varchar(255),
+  `year` year,
+  `answer` text,
+  PRIMARY KEY (`uid`, `question_id`, `year`),
+  INDEX ix_response_uid (`uid`),
+  INDEX ix_response_question_id (`question_id`),
+  INDEX ix_response_year (`year`),
+  FOREIGN KEY (`uid`, `year`) 
+    REFERENCES `program` (`uid`, `year`)
+    ON UPDATE CASCADE,
+  FOREIGN KEY (`question_id`, `year`) 
+    REFERENCES `question` (`question_id`, `year`)
+    ON UPDATE CASCADE
+);
