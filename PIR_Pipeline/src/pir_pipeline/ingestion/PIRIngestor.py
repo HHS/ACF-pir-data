@@ -283,6 +283,8 @@ class PIRIngestor:
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
 
+            self._data["question"] = question
+
         # Merge
         response = response.merge(
             question.drop(columns=["type"]),
@@ -440,11 +442,11 @@ class PIRIngestor:
             indicator=True,
         )
 
-        df["linked_id"] = df["question_id"]
         df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
         df.drop(["uqid_x", "uqid_y"], axis=1, inplace=True)
 
         self._linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        self._linked["linked_id"] = self._linked["question_id"]
         self._unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
 
         assert not self._linked.duplicated(["question_id"]).any()
@@ -509,8 +511,13 @@ class PIRIngestor:
         df = self._unlinked.merge(
             confirmed, how="left", on="question_id", indicator=True
         )
+        df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
+        df.drop(["uqid_x", "uqid_y"], inplace=True, axis=1)
+
         linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        assert linked["uqid"].all()
         unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
+        assert not unlinked["uqid"].any()
 
         assert not self._linked.duplicated(["question_id"]).any()
         self._linked = pd.concat([self._linked, linked])
@@ -672,5 +679,13 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
+        # elif year != 2015:
+        #     continue
 
-        PIRIngestor(os.path.join(INPUT_DIR, file), db_config, database="pir").ingest()
+        try:
+            PIRIngestor(
+                os.path.join(INPUT_DIR, file), db_config, database="pir"
+            ).ingest()
+        except Exception:
+            print(year)
+            raise
