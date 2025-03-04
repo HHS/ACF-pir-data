@@ -1,8 +1,10 @@
+"""Class for ingesting and linking PIR data"""
+
 import hashlib
 import os
 import re
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 
 import numpy as np
 import pandas as pd
@@ -214,6 +216,11 @@ class PIRIngestor:
         return self
 
     def append_sections(self) -> Self:
+        """Append the loaded section data to generate the response table
+
+        Returns:
+            Self: PIRIngestor Object
+        """
         df_list = []
         to_delete = []
         for name, df in self._data.items():
@@ -229,7 +236,16 @@ class PIRIngestor:
         return self
 
     def merge_response_question(self) -> Self:
-        # Response data
+        """Merge response and question data frames
+
+        Merges the response and question data frames to: 1) get question text onto the
+        response data frame for question_id generation, 2) ensure that all questions
+        that appear in the response data frame appear in the question data frame.
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def gen_question_number(string: str):
             if not isinstance(string, str):
                 return string
@@ -241,6 +257,7 @@ class PIRIngestor:
 
             return string
 
+        # Response data
         response = self._data["response"]
         response["question_number"] = response["question_number"].map(
             gen_question_number
@@ -288,6 +305,7 @@ class PIRIngestor:
             .any()
         ), "Some records are duplicated"
 
+        # Combine any columns that appear twice due to merging
         for column in response.columns.tolist():
             if column.endswith("_x"):
                 column_y = column.replace("_x", "_y")
@@ -302,6 +320,12 @@ class PIRIngestor:
         return self
 
     def clean_pir_data(self) -> Self:
+        """Align the PIR data with PIR database schemas
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def get_region(region: str):
             region = re.sub(r"\D+", "", region)
             if region:
@@ -360,7 +384,17 @@ class PIRIngestor:
 
         return self
 
-    def stringify(self, value) -> str:
+    def stringify(self, value: Any) -> str:
+        """Convert values to string
+
+        In the case of dates, this function applies the Month/Day/Year format.
+
+        Args:
+            value (Any): Value to convert to string
+
+        Returns:
+            str: Original value converted to string
+        """
         if isinstance(value, str):
             return value
         elif isinstance(value, datetime):
@@ -372,7 +406,12 @@ class PIRIngestor:
 
         return value
 
-    def get_question_data(self):
+    def get_question_data(self) -> Self:
+        """Select distinct questions from the question table
+
+        Returns:
+            Self: PIRIngestor object
+        """
         question_columns = self._sql.get_columns(
             "question",
             "AND (column_name LIKE '%question%' OR column_name IN ('section', 'uqid'))",
@@ -384,11 +423,12 @@ class PIRIngestor:
 
         return self
 
-    def link(self):
-        # Look in question table (exclude the current year of data)
-        # If question has a match, look for uqid in linked.
-        #   If no uqid in linked, generate
-        #   Otherwise apply
+    def link(self) -> Self:
+        """Create links between existing questions and newly ingested questions
+
+        Returns:
+            Self: PIRIngestor object
+        """
 
         # Look for a direct match on question_id
         self.get_question_data()
@@ -418,7 +458,13 @@ class PIRIngestor:
 
         return self
 
-    def fuzzy_link(self):
+    def fuzzy_link(self) -> Self:
+        """Link questions using Levenshtein algorithm
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def confirm_link(row: pd.Series):
             scores = [item == 100 for item in row.filter(like="score")]
             section = row["section_x"] == row["section_y"]
@@ -475,7 +521,14 @@ class PIRIngestor:
 
         return self
 
-    def prepare_for_insertion(self):
+    def prepare_for_insertion(self) -> Self:
+        """Prepare question data for final insertion
+
+        Also, prepare to update any newly linked extant records as necessary.
+
+        Returns:
+            Self: PIRIngestor object
+        """
         df = self._data["question"]
         df = df.merge(
             self._linked[["question_id", "linked_id"]], how="left", on="question_id"
@@ -494,7 +547,15 @@ class PIRIngestor:
 
         return self
 
-    def gen_uqid(self, row: pd.Series):
+    def gen_uqid(self, row: pd.Series) -> str | float:
+        """Generate a unique question ID
+
+        Args:
+            row (pd.Series): Pandas series containing row information
+
+        Returns:
+            str | float: A null value or a hashed question ID returned as a string
+        """
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
@@ -506,12 +567,21 @@ class PIRIngestor:
 
         return hashlib.md5(row["linked_id"].encode()).hexdigest()
 
-    def insert_data(self):
+    def insert_data(self) -> Self:
+        """Insert data into the target database
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
+        # Loop through program, question, and response tables and insert records
         for table, df in self._data.items():
             df.replace({np.nan: None}, inplace=True)
             model = getattr(pir_models, f"{table.title()}Model")
             initial_records = df.to_dict(orient="records")
             cleaned_records = []
+
+            # Validate the records with pydantic model
             for record in initial_records:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
@@ -519,6 +589,7 @@ class PIRIngestor:
             columns = tuple(df.columns.to_list())
             self._sql.insert_records(columns, cleaned_records, table)
 
+        # Update unlinked records if necessary
         if not self._unlinked.empty:
             self._unlinked.apply(
                 lambda row: self._sql.update_records(
@@ -529,8 +600,21 @@ class PIRIngestor:
                 axis=1,
             )
 
-    def update_unlinked(self):
+        return self
+
+    def update_unlinked(self) -> Self:
+        """Find any unlinked records that should be updated with a new uqid
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
+        # Get the unlinked records
         unlinked = self._sql.get_records("SELECT DISTINCT question_id FROM unlinked")
+
+        # Check whether unlinked records are among those to link currently
+        # No need to worry about setting an ID to null, because if an ID in unlinked
+        # matches, then there must be a uqid in self._data["question"]
         unlinked = unlinked.merge(
             self._data["question"][["linked_id", "uqid"]],
             how="inner",
@@ -542,7 +626,12 @@ class PIRIngestor:
 
         return self
 
-    def ingest(self):
+    def ingest(self) -> Self:
+        """Ingestion entry point
+
+        Returns:
+            Self: PIRIngestor object
+        """
         (
             self.extract_sheets()
             .load_data()
@@ -550,7 +639,7 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .link()
-            .insert_data()
+            # .insert_data()
         )
 
         self._sql.close_connection()
@@ -582,8 +671,6 @@ if __name__ == "__main__":
         if year < 2008:
             continue
         elif year == 2008 and file.endswith(".xlsx"):
-            continue
-        elif year > 2009:
             continue
 
         PIRIngestor(os.path.join(INPUT_DIR, file), db_config, database="pir").ingest()
