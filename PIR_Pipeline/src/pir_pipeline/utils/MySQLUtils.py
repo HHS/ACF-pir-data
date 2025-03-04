@@ -88,21 +88,15 @@ class MySQLUtils(SQLUtils):
             self._connection.commit()
             cursor.close()
 
-        if len(records) < 20000:
+        batch_size = 20000
+        if len(records) < batch_size:
             insertion_query(columns, records, table)
         else:
             num_records = len(records)
-            upper_bound = 20000
-            lower_bound = 0
-            batches = []
-            while upper_bound < num_records:
-                if lower_bound == 0:
-                    pass
-                else:
-                    lower_bound += 20000
-                    upper_bound += 20000
-
-                batches.append(records[lower_bound:upper_bound])
+            # Logic sourced from Microsoft Copilot
+            batches = [
+                records[i : i + batch_size] for i in range(0, num_records, batch_size)
+            ]
 
             for batch in batches:
                 insertion_query(columns, batch, table)
