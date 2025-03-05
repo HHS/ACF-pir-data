@@ -56,7 +56,7 @@ class PIRIngestor:
             pd.DataFrame: A deduplicated data frame
         """
         df.sort_values(columns + ["question_order"], inplace=True)
-        df = df.groupby(columns).sample(1).reset_index().drop(columns="index")
+        df = df.groupby(columns).first().reset_index()
         return df
 
     def missing_question_error(
@@ -646,7 +646,7 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .link()
-            # .insert_data()
+            .insert_data()
         )
 
         self._sql.close_connection()
@@ -679,8 +679,8 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        # elif year != 2015:
-        #     continue
+        elif year != 2012:
+            continue
 
         try:
             PIRIngestor(
