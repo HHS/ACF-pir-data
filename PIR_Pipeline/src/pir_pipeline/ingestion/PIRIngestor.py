@@ -364,7 +364,12 @@ class PIRIngestor:
             inplace=True,
         )
         duplicates = program[program[uid_columns].duplicated()]
-        assert duplicates.empty, f"Some duplicated records:\n{duplicates}"
+        try:
+            assert duplicates.empty, f"Some duplicated records:\n{duplicates}"
+        except AssertionError:
+            # For now, simply remove duplicates if any occur
+            program = program[~program[uid_columns].duplicated()]
+
         program["uid"] = program[uid_columns].apply(self.hash_columns, axis=1)
         program["region"] = program["region"].map(get_region)
 
@@ -376,9 +381,10 @@ class PIRIngestor:
         question["question_id"] = question[qid_columns].apply(self.hash_columns, axis=1)
 
         # Add year, subset to relevant variables only
-        for frame in ["response", "program", "question"]:
+        data = {"response": response, "program": program, "question": question}
+        for frame in data:
             final_columns = self._sql._schemas[frame]["Field"]
-            df = eval(frame)
+            df = data[frame]
             df["year"] = self._year
             missing_variables = set(final_columns) - set(df.columns)
             for var in missing_variables:

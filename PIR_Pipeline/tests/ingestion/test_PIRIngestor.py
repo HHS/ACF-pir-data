@@ -72,8 +72,26 @@ class TestPIRIngestor:
         ]
         assert all([name.find("section") == -1 for name in data_ingestor._data])
 
-    # def test_clean_pir_data(self, data_ingestor):
-    #     data_ingestor._sql.make_connection = MagicMock(return_value=)
+    def test_clean_pir_data(self, data_ingestor, mock_schemas):
+        data_ingestor._sql.make_connection = MagicMock()
+        data_ingestor._sql.get_schemas = MagicMock()
+        data_ingestor._sql._schemas = mock_schemas
+        (
+            data_ingestor.extract_sheets()
+            .load_data()
+            .append_sections()
+            .merge_response_question()
+            .clean_pir_data()
+        )
+        assert list(data_ingestor._data.keys()) == [
+            "program",
+            "question",
+            "response",
+        ], "Incorrect keys in data dictionary"
+        for table in ["response", "program", "question"]:
+            assert data_ingestor._data[table].columns.tolist() == getattr(
+                self, f"{table}_fields"
+            )
 
 
 if __name__ == "__main__":
