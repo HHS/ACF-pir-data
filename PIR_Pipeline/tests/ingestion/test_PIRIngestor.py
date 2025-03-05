@@ -1,38 +1,15 @@
-import os
 import random
 from string import ascii_uppercase
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
-if __name__ == "__main__":
-    from question import question
-else:
-    from .question import question
-
-from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
-
-
-@pytest.fixture
-def dummy_ingestor():
-    return PIRIngestor(
-        "", {"user": "", "password": "", "host": "", "port": ""}, database="pir"
-    )
-
-
-@pytest.fixture
-def data_ingestor():
-    return PIRIngestor(
-        os.path.join(os.path.dirname(__file__), "test_data_2008.xlsx"),
-        {"user": "", "password": "", "host": "", "port": ""},
-        database="pir",
-    )
-
 
 class TestPIRIngestor:
-    def test_duplicate_question_error(self, dummy_ingestor):
+    def test_duplicate_question_error(self, dummy_ingestor, mock_question_data):
         columns = ["question_name", "question_number"]
-        df = pd.DataFrame.from_dict(question)
+        df = pd.DataFrame.from_dict(mock_question_data)
         df = dummy_ingestor.duplicated_question_error(df, columns)
         question_order = [1, 3, 4, 5]
         assert (
@@ -94,6 +71,9 @@ class TestPIRIngestor:
             "section",
         ]
         assert all([name.find("section") == -1 for name in data_ingestor._data])
+
+    # def test_clean_pir_data(self, data_ingestor):
+    #     data_ingestor._sql.make_connection = MagicMock(return_value=)
 
 
 if __name__ == "__main__":
