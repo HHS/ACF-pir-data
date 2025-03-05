@@ -1,4 +1,6 @@
 import os
+import random
+from string import ascii_uppercase
 
 import pandas as pd
 import pytest
@@ -26,6 +28,19 @@ class TestPIRIngestor:
         question_order = [1, 3, 4, 5]
         assert df["question_order"].tolist() == question_order
         assert not df[columns].duplicated().any()
+
+    def test_get_section(self, dummy_ingestor):
+        letters = [random.choice(ascii_uppercase) for i in range(20)]
+        question_numbers = [letter + str(i) for i, letter in enumerate(letters)]
+
+        correct = letters + ["", ""]
+        question_numbers += [1, "wrong_format"]
+
+        result = []
+        for qn in question_numbers:
+            result.append(dummy_ingestor.get_section(qn))
+
+        assert correct == result
 
 
 if __name__ == "__main__":
