@@ -121,7 +121,9 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor object
         """
-        self._year = re.search(r"(\d{4})\.(csv|xlsx?)$", self._workbook).group(1)
+        year = re.search(r"(\d{4})\.(csv|xlsx?)$", self._workbook)
+        assert year, "Workbook does not contain the year in the file name."
+        self._year = int(year.group(1))
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
         return self

@@ -73,6 +73,28 @@ class TestPIRIngestor:
             "Reference",
         ], "Incorrect sheets returned"
 
+    def test_append_sections(self, data_ingestor):
+        data_ingestor.extract_sheets().load_data().append_sections()
+        df = data_ingestor._data["response"]
+        assert df.shape == (80, 14)
+        assert df.columns.tolist() == [
+            "region",
+            "state",
+            "grant_number",
+            "program_number",
+            "type",
+            "grantee",
+            "program",
+            "city",
+            "zip_code",
+            "zip_4",
+            "question_number",
+            "answer",
+            "question_name",
+            "section",
+        ]
+        assert all([name.find("section") == -1 for name in data_ingestor._data])
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
