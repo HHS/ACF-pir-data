@@ -53,8 +53,10 @@ CREATE TABLE `response` (
   INDEX ix_response_year (`year`),
   FOREIGN KEY (`uid`, `year`) 
     REFERENCES `program` (`uid`, `year`)
-    ON UPDATE CASCADE,
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
   FOREIGN KEY (`question_id`, `year`) 
     REFERENCES `question` (`question_id`, `year`)
     ON UPDATE CASCADE
+    ON DELETE CASCADE
 );
