@@ -73,8 +73,6 @@ class TestPIRIngestor:
         assert all([name.find("section") == -1 for name in data_ingestor._data])
 
     def test_clean_pir_data(self, data_ingestor, mock_schemas):
-        data_ingestor._sql.make_connection = MagicMock()
-        data_ingestor._sql.get_schemas = MagicMock()
         data_ingestor._sql._schemas = mock_schemas
         (
             data_ingestor.extract_sheets()

@@ -1,4 +1,5 @@
 import os
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -9,7 +10,9 @@ from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
 @pytest.fixture
 def dummy_ingestor():
     return PIRIngestor(
-        "", {"user": "", "password": "", "host": "", "port": ""}, database="pir"
+        "",
+        MagicMock(),
+        database="pir",
     )
 
 
@@ -17,7 +20,7 @@ def dummy_ingestor():
 def data_ingestor():
     return PIRIngestor(
         os.path.join(os.path.dirname(__file__), "test_data_2008.xlsx"),
-        {"user": "", "password": "", "host": "", "port": ""},
+        MagicMock(),
         database="pir",
     )
 

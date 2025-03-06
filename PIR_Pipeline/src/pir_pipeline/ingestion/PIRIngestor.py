@@ -12,17 +12,18 @@ from fuzzywuzzy import fuzz
 
 from pir_pipeline.models import pir_models
 from pir_pipeline.utils.MySQLUtils import MySQLUtils
+from pir_pipeline.utils.SQLUtils import SQLUtils
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike, db_config: dict, database: str):
+    def __init__(self, workbook: str | os.PathLike, sql: SQLUtils, database: str):
         """Initialize a PIRIngestor object
 
         Args:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
         self._data: dict[pd.DataFrame] = {}
-        self._sql = MySQLUtils(**db_config)
+        self._sql = sql
         self._database = database
 
         self._workbook = workbook
@@ -430,6 +431,15 @@ class PIRIngestor:
         self._question = self._sql.get_records(
             f"SELECT DISTINCT {question_columns} FROM question WHERE year != {self._year}",
         )
+        try:
+            assert not self._question["question_id"].duplicated().any()
+        except AssertionError:
+            self._question = (
+                self._question.groupby(["question_id"]).first().reset_index()
+            )
+            assert (
+                not self._question["question_id"].duplicated().any()
+            ), "Duplicated question_ids"
 
         return self
 
@@ -692,7 +702,7 @@ if __name__ == "__main__":
 
         try:
             PIRIngestor(
-                os.path.join(INPUT_DIR, file), db_config, database="pir"
+                os.path.join(INPUT_DIR, file), MySQLUtils(**db_config), database="pir"
             ).ingest()
         except Exception:
             print(year)
