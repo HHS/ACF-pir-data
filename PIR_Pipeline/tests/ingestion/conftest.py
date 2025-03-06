@@ -33,7 +33,25 @@ def mock_question_data():
         "question_order": {i: i + 1 for i in range(6)},
     }
 
-    return question
+    question_db = {
+        "question_id": {
+            i: value
+            for i, value in enumerate(
+                ["A", "A", "B", "B", "C", "C", "D", "D", "E", "E"]
+            )
+        },
+        "uqid": {i: "" for i in range(10)},
+        "question_name": {i: "" for i in range(10)},
+        "question_order": {i: "" for i in range(10)},
+        "question_text": {i: "" for i in range(10)},
+        "question_number": {i: "" for i in range(10)},
+        "question_type": {i: "" for i in range(10)},
+        "section": {i: "" for i in range(10)},
+    }
+
+    question_dict = {"raw": question, "db": question_db}
+
+    return question_dict
 
 
 # Adapted from GPT

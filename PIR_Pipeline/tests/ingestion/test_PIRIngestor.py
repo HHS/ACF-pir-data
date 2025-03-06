@@ -1,6 +1,6 @@
 import random
 from string import ascii_uppercase
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 
 import pandas as pd
 import pytest
@@ -9,7 +9,7 @@ import pytest
 class TestPIRIngestor:
     def test_duplicate_question_error(self, dummy_ingestor, mock_question_data):
         columns = ["question_name", "question_number"]
-        df = pd.DataFrame.from_dict(mock_question_data)
+        df = pd.DataFrame.from_dict(mock_question_data["raw"])
         df = dummy_ingestor.duplicated_question_error(df, columns)
         question_order = [1, 3, 4, 5]
         assert (
@@ -91,7 +91,7 @@ class TestPIRIngestor:
                 self, f"{table}_fields"
             )
 
-    def test_get_question_data(self, dummy_ingestor):
+    def test_get_question_data(self, dummy_ingestor, mock_question_data):
         question_columns = [
             "question_id",
             "uqid",
@@ -102,22 +102,8 @@ class TestPIRIngestor:
             "question_type",
             "section",
         ]
-        question = {
-            "question_id": {
-                i: value
-                for i, value in enumerate(
-                    ["A", "A", "B", "B", "C", "C", "D", "D", "E", "E"]
-                )
-            },
-            "uqid": {i: "" for i in range(10)},
-            "question_name": {i: "" for i in range(10)},
-            "question_order": {i: "" for i in range(10)},
-            "question_text": {i: "" for i in range(10)},
-            "question_number": {i: "" for i in range(10)},
-            "question_type": {i: "" for i in range(10)},
-            "section": {i: "" for i in range(10)},
-        }
-        question = pd.DataFrame.from_dict(question)
+
+        question = pd.DataFrame.from_dict(mock_question_data["db"])
 
         dummy_ingestor._sql.get_columns = MagicMock(return_value=question_columns)
         dummy_ingestor._sql.get_records = MagicMock(return_value=question)
@@ -130,6 +116,27 @@ class TestPIRIngestor:
 
         assert not dummy_ingestor._question["question_id"].duplicated().any()
         assert dummy_ingestor._question.shape == (5, 8)
+
+    def test_insert_data(self, data_ingestor, mock_schemas, mock_question_data):
+        data_ingestor._sql._schemas = mock_schemas
+        data_ingestor._sql.insert_records = MagicMock()
+        data_ingestor._sql.update_records = MagicMock()
+        question = pd.DataFrame.from_dict(mock_question_data["db"])
+        data_ingestor._sql.get_records = MagicMock(return_value=question)
+        (
+            data_ingestor.extract_sheets()
+            .load_data()
+            .append_sections()
+            .merge_response_question()
+            .clean_pir_data()
+            .link()
+            .insert_data()
+        )
+
+        assert data_ingestor._sql.insert_records.call_count == 3
+        data_ingestor._sql.insert_records.assert_any_call(ANY, "response")
+        data_ingestor._sql.insert_records.assert_any_call(ANY, "program")
+        data_ingestor._sql.insert_records.assert_any_call(ANY, "question")
 
 
 if __name__ == "__main__":
