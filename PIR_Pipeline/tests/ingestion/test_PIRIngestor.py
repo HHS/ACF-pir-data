@@ -91,6 +91,46 @@ class TestPIRIngestor:
                 self, f"{table}_fields"
             )
 
+    def test_get_question_data(self, dummy_ingestor):
+        question_columns = [
+            "question_id",
+            "uqid",
+            "question_name",
+            "question_number",
+            "question_order",
+            "question_text",
+            "question_type",
+            "section",
+        ]
+        question = {
+            "question_id": {
+                i: value
+                for i, value in enumerate(
+                    ["A", "A", "B", "B", "C", "C", "D", "D", "E", "E"]
+                )
+            },
+            "uqid": {i: "" for i in range(10)},
+            "question_name": {i: "" for i in range(10)},
+            "question_order": {i: "" for i in range(10)},
+            "question_text": {i: "" for i in range(10)},
+            "question_number": {i: "" for i in range(10)},
+            "question_type": {i: "" for i in range(10)},
+            "section": {i: "" for i in range(10)},
+        }
+        question = pd.DataFrame.from_dict(question)
+
+        dummy_ingestor._sql.get_columns = MagicMock(return_value=question_columns)
+        dummy_ingestor._sql.get_records = MagicMock(return_value=question)
+        dummy_ingestor._year = 2008
+
+        dummy_ingestor.get_question_data()
+
+        dummy_ingestor._sql.get_columns.assert_called_once()
+        dummy_ingestor._sql.get_records.assert_called_once()
+
+        assert not dummy_ingestor._question["question_id"].duplicated().any()
+        assert dummy_ingestor._question.shape == (5, 8)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s"])
