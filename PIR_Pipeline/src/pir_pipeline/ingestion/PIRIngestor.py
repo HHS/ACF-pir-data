@@ -461,7 +461,7 @@ class PIRIngestor:
         )
 
         df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        df.drop(["uqid_x", "uqid_y"], axis=1, inplace=True)
+        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         self._linked = df[df["_merge"] == "both"].drop(columns="_merge")
         self._linked["linked_id"] = self._linked["question_id"]
@@ -488,7 +488,8 @@ class PIRIngestor:
         def confirm_link(row: pd.Series):
             scores = [item == 100 for item in row.filter(like="score")]
             section = row["section_x"] == row["section_y"]
-            return sum(scores) >= 2 and section
+            qtype = row["question_type_x"] == row["question_type_y"]
+            return sum(scores) >= 2 and section and qtype
 
         # Add similarity score variables
         for column in ["question_name", "question_number", "question_text"]:
@@ -503,7 +504,7 @@ class PIRIngestor:
             )
 
         # Determine whether score meets threshold for match
-        self._cross["confirmed"] = self._cross.filter(regex="score|section").apply(
+        self._cross["confirmed"] = self._cross.filter(regex="score|section|type").apply(
             confirm_link, axis=1
         )
         self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
@@ -530,7 +531,7 @@ class PIRIngestor:
             confirmed, how="left", on="question_id", indicator=True
         )
         df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        df.drop(["uqid_x", "uqid_y"], inplace=True, axis=1)
+        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         linked = df[df["_merge"] == "both"].drop(columns="_merge")
         assert linked["uqid"].all()
@@ -555,8 +556,12 @@ class PIRIngestor:
             Self: PIRIngestor object
         """
         df = self._data["question"]
+        assert df["uqid"].isna().all()
+        df.drop(columns="uqid", inplace=True)
         df = df.merge(
-            self._linked[["question_id", "linked_id"]], how="left", on="question_id"
+            self._linked[["question_id", "linked_id", "uqid"]],
+            how="left",
+            on="question_id",
         )
         assert self._linked.shape[0] == df["linked_id"].notna().sum()
         assert self._unlinked.shape[0] == df["linked_id"].isna().sum()
@@ -568,7 +573,9 @@ class PIRIngestor:
 
         self._data["question"] = df
         self.update_unlinked()
-        self._data["question"].drop(["linked_id"], inplace=True, axis=1)
+        self._data["question"] = self._data["question"][
+            self._sql._schemas["question"]["Field"]
+        ]
 
         return self
 
@@ -601,6 +608,8 @@ class PIRIngestor:
 
         # Loop through program, question, and response tables and insert records
         for table, df in self._data.items():
+            if table == "response":
+                continue
             df.replace({np.nan: None}, inplace=True)
             model = getattr(pir_models, f"{table.title()}Model")
             initial_records = df.to_dict(orient="records")
@@ -611,8 +620,7 @@ class PIRIngestor:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
 
-            columns = tuple(df.columns.to_list())
-            self._sql.insert_records(columns, cleaned_records, table)
+            self._sql.insert_records(cleaned_records, table)
 
         # Update unlinked records if necessary
         if not self._unlinked.empty:
@@ -697,8 +705,8 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2012:
-            continue
+        # elif year < 2020:
+        #     continue
 
         try:
             PIRIngestor(
