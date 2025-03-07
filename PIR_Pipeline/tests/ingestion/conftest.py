@@ -49,7 +49,19 @@ def mock_question_data():
         "section": {i: "" for i in range(10)},
     }
 
-    question_dict = {"raw": question, "db": question_db}
+    question_linked = {
+        "question_id": {i: value for i, value in enumerate(["A", "B", "C", "D", "E"])},
+        "uqid": {i: "" for i in range(5)},
+        "question_name": {i: "" for i in range(5)},
+        "question_order": {i: "" for i in range(5)},
+        "question_text": {i: "" for i in range(5)},
+        "question_number": {i: "" for i in range(5)},
+        "question_type": {i: "" for i in range(5)},
+        "section": {i: "" for i in range(5)},
+        "linked_id": {i: value for i, value in enumerate(["A", "B", "F", "G", "H"])},
+    }
+
+    question_dict = {"raw": question, "db": question_db, "linked": question_linked}
 
     return question_dict
 
