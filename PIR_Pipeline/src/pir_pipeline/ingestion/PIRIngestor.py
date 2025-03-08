@@ -289,13 +289,46 @@ class PIRIngestor:
             self._data["question"] = question
 
         # Merge
+        original_response = response.copy()
+        merge_columns = ["question_number", "question_name"]
         response = response.merge(
-            question.drop(columns=["type"]),
+            question.drop(columns=["type"]),  # Why not just get the necessary columns?
             how="left",
-            on=["question_number", "question_name"],
+            on=merge_columns,
             validate="many_to_one",
             indicator=True,
         )
+        try:
+            num_records = response.shape[0]
+            assert (response["_merge"] == "both").all()
+        except AssertionError:
+            both = response[response["_merge"] == "both"].drop(columns="_merge")
+            left = response[response["_merge"] == "left_only"].drop(columns="_merge")
+            left = left[merge_columns][~left[merge_columns].duplicated()]
+
+            left = (
+                original_response.merge(
+                    left,
+                    how="inner",
+                    on=merge_columns,
+                    validate="many_to_one",
+                )
+                .drop(columns="question_name")
+                .merge(
+                    question.drop(columns=["type"]),
+                    how="left",
+                    on="question_number",
+                    validate="many_to_one",
+                    indicator=True,
+                )
+            )
+
+            assert (left["_merge"] == "both").all()
+            assert set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            appended = pd.concat([both, left])
+            assert appended.shape[0] == num_records
+            response = appended
+
         assert (
             not response[
                 [
@@ -608,8 +641,8 @@ class PIRIngestor:
 
         # Loop through program, question, and response tables and insert records
         for table, df in self._data.items():
-            if table == "response":
-                continue
+            # if table == "response":
+            #     continue
             df.replace({np.nan: None}, inplace=True)
             model = getattr(pir_models, f"{table.title()}Model")
             initial_records = df.to_dict(orient="records")
@@ -694,6 +727,8 @@ class PIRIngestor:
 
 
 if __name__ == "__main__":
+    import time
+
     from pir_pipeline.config import db_config
     from pir_pipeline.utils.paths import INPUT_DIR
 
@@ -705,13 +740,16 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        # elif year < 2020:
-        #     continue
+        elif year != 2023:
+            continue
 
         try:
+            init = time.time()
             PIRIngestor(
                 os.path.join(INPUT_DIR, file), MySQLUtils(**db_config), database="pir"
             ).ingest()
+            fin = time.time()
+            print(f"Time to process {year}: {(fin-init)/60} minutes")
         except Exception:
             print(year)
             raise
