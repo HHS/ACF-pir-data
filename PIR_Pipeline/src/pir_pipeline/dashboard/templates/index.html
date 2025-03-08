@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block header %}
+    <h1>{% block title %}Home{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="table-container">
+        <table>
+            <tr>
+                <th></th>
+                <th>Unique Questions</th>
+            </tr>
+            {% for index, row in unique_questions.items() %}
+                <tr>
+                    <td>{{ index }}</td>
+                    <td>{{ row["unique_questions"] }}</td>
+                </tr>
+            {% endfor %}
+                
+        </table>
+    </div>
+    <div class="table-container">
+        <table>
+            <tr>
+                <th></th>
+                <th>Available Years</th>
+            </tr>
+            {% for row in years.values() %}
+                <tr>
+                    <td>{{ row["year"] }}</td>
+                    <td>{{ row["count"] }}</td>
+                </tr>
+            {% endfor %}
+                
+        </table>
+    </div>
+    <div class="table-container">
+        <table>
+            <tr>
+                <th></th>
+                <th>Total Questions</th>
+            </tr>
+            {% for index, row in total_questions.items() %}
+                <tr>
+                    <td>{{ index }}</td>
+                    <td>{{ row["total_questions"] }}</td>
+                </tr>
+            {% endfor %}
+                
+        </table>
+    </div>
+{% endblock %}
