@@ -1,10 +1,20 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <h1>{% block title %}Home{% endblock %}</h1>
+    <h1>{% block title %}Search{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
+    <div>
+        <form>
+            <select>
+                {% for table in tables %}
+                    <option value="{{ table }}">{{ table.title() }}</option>
+                {% endfor %}
+            </select>
+            
+        </form>
+    </div>
     <div>
         <table>
             <tr>

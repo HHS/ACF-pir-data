@@ -1,31 +1,111 @@
-/* nav */
-nav {
-    display: flex;
-    align-items: center;
+/* Adapted from Claude 3.5 S */
+/* Custom CSS to override Bootstrap defaults with your color palette */
+:root {
+    --primary: #336A90;
+    --secondary: #779cb5;
+    --dark: #172C3C;
+    --light: #E2EFF7;
+    --info: #BCD9ED;
+    --accent: #BFB0A3;
+    --gray-dark: #21272D;
+    --gray: #80858C;
+}
+
+/* Body and general styles */
+body {
+    background-color: white;
+    color: var(--gray-dark);
+}
+
+/* Navbar customization */
+.navbar-custom {
+    background-color: var(--primary);
+}
+
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-nav .nav-link {
+    color: var(--light);
+}
+
+.navbar-custom .navbar-nav .nav-link:hover {
+    color: var(--info);
+}
+
+.navbar-custom .navbar-toggler {
+    border-color: var(--light);
+}
+
+/* Table customization */
+.table {
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(23, 44, 60, 0.1);
+}
+
+.table thead th {
+    background-color: var(--primary);
+    color: var(--light);
+    border-bottom: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--info);
+}
+
+/* Form elements customization */
+.form-control {
+    border-color: var(--secondary);
+    background-color: #fff;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
+}
+
+.form-select {
+    border-color: var(--secondary);
+}
+
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
+}
+
+/* Custom button styles */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
     background-color: #264A64;
+    border-color: #264A64;
 }
 
-nav ul {
-    display: flex;
-    list-style: none;
-    padding-right: 1em;
+.btn-secondary {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
 }
 
-nav ul li {
-    padding: .5em;
+/* Card customization */
+.card {
+    background-color: #fff;
+    border-color: var(--secondary);
 }
 
-nav ul li a {
-    color: black;
-    text-decoration: none;
+.card-header {
+    background-color: var(--primary);
+    color: var(--light);
 }
 
-nav h1 {
-    padding-left: 1em;
-    color: black;
+/* Search bar customization */
+.search-wrapper .input-group-text {
+    background-color: var(--primary);
+    color: var(--light);
+    border-color: var(--primary);
 }
 
-/* section */
+/* Additions */
 section#tables {
     display: flex;
     justify-content: space-between;
@@ -33,52 +113,11 @@ section#tables {
     margin-right: 5em;
 }
 
-/* div */
-div.table-container {
-    padding: 1em;
+img.logo {
+    max-width: 3em;
+    max-height: 3em;
 }
 
-/* heading */
 h1#home-title {
     text-align: center;
 }
-
-/* Table styling */
-/* adapted from https://dev.to/dcodeyt/creating-beautiful-html-tables-with-css-428l */
-.styled-table {
-    border-collapse: collapse;
-    /* margin: 25px 0; */
-    font-size: 0.9em;
-    font-family: sans-serif;
-    /* min-width: 400px; */
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-}
-
-.styled-table thead tr {
-    background-color: #21272D;
-    color: #ffffff;
-    text-align: left;
-}
-
-.styled-table th,
-.styled-table td {
-    padding: 12px 15px;
-}
-
-.styled-table tbody tr {
-    border-bottom: 1px solid #dddddd;
-}
-
-.styled-table tbody tr:nth-of-type(even) {
-    background-color: #f3f3f3;
-}
-
-.styled-table tbody tr:last-of-type {
-    border-bottom: 2px solid #21272D;
-}
-
-
-/* .styled-table tbody tr.active-row {
-    font-weight: bold;
-    color: #009879;
-} */
