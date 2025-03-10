@@ -132,6 +132,9 @@ class PIRIngestor:
         Returns:
             str: Hashed columns
         """
+        assert all(row.notna()), "Some values in row are none or NaN."    
+        assert not row.empty, "Input row is empty"
+        
         string = "".join([str(item) for item in row])
         byte_string = string.encode()
 

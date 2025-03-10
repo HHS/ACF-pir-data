@@ -60,6 +60,24 @@ class TestPIRIngestor:
             result.append(dummy_ingestor.get_section(qn))
 
         assert correct == result, "Incorrect string(s) returned"
+        
+    def test_hash_columns(self, dummy_ingestor, valid_hash_rows, invalid_hash_rows):
+        def row_raises_assertion(df):
+            for index, row in df.iterrows():
+                with pytest.raises(AssertionError):
+                    dummy_ingestor.hash_columns(row)
+                    
+        def row_passes(df, expected_hashes):
+            for (_, row), expected in zip(df.iterrows(), expected_hashes):
+                assert dummy_ingestor.hash_columns(row) == expected
+
+        row_passes(valid_hash_rows['uid_rows'], valid_hash_rows['expected_uid_hashes'])
+        row_passes(valid_hash_rows['qid_rows'], valid_hash_rows['expected_qid_hashes'])
+
+        row_raises_assertion(invalid_hash_rows['uid_rows'])
+        row_raises_assertion(invalid_hash_rows['qid_rows'])
+        row_raises_assertion(invalid_hash_rows['empty_row'])
+        
 
     def test_extract_sheets(self, data_ingestor, dummy_ingestor):
         with pytest.raises(AssertionError):
@@ -122,4 +140,4 @@ class TestPIRIngestor:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s", "-k", "missing_question_error"])
+    pytest.main([__file__, "-s"])
