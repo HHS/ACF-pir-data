@@ -30,10 +30,12 @@
             </ul>
         </div>
     </nav>
-    <section class="content">
+    <section class="header">
         <header>
             {% block header %}{% endblock %}
         </header>
+    </section>
+    <section class="content" id="{{ section_id }}">
         {% for message in get_flashed_messages() %}
             <div class="flash">{{ message }}</div>
         {% endfor %}

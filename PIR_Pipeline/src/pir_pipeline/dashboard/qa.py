@@ -56,6 +56,7 @@ def index():
         total_questions=total_questions,
         unique_questions=unique_questions,
         years=years,
+        section_id="tables",
     )
 
 
@@ -63,13 +64,18 @@ def index():
 def search():
     db = get_db()
     if request.method == "POST":
-        response = request.get_json()
-        table = response["value"]
-        if response["element"] == "table-select":
+        if request.headers["Content-Type"] == "application/json":
+            response = request.get_json()
+            table = response["value"]
             columns = db.get_columns(table)
             columns = get_searchable_columns(columns)
+            return json.dumps(columns)
+        elif request.headers["Content-Type"] == "application/x-www-form-urlencoded":
+            table = request.form["table-select"]
+            column = request.form["column-select"]
+            keyword = request.form["keyword-search"]
 
-        return json.dumps(columns)
+            pass
 
     tables = db.get_records("SHOW TABLES").iloc[:, 0].tolist()
     tables = [
@@ -80,7 +86,9 @@ def search():
     columns = db.get_columns(tables[0])
     columns = get_searchable_columns(columns)
 
-    return render_template("search.html", tables=tables, columns=columns)
+    return render_template(
+        "search.html", tables=tables, columns=columns, section_id="search-form"
+    )
 
 
 @bp.route("/review")

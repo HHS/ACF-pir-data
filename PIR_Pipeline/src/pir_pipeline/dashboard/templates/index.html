@@ -1,85 +1,56 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <h1 id="home-title">{% block title %}Home{% endblock %}</h1>
+    <h1 class="page-title">{% block title %}Home{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-    <section id="tables">
-        <div class="row mb-4">
-            <div class="col">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Data Table</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Unique Questions</th>
-                                </tr>
-                            </thead>
-                            {% for index, row in unique_questions.items() %}
-                                <tr>
-                                    <td>{{ index }}</td>
-                                    <td>{{ row["unique_questions"] }}</td>
-                                </tr>
-                            {% endfor %}    
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Data Table</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Available Years</th>
-                                </tr>
-                            </thead>
-                            {% for row in years.values() %}
-                                <tr>
-                                    <td>{{ row["year"] }}</td>
-                                    <td>{{ row["count"] }}</td>
-                                </tr>
-                            {% endfor %}    
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row mb-4">
-            <div class="col">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Data Table</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Total Questions</th>
-                                </tr>
-                            </thead>
-                            {% for index, row in total_questions.items() %}
-                                <tr>
-                                    <td>{{ index }}</td>
-                                    <td>{{ row["total_questions"] }}</td>
-                                </tr>
-                            {% endfor %}
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Unique Questions</th>
+                </tr>
+            </thead>
+            {% for index, row in unique_questions.items() %}
+                <tr>
+                    <td>{{ index }}</td>
+                    <td>{{ row["unique_questions"] }}</td>
+                </tr>
+            {% endfor %}    
+        </table>
+    </div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Available Years</th>
+                </tr>
+            </thead>
+            {% for row in years.values() %}
+                <tr>
+                    <td>{{ row["year"] }}</td>
+                    <td>{{ row["count"] }}</td>
+                </tr>
+            {% endfor %}    
+        </table>
+    </div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Total Questions</th>
+                </tr>
+            </thead>
+            {% for index, row in total_questions.items() %}
+                <tr>
+                    <td>{{ index }}</td>
+                    <td>{{ row["total_questions"] }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
 {% endblock %}

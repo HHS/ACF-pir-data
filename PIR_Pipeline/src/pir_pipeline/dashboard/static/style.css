@@ -35,6 +35,10 @@ body {
     border-color: var(--light);
 }
 
+.navbar {
+    padding: 0em 5em;
+}
+
 /* Table customization */
 .table {
     background-color: #fff;
@@ -71,6 +75,19 @@ body {
     box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
 }
 
+/* From https://stackoverflow.com/questions/57978278/form-input-displayed-above-text-field-using-flexbox */
+
+.form-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-group {
+display: flex;
+flex-direction : column;
+/* margin-right: 40px; */
+}
+
 /* Custom button styles */
 .btn-primary {
     background-color: var(--primary);
@@ -105,19 +122,31 @@ body {
     border-color: var(--primary);
 }
 
-/* Additions */
-section#tables {
-    display: flex;
-    justify-content: space-between;
+
+/* Sections */
+section {
     margin-left: 5em;
     margin-right: 5em;
 }
+
+section#tables {
+    display: flex;
+    justify-content: space-between;
+}
+
+div.card-body {
+    padding: 1em;
+}
+
+/* Additions */
 
 img.logo {
     max-width: 3em;
     max-height: 3em;
 }
 
-h1#home-title {
+/* Headings */
+
+h1.page-title {
     text-align: center;
 }
