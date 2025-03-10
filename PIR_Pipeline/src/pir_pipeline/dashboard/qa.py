@@ -1,4 +1,5 @@
 import functools
+import json
 
 import pandas as pd
 from flask import (
@@ -14,6 +15,7 @@ from flask import (
 from werkzeug.exceptions import abort
 
 from pir_pipeline.dashboard.db import get_db
+from pir_pipeline.utils.utils import get_searchable_columns
 
 bp = Blueprint("qa", __name__)
 
@@ -57,9 +59,28 @@ def index():
     )
 
 
-@bp.route("/search")
+@bp.route("/search", methods=("GET", "POST"))
 def search():
-    pass
+    db = get_db()
+    if request.method == "POST":
+        response = request.get_json()
+        table = response["value"]
+        if response["element"] == "table-select":
+            columns = db.get_columns(table)
+            columns = get_searchable_columns(columns)
+
+        return json.dumps(columns)
+
+    tables = db.get_records("SHOW TABLES").iloc[:, 0].tolist()
+    tables = [
+        table
+        for table in tables
+        if table.find("program") != -1 or table.find("question") != -1
+    ]
+    columns = db.get_columns(tables[0])
+    columns = get_searchable_columns(columns)
+
+    return render_template("search.html", tables=tables, columns=columns)
 
 
 @bp.route("/review")

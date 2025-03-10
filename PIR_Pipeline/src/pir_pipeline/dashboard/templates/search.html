@@ -7,12 +7,16 @@
 {% block content %}
     <div>
         <form>
-            <select>
+            <select onchange="getColumns(event)" id="table-select">
                 {% for table in tables %}
                     <option value="{{ table }}">{{ table.title() }}</option>
                 {% endfor %}
             </select>
-            
+            <select id="column-select">
+                {% for column in columns %}
+                    <option value="{{ column }}">{{ column.title() }}</option>
+                {% endfor %}
+            </select>
         </form>
     </div>
     <div>
@@ -26,7 +30,10 @@
                     <td>row.unique_questions</td>
                 </tr>
             {% endfor %}
-                
         </table>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="text/javascript" src="{{ url_for('static', filename='utilities.js') }}"></script>
 {% endblock %}
