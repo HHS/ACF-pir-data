@@ -24,6 +24,13 @@ def data_ingestor():
         database="pir",
     )
 
+@pytest.fixture
+def invalid_names():
+    return ['   ', int(8)]
+
+@pytest.fixture
+def valid_name():
+    return 'Section A'
 
 @pytest.fixture
 def mock_question_data():
@@ -32,9 +39,47 @@ def mock_question_data():
         "question_name": {0: "Q1", 1: "Q1", 2: "Q2", 3: "Q3", 4: "Q4", 5: "Q3"},
         "question_order": {i: i + 1 for i in range(6)},
     }
+    
+    question_merge_pass = {
+        "question_number": {i: "A." + str(i + 1) for i in range(6)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(6)},
+        "section": {i: "A" for i in range(6)}
+    }
+    
+    question_merge_fail = {
+        "question_number": {i: "A." + str(i + 1) for i in range(6)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(6)},
+        "fail": {i: "A" for i in range(6)}
+    }
 
-    return question
+    return {
+        "question" : question,
+        "question_merge_pass" : question_merge_pass,
+        "question_merge_fail" : question_merge_fail
+    }
 
+@pytest.fixture
+def mock_response_data():
+    response_merge_pass = {
+        "question_number": {i: "A." + str(i + 1) for i in range(7)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(7)},
+        "section": {i: "A" for i in range(7)}
+    }
+    
+    response_merge_fail = {
+        "question_number": {i: "A." + str(i + 1) for i in range(7)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(7)},
+        "fail": {i: "A" for i in range(7)}
+    }
+    
+    return {
+        "response_merge_pass" : response_merge_pass,
+        "response_merge_fail" : response_merge_fail
+    }
+
+@pytest.fixture
+def mock_missing_questions():
+    return 'A.7'
 
 # Adapted from GPT
 @pytest.fixture
