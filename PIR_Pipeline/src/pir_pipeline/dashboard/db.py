@@ -3,13 +3,13 @@ from datetime import datetime
 import click
 from flask import current_app, g
 
-from pir_pipeline.utils.MySQLUtils import MySQLUtils
+from pir_pipeline.utils import SQLAlchemyUtils
 
 
 def get_db():
     if "db" not in g:
-        g.db = MySQLUtils(**current_app.config["DB_CONFIG"]).make_connection(
-            current_app.config["DB_NAME"]
+        g.db = SQLAlchemyUtils(
+            **current_app.config["DB_CONFIG"], database=current_app.config["DB_NAME"]
         )
 
     return g.db

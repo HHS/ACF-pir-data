@@ -1,3 +1,5 @@
+__all__ = ["get_searchable_columns"]
+
 import re
 
 

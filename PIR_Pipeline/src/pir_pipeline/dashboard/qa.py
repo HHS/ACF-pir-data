@@ -15,7 +15,7 @@ from flask import (
 from werkzeug.exceptions import abort
 
 from pir_pipeline.dashboard.db import get_db
-from pir_pipeline.utils.utils import get_searchable_columns
+from pir_pipeline.utils import SQLAlchemyUtils, get_searchable_columns
 
 bp = Blueprint("qa", __name__)
 
