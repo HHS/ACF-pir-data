@@ -24,6 +24,13 @@ def data_ingestor():
         database="pir",
     )
 
+@pytest.fixture
+def invalid_names():
+    return ['   ', int(8)]
+
+@pytest.fixture
+def valid_name():
+    return 'Section A'
 
 @pytest.fixture
 def mock_question_data():
@@ -60,11 +67,114 @@ def mock_question_data():
         "section": {i: "" for i in range(5)},
         "linked_id": {i: value for i, value in enumerate(["A", "B", "F", "G", "H"])},
     }
+    
+        
+    question_merge_pass = {
+        "question_number": {i: "A." + str(i + 1) for i in range(6)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(6)},
+        "section": {i: "A" for i in range(6)}
+    }
+    
+    question_merge_fail = {
+        "question_number": {i: "A." + str(i + 1) for i in range(6)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(6)},
+        "fail": {i: "A" for i in range(6)}
+    }
 
-    question_dict = {"raw": question, "db": question_db, "linked": question_linked}
+    question_dict = {"raw": question, "db": question_db, "linked": question_linked, "question": question, "question_merge_pass": question_merge_pass, "question_merge_fail": question_merge_fail}
+    
+    
 
     return question_dict
 
+
+
+    
+@pytest.fixture
+def valid_hash_rows():
+    
+    uid_rows = pd.DataFrame(
+            {
+                'grant_number': ['06CH010420', '02HP0026', '05CH8368'],
+                'program_number': ['000', '200', '000'],
+                'program_type': ['HS', 'EHS', 'HS']
+            }
+    )
+    
+    
+    expected_uid_hashes = [
+        "000f56e97392dbb83df26feaecdc5063", # MD5 for ['06CH010420', '000', 'HS']
+        "0010ce3bb709d424dc1d1598f8c3ecb5", # MD5 for ['02HP0026', '200', 'EHS']
+        "002a208d04df9f43e893db401184157d" # MD5 for ['05CH8368', '000', 'HS']
+    ]
+    
+    qid_rows = pd.DataFrame(
+        {
+            'question_name': ['English', 'Homeless Families Served'],
+            'question_number': ['A.21.a', 'C.49']
+        }
+    )
+    
+    expected_qid_hashes = [
+        "68e7eddc1b7857b8611a19993ecde1b2", # MD5 for ['English', 'A.21.a']
+        "10f9a9567b29a7c565818a68f4df33d8" # MD5 for ['Homeless Families Served', 'C.49']
+    ]
+    
+    return {
+        'uid_rows': uid_rows,
+        'expected_uid_hashes': expected_uid_hashes,
+        'qid_rows': qid_rows,
+        'expected_qid_hashes': expected_qid_hashes
+    }
+    
+@pytest.fixture
+def invalid_hash_rows():
+    
+    uid_rows = pd.DataFrame(
+        {
+            'grant_number': [None],
+            'program_number': [None],
+            'program_type': [None]
+        }
+    )
+    
+    qid_rows = pd.DataFrame(
+        {
+            'question_name': [None],
+            'question_number': [None]
+        }
+    )
+    
+    empty_row = pd.DataFrame(pd.Series([]))
+    
+    return {
+        'uid_rows': uid_rows,
+        'qid_rows': qid_rows,
+        'empty_row': empty_row
+    }
+
+@pytest.fixture
+def mock_response_data():
+    response_merge_pass = {
+        "question_number": {i: "A." + str(i + 1) for i in range(7)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(7)},
+        "section": {i: "A" for i in range(7)}
+    }
+    
+    response_merge_fail = {
+        "question_number": {i: "A." + str(i + 1) for i in range(7)},
+        "question_name": {x: 'Q' + str(x + 1) for x in range(7)},
+        "fail": {i: "A" for i in range(7)}
+    }
+    
+    return {
+        "response_merge_pass" : response_merge_pass,
+        "response_merge_fail" : response_merge_fail
+    }
+
+@pytest.fixture
+def mock_missing_questions():
+    return 'A.7'
 
 # Adapted from GPT
 @pytest.fixture
