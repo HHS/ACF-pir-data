@@ -503,7 +503,12 @@ class PIRIngestor:
         assert not self._linked.duplicated(["question_id"]).any()
 
         # Look for a fuzzy match on question_name, question_number, or question_text
-        self._cross = self._unlinked.merge(self._question, how="cross")
+        self._cross = self._unlinked.merge(
+            self._question,
+            how="left",
+            on=["question_type", "section"],
+            validate="many_to_many",
+        )
         if not self._cross.empty:
             self.fuzzy_link()
 
