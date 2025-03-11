@@ -35,11 +35,13 @@ class PIRIngestor:
             str: Snake-cased name
         """
         assert isinstance(name, str), "Input `name` must be a string."
-        assert name.strip() != '', "Input `name` cannot be an empty or whitespace-only string."
-        
+        assert (
+            name.strip() != ""
+        ), "Input `name` cannot be an empty or whitespace-only string."
+
         snake_name = re.sub(r"\W", "_", name.lower())
         snake_name = re.sub(r"_+", "_", snake_name)
-        
+
         return snake_name
 
     def duplicated_question_error(
@@ -56,7 +58,7 @@ class PIRIngestor:
 
         Returns:
             pd.DataFrame: A deduplicated data frame
-        """        
+        """
         df.sort_values(columns + ["question_order"], inplace=True)
         df = df.groupby(columns).first().reset_index()
         return df
@@ -74,18 +76,28 @@ class PIRIngestor:
         Returns:
             pd.DataFrame: Question data frame, updated to contain missing questions
         """
-        
+
         REQUIRED_COLS = ["question_number", "question_name", "section"]
-        
-        assert isinstance(response, pd.DataFrame), "Input `response` must be a dataframe."
-        assert isinstance(question, pd.DataFrame), "Input `question` must be a dataframe."
-        assert isinstance(missing_questions, set), "Input `missing_questions` must be a set."
-        
-        assert set(REQUIRED_COLS) - set(response.columns.tolist()) == set(), f"Input `response` must have columns {REQUIRED_COLS}."
-        assert set(REQUIRED_COLS) - set(question.columns.tolist()) == set(), f"Input `question` must have columns {REQUIRED_COLS}."
-        
+
+        assert isinstance(
+            response, pd.DataFrame
+        ), "Input `response` must be a dataframe."
+        assert isinstance(
+            question, pd.DataFrame
+        ), "Input `question` must be a dataframe."
+        assert isinstance(
+            missing_questions, set
+        ), "Input `missing_questions` must be a set."
+
+        assert (
+            set(REQUIRED_COLS) - set(response.columns.tolist()) == set()
+        ), f"Input `response` must have columns {REQUIRED_COLS}."
+        assert (
+            set(REQUIRED_COLS) - set(question.columns.tolist()) == set()
+        ), f"Input `question` must have columns {REQUIRED_COLS}."
+
         numrows_q = question.shape[0]
-        
+
         response = (
             response[["question_number", "question_name", "section"]][
                 response["question_number"].isin(missing_questions)
@@ -93,12 +105,14 @@ class PIRIngestor:
             .groupby(["question_number", "question_name"])
             .sample(1)
         )
-        
+
         expected_numrows = numrows_q + response.shape[0]
 
         question = pd.concat([question, response])
-        
-        assert question.shape[0] == expected_numrows, f"Output of missing_question_error is an incorrect length. Expected {expected_numrows}."
+
+        assert (
+            question.shape[0] == expected_numrows
+        ), f"Output of missing_question_error is an incorrect length. Expected {expected_numrows}."
 
         return question
 
@@ -129,9 +143,9 @@ class PIRIngestor:
         Returns:
             str: Hashed columns
         """
-        assert all(row.notna()), "Some values in row are none or NaN."    
+        assert not row.isna().all(), "All values in the row are None or nan."
         assert not row.empty, "Input row is empty"
-        
+
         string = "".join([str(item) for item in row])
         byte_string = string.encode()
 
@@ -546,9 +560,7 @@ class PIRIngestor:
 
         def confirm_link(row: pd.Series):
             scores = [item == 100 for item in row.filter(like="score")]
-            section = row["section_x"] == row["section_y"]
-            qtype = row["question_type_x"] == row["question_type_y"]
-            return sum(scores) >= 2 and section and qtype
+            return sum(scores) >= 2
 
         # Add similarity score variables
         for column in ["question_name", "question_number", "question_text"]:
@@ -647,7 +659,7 @@ class PIRIngestor:
         Returns:
             str | float: A null value or a hashed question ID returned as a string
         """
-        
+
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
