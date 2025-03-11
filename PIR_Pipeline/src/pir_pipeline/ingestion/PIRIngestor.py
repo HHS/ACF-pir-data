@@ -11,12 +11,11 @@ import pandas as pd
 from fuzzywuzzy import fuzz
 
 from pir_pipeline.models import pir_models
-from pir_pipeline.utils.MySQLUtils import MySQLUtils
-from pir_pipeline.utils.SQLUtils import SQLUtils
+from pir_pipeline.utils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike, sql: SQLUtils, database: str):
+    def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
         """Initialize a PIRIngestor object
 
         Args:
@@ -24,8 +23,6 @@ class PIRIngestor:
         """
         self._data: dict[pd.DataFrame] = {}
         self._sql = sql
-        self._database = database
-
         self._workbook = workbook
 
     def make_snake_name(self, name: str) -> str:
@@ -371,9 +368,7 @@ class PIRIngestor:
 
             return None
 
-        self._sql.make_connection(self._database).get_schemas(
-            ["response", "program", "question"]
-        )
+        self._sql.get_schemas(["response", "program", "question"])
         uid_columns = ["grant_number", "program_number", "program_type"]
         qid_columns = ["question_number", "question_name"]
 
@@ -751,7 +746,8 @@ if __name__ == "__main__":
         try:
             init = time.time()
             PIRIngestor(
-                os.path.join(INPUT_DIR, file), MySQLUtils(**db_config), database="pir"
+                os.path.join(INPUT_DIR, file),
+                SQLAlchemyUtils(**db_config, database="pir"),
             ).ingest()
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")
