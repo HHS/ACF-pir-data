@@ -6,7 +6,7 @@ authors = [
 ]
 description = "Program Information Report ingestion and linking infrastructure."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: Microsoft :: Windows",
@@ -15,7 +15,7 @@ classifiers = [
 dependencies = [
     "pywin32", "mysql-connector-python", "sphinx", "pandas", 
     "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd",
-    "pydantic"
+    "pydantic", "Flask", "SQLAlchemy"
 ]
 
 [build-system]

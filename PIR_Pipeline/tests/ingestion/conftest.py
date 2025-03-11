@@ -39,7 +39,36 @@ def mock_question_data():
         "question_name": {0: "Q1", 1: "Q1", 2: "Q2", 3: "Q3", 4: "Q4", 5: "Q3"},
         "question_order": {i: i + 1 for i in range(6)},
     }
+
+    question_db = {
+        "question_id": {
+            i: value
+            for i, value in enumerate(
+                ["A", "A", "B", "B", "C", "C", "D", "D", "E", "E"]
+            )
+        },
+        "uqid": {i: "" for i in range(10)},
+        "question_name": {i: "" for i in range(10)},
+        "question_order": {i: "" for i in range(10)},
+        "question_text": {i: "" for i in range(10)},
+        "question_number": {i: "" for i in range(10)},
+        "question_type": {i: "" for i in range(10)},
+        "section": {i: "" for i in range(10)},
+    }
+
+    question_linked = {
+        "question_id": {i: value for i, value in enumerate(["A", "B", "C", "D", "E"])},
+        "uqid": {i: "" for i in range(5)},
+        "question_name": {i: "" for i in range(5)},
+        "question_order": {i: "" for i in range(5)},
+        "question_text": {i: "" for i in range(5)},
+        "question_number": {i: "" for i in range(5)},
+        "question_type": {i: "" for i in range(5)},
+        "section": {i: "" for i in range(5)},
+        "linked_id": {i: value for i, value in enumerate(["A", "B", "F", "G", "H"])},
+    }
     
+        
     question_merge_pass = {
         "question_number": {i: "A." + str(i + 1) for i in range(6)},
         "question_name": {x: 'Q' + str(x + 1) for x in range(6)},
@@ -52,11 +81,14 @@ def mock_question_data():
         "fail": {i: "A" for i in range(6)}
     }
 
-    return {
-        "question" : question,
-        "question_merge_pass" : question_merge_pass,
-        "question_merge_fail" : question_merge_fail
-    }
+    question_dict = {"raw": question, "db": question_db, "linked": question_linked, "question": question, "question_merge_pass": question_merge_pass, "question_merge_fail": question_merge_fail}
+    
+    
+
+    return question_dict
+
+
+
     
 @pytest.fixture
 def valid_hash_rows():

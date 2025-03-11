@@ -1,7 +1,7 @@
 import random
 from string import ascii_uppercase
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 import numpy as np
 import pandas as pd
 import pytest
@@ -39,7 +39,7 @@ class TestPIRIngestor:
         
     def test_duplicate_question_error(self, dummy_ingestor, mock_question_data):
         columns = ["question_name", "question_number"]
-        df = pd.DataFrame.from_dict(mock_question_data)
+        df = pd.DataFrame.from_dict(mock_question_data["raw"])
         df = dummy_ingestor.duplicated_question_error(df, columns)
         question_order = [1, 3, 4, 5]
         assert (
@@ -164,6 +164,65 @@ class TestPIRIngestor:
             assert data_ingestor._data[table].columns.tolist() == getattr(
                 self, f"{table}_fields"
             )
+
+    def test_get_question_data(self, dummy_ingestor, mock_question_data):
+        question_columns = [
+            "question_id",
+            "uqid",
+            "question_name",
+            "question_number",
+            "question_order",
+            "question_text",
+            "question_type",
+            "section",
+        ]
+
+        question = pd.DataFrame.from_dict(mock_question_data["db"])
+
+        dummy_ingestor._sql.get_columns = MagicMock(return_value=question_columns)
+        dummy_ingestor._sql.get_records = MagicMock(return_value=question)
+        dummy_ingestor._year = 2008
+
+        dummy_ingestor.get_question_data()
+
+        dummy_ingestor._sql.get_columns.assert_called_once()
+        dummy_ingestor._sql.get_records.assert_called_once()
+
+        assert not dummy_ingestor._question["question_id"].duplicated().any()
+        assert dummy_ingestor._question.shape == (5, 8)
+
+    def test_insert_data(self, data_ingestor, mock_schemas, mock_question_data):
+        data_ingestor._sql._schemas = mock_schemas
+        data_ingestor._sql.insert_records = MagicMock()
+        data_ingestor._sql.update_records = MagicMock()
+        question = pd.DataFrame.from_dict(mock_question_data["db"])
+        data_ingestor._sql.get_records = MagicMock(return_value=question)
+        (
+            data_ingestor.extract_sheets()
+            .load_data()
+            .append_sections()
+            .merge_response_question()
+            .clean_pir_data()
+            .link()
+            .insert_data()
+        )
+
+        assert data_ingestor._sql.insert_records.call_count == 3
+        data_ingestor._sql.insert_records.assert_any_call(ANY, "response")
+        data_ingestor._sql.insert_records.assert_any_call(ANY, "program")
+        data_ingestor._sql.insert_records.assert_any_call(ANY, "question")
+
+    def test_update_unlinked(self, data_ingestor, mock_question_data):
+        question = pd.DataFrame.from_dict(mock_question_data["linked"])
+        data_ingestor._sql.get_records = MagicMock(
+            return_value=question[["question_id"]]
+        )
+        data_ingestor._data["question"] = question
+
+        data_ingestor.update_unlinked()
+
+        data_ingestor._sql.get_records.assert_called_once()
+        assert data_ingestor._unlinked.shape == (2, 3)
 
 
 if __name__ == "__main__":

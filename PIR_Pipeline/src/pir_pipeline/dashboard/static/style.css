@@ -1,0 +1,152 @@
+/* Adapted from Claude 3.5 S */
+/* Custom CSS to override Bootstrap defaults with your color palette */
+:root {
+    --primary: #336A90;
+    --secondary: #779cb5;
+    --dark: #172C3C;
+    --light: #E2EFF7;
+    --info: #BCD9ED;
+    --accent: #BFB0A3;
+    --gray-dark: #21272D;
+    --gray: #80858C;
+}
+
+/* Body and general styles */
+body {
+    background-color: white;
+    color: var(--gray-dark);
+}
+
+/* Navbar customization */
+.navbar-custom {
+    background-color: var(--primary);
+}
+
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-nav .nav-link {
+    color: var(--light);
+}
+
+.navbar-custom .navbar-nav .nav-link:hover {
+    color: var(--info);
+}
+
+.navbar-custom .navbar-toggler {
+    border-color: var(--light);
+}
+
+.navbar {
+    padding: 0em 5em;
+}
+
+/* Table customization */
+.table {
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(23, 44, 60, 0.1);
+}
+
+.table thead th {
+    background-color: var(--primary);
+    color: var(--light);
+    border-bottom: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--info);
+}
+
+/* Form elements customization */
+.form-control {
+    border-color: var(--secondary);
+    background-color: #fff;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
+}
+
+.form-select {
+    border-color: var(--secondary);
+}
+
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
+}
+
+/* From https://stackoverflow.com/questions/57978278/form-input-displayed-above-text-field-using-flexbox */
+
+.form-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.form-group {
+display: flex;
+flex-direction : column;
+/* margin-right: 40px; */
+}
+
+/* Custom button styles */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    background-color: #264A64;
+    border-color: #264A64;
+}
+
+.btn-secondary {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+}
+
+/* Card customization */
+.card {
+    background-color: #fff;
+    border-color: var(--secondary);
+}
+
+.card-header {
+    background-color: var(--primary);
+    color: var(--light);
+}
+
+/* Search bar customization */
+.search-wrapper .input-group-text {
+    background-color: var(--primary);
+    color: var(--light);
+    border-color: var(--primary);
+}
+
+
+/* Sections */
+section {
+    margin-left: 5em;
+    margin-right: 5em;
+}
+
+section#tables {
+    display: flex;
+    justify-content: space-between;
+}
+
+div.card-body {
+    padding: 1em;
+}
+
+/* Additions */
+
+img.logo {
+    max-width: 3em;
+    max-height: 3em;
+}
+
+/* Headings */
+
+h1.page-title {
+    text-align: center;
+}

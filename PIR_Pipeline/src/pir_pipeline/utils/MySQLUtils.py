@@ -125,14 +125,13 @@ class MySQLUtils(SQLUtils):
         columns = [column[0] for column in columns]
         return columns
 
-    def insert_records(self, columns: tuple[str], records: list[dict], table: str):
+    def insert_records(self, records: list[dict], table: str):
         """Insert records in the target table
 
         If there are less than 20000 records, they will be inserted using a single
         statement. Otherwise, batches of 20000 records at a time will be inserted.
 
         Args:
-            columns (tuple[str]): Columns to insert data into
             records (list[dict]): Records to insert
             table (str): Table to insert records into
         """
@@ -156,6 +155,7 @@ class MySQLUtils(SQLUtils):
             self._connection.commit()
             cursor.close()
 
+        columns = list(records[0].keys())
         batch_size = 20000
         if len(records) < batch_size:
             insertion_query(columns, records, table)

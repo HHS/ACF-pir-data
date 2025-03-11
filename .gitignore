@@ -105,3 +105,9 @@ dmypy.json
 
 # sql extension stuff
 .idea/
+
+# Flask stuff
+*instance/
+
+# General
+*scrap.py
