@@ -434,9 +434,11 @@ class PIRIngestor:
             return value
         elif isinstance(value, datetime):
             return value.strftime("%m/%d/%Y")
-        elif np.isnan(value):
-            return np.nan
         elif isinstance(value, (int, float)):
+            if np.isnan(value):
+                return "nan"
+            if isinstance(value, bool):
+                return value
             return str(value)
 
         return value
@@ -605,6 +607,7 @@ class PIRIngestor:
         Returns:
             str | float: A null value or a hashed question ID returned as a string
         """
+        
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 

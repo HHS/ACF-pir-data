@@ -1,7 +1,8 @@
 import random
 from string import ascii_uppercase
+from datetime import datetime
 from unittest.mock import MagicMock
-
+import numpy as np
 import pandas as pd
 import pytest
 import re
@@ -78,7 +79,33 @@ class TestPIRIngestor:
         row_raises_assertion(invalid_hash_rows['qid_rows'])
         row_raises_assertion(invalid_hash_rows['empty_row'])
         
+    def test_stringify(self, dummy_ingestor):
+        
+        result = dummy_ingestor.stringify("test")
+        assert result == "test", "String input should remain unchanged."
 
+        date = datetime(2020, 1, 1)
+        result = dummy_ingestor.stringify(date)
+        assert result == "01/01/2020", "Datetime input shoudl be formatted as MM/DD/YYYY."
+
+        result = dummy_ingestor.stringify(3.14159)
+        assert result == "3.14159", "Float input should be converted to a string."
+        
+        result = dummy_ingestor.stringify(1)
+        assert result == "1", "Int input should be converted to a string."
+        
+        result = dummy_ingestor.stringify(np.nan)
+        assert result == 'nan', "`np.nan` input should return 'nan' string."
+        
+        result = dummy_ingestor.stringify(None)
+        assert result is None, "`None` should be returned unchanged."
+        
+        result = dummy_ingestor.stringify("")
+        assert result == "", "Empty string should be returned unchanged."
+        
+        result = dummy_ingestor.stringify(True)
+        assert result == True, "Boolean input should be returned unchanged."
+        
     def test_extract_sheets(self, data_ingestor, dummy_ingestor):
         with pytest.raises(AssertionError):
             dummy_ingestor.extract_sheets()
@@ -140,4 +167,4 @@ class TestPIRIngestor:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    pytest.main([__file__, "-sk", "stringify"])
