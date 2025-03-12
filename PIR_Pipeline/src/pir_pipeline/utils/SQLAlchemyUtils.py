@@ -5,7 +5,13 @@ from sqlalchemy import Engine, Table, create_engine, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from pir_pipeline.config import db_config
-from pir_pipeline.models.pir_models_sql_alchemy import program, question, response
+from pir_pipeline.models.pir_models_sql_alchemy import (
+    linked,
+    program,
+    question,
+    response,
+    unlinked,
+)
 from pir_pipeline.utils.SQLUtils import SQLUtils
 from pir_pipeline.utils.utils import get_searchable_columns
 
@@ -26,6 +32,8 @@ class SQLAlchemyUtils(SQLUtils):
             "response": response,
             "question": question,
             "program": program,
+            "linked": linked,
+            "unlinked": unlinked,
         }
 
     @property
@@ -95,6 +103,15 @@ class SQLAlchemyUtils(SQLUtils):
                 conn.execute(statement, records)
             else:
                 conn.execute(statement)
+
+    def to_dict(self, records: list[tuple], columns: list[str]) -> list[dict]:
+        data = []
+        for record in records:
+            assert len(record) == len(columns)
+            result_dict = {key: record[i] for i, key in enumerate(columns)}
+            data.append(result_dict)
+
+        return data
 
 
 if __name__ == "__main__":
