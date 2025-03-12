@@ -1,4 +1,4 @@
-__all__ = ["get_searchable_columns", "make_snake_name"]
+__all__ = ["get_searchable_columns", "clean_name"]
 
 import re
 
@@ -13,15 +13,23 @@ def get_searchable_columns(columns: list[str]) -> list[str]:
     return keep_columns
 
 
-def make_snake_name(name: str) -> str:
-    """Convert a name to snake case
+def clean_name(name: str, how: str = "snake") -> str:
+    """Convert a name to a new case
 
     Args:
         name (str): A name to convert
+        how (str): What method to use to convert.\n
+            "snake": Converts to snake case.\n
+            "title": Converts to title case (can un-snake).
 
     Returns:
-        str: Snake-cased name
+        str: Converted name
     """
-    snake_name = re.sub(r"\W", "_", name.lower())
-    snake_name = re.sub(r"_+", "_", snake_name)
-    return snake_name
+    if how == "snake":
+        new_name = re.sub(r"\W", "_", name.lower())
+        new_name = re.sub(r"_+", "_", new_name)
+    elif how == "title":
+        new_name = re.sub(r"_", " ", name)
+        new_name = new_name.title()
+
+    return new_name

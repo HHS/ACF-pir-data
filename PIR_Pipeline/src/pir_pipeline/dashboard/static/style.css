@@ -59,6 +59,12 @@ table#search-results-table {
     margin-top: 1em;
 }
 
+table#search-results-table tbody tr td,
+table#search-results-table thead tr th {
+    width: 10em;
+    white-space: pre-wrap;
+}
+
 /* Form elements customization */
 .form-control {
     border-color: var(--secondary);
@@ -138,10 +144,6 @@ section#tables {
     justify-content: space-between;
 }
 
-div.card-body {
-    padding: 1em;
-}
-
 /* Additions */
 
 img.logo {
@@ -153,4 +155,14 @@ img.logo {
 
 h1.page-title {
     text-align: center;
+}
+
+/* Divs */
+
+div.card-body {
+    padding: 1em;
+}
+
+.table-box {
+    overflow: scroll;
 }

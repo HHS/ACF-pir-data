@@ -1,11 +1,11 @@
 import functools
+import json
 
 import pandas as pd
 from flask import (
     Blueprint,
     flash,
     g,
-    jsonify,
     redirect,
     render_template,
     request,
@@ -16,7 +16,7 @@ from sqlalchemy import bindparam, select
 from werkzeug.exceptions import abort
 
 from pir_pipeline.dashboard.db import get_db
-from pir_pipeline.utils import SQLAlchemyUtils, get_searchable_columns, make_snake_name
+from pir_pipeline.utils import SQLAlchemyUtils, clean_name, get_searchable_columns
 
 bp = Blueprint("qa", __name__)
 
@@ -70,14 +70,14 @@ def search():
             table = response["value"]
             columns = db.get_columns(table)
             columns = get_searchable_columns(columns)
-            return jsonify(columns)
+            return json.dumps(columns)
         else:
             table = request.form["table-select"]
             column = request.form["column-select"]
             keyword = request.form["keyword-search"]
 
             table = db.tables[table]
-            column = make_snake_name(
+            column = clean_name(
                 column
             )  # But why not just have the snake_name as the value for the option?
 
@@ -86,14 +86,14 @@ def search():
             )
 
             data = []
-            data.append(table.c.keys())
+            data.append([clean_name(col, "title") for col in table.c.keys()])
             with db.engine.connect() as conn:
                 result = conn.execute(query, {"keyword": keyword})
                 for res in result.all():
                     result_dict = {key: res[i] for i, key in enumerate(table.c.keys())}
                     data.append(result_dict)
 
-            return jsonify(data)
+            return json.dumps(data)
 
     tables = db.get_records("SHOW TABLES").iloc[:, 0].tolist()
     tables = [
