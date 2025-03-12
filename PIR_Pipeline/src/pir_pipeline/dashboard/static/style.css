@@ -55,6 +55,10 @@ body {
     background-color: var(--info);
 }
 
+table#search-results-table {
+    margin-top: 1em;
+}
+
 /* Form elements customization */
 .form-control {
     border-color: var(--secondary);

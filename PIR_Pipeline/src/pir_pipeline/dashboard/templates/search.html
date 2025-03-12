@@ -7,47 +7,36 @@
 {% endblock %}
 
 {% block content %}
-    <form method="post">
-        <div class="form-container">
-            <div class="form-group">
-                <label for="table-select" class="form-label">Table</label>
-                <select class="form-select" onchange="getColumns(event)" name="table-select" id="table-select">
-                    {% for table in tables %}
-                        <option value="{{ table }}">{{ table.title() }}</option>
-                    {% endfor %}
-                </select>
-            </div class="form-group">
-            <div class="form-group">
-                <label for="column-select" class="form-label">Column</label>
-                <select class="form-select" id="column-select" name="column-select">
-                    {% for column in columns %}
-                        <option value="{{ column }}">{{ column.title() }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="keyword-search" class="form-label">Search</label>
-                <input type="text" class="form-control" placeholder="Search by Keyword..." id="keyword-search" name="keyword-search">
-            </div>
-            <div class="form-group">
-                <label for="search-button" class="form-label">&#x200B</label>
-                <button type="submit" class="btn btn-primary" id="search-button">Search</button>
-            </div>
+<form id="search-form">
+    <div class="form-container">
+        <div class="form-group">
+            <label for="table-select" class="form-label">Table</label>
+            <select class="form-select" onchange="getColumns(event)" name="table-select" id="table-select">
+                {% for table in tables %}
+                    <option value="{{ table }}">{{ table.title() }}</option>
+                {% endfor %}
+            </select>
+        </div class="form-group">
+        <div class="form-group">
+            <label for="column-select" class="form-label">Column</label>
+            <select class="form-select" id="column-select" name="column-select">
+                {% for column in columns %}
+                    <option value="{{ column }}">{{ column.title() }}</option>
+                {% endfor %}
+            </select>
         </div>
-    </form>
-</section>
-<section id="search-tables">
-    <table>
-        <tr>
-            <th></th>
-            <th>Unique Questions</th>
-        </tr>
-        {% for row in unique_questions %}
-            <tr>
-                <td>row.unique_questions</td>
-            </tr>
-        {% endfor %}
-    </table>
+        <div class="form-group">
+            <label for="keyword-search" class="form-label">Search</label>
+            <input type="text" class="form-control" placeholder="Search by Keyword..." id="keyword-search" name="keyword-search">
+        </div>
+        <div class="form-group">
+            <label for="search-button" class="form-label">&#x200B</label>
+            <button type="submit" class="btn btn-primary" id="search-button">Search</button>
+        </div>
+    </div>
+</form>
+<table id="search-results-table" class="table table-hover">
+</table>
 {% endblock %}
 
 {% block scripts %}

@@ -1,7 +1,7 @@
 from urllib.parse import quote_plus
 
 import pandas as pd
-from sqlalchemy import create_engine, update
+from sqlalchemy import Engine, Table, create_engine, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from pir_pipeline.config import db_config
@@ -12,7 +12,7 @@ from pir_pipeline.utils.utils import get_searchable_columns
 
 class SQLAlchemyUtils(SQLUtils):
     def __init__(self, user: str, password: str, host: str, port: int, database: str):
-        self._engine = create_engine(
+        self._engine: Engine = create_engine(
             f"mysql+mysqlconnector://{user}:{quote_plus(password)}@{host}:{port}/{database}"
         )
         if self._engine.name == "mysql":
@@ -22,7 +22,19 @@ class SQLAlchemyUtils(SQLUtils):
 
         self.insert = insert
         self._dialect = self._engine.name
-        self._tables = {"response": response, "question": question, "program": program}
+        self._tables: dict[Table] = {
+            "response": response,
+            "question": question,
+            "program": program,
+        }
+
+    @property
+    def engine(self):
+        return self._engine
+
+    @property
+    def tables(self):
+        return self._tables
 
     def make_connection(self):
         pass
