@@ -21,18 +21,21 @@ function buildDropdown(options) {
     }
 }
 
-function doKeywordSearch(event) {
+function updateTable(event) {
+    // Get the form data
     const form = event.srcElement;
     const formData = new FormData(form);
 
+    // Get the table to be updated
+    const tables = document.getElementsByTagName("table");
+    const table = tables[0];
+
     fetch(document.URL, {"method": "POST", "body": formData})
     .then(response => response.json())
-    .then(data => buildTable(data));
+    .then(data => buildTable(data, table));
 }
 
-function buildTable(data) {
-    const table = document.getElementById("search-results-table");
-
+function buildTable(data, table) {
     table.innerHTML = '';
     let header = data[0];
     let head = document.createElement("thead");
@@ -62,21 +65,9 @@ function buildTable(data) {
     table.appendChild(body)
 }
 
-function getReviewTable(event) {
-    const form = event.srcElement;
-    const formData = new FormData(form);
-    console.log(form.id);
-    exit()
-
-    fetch(document.URL, {"method": "POST", "body": formData})
-    .then(response => response.json())
-    .then(data => buildTable(data));
-}
-
 export {
     getColumns,
     buildDropdown,
     buildTable,
-    doKeywordSearch,
-    getReviewTable
+    updateTable
 }
