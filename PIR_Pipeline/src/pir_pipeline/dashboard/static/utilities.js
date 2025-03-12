@@ -24,7 +24,6 @@ function buildDropdown(options) {
 function doKeywordSearch(event) {
     const form = event.srcElement;
     const formData = new FormData(form);
-    console.log(formData);
 
     fetch(document.URL, {"method": "POST", "body": formData})
     .then(response => response.json())
@@ -35,22 +34,22 @@ function buildTable(data) {
     const table = document.getElementById("search-results-table");
 
     table.innerHTML = '';
-    header = data[0];
-    head = document.createElement("thead");
-    headerRow = document.createElement("tr");
+    let header = data[0];
+    let head = document.createElement("thead");
+    let headerRow = document.createElement("tr");
     head.appendChild(headerRow)
     for (let i = 0; i < header.length; i++) {
-        column = document.createElement("th");
+        const column = document.createElement("th");
         column.innerHTML = header[i];
         headerRow.appendChild(column);
     }
     table.appendChild(head);
 
-    body = document.createElement("tbody");
+    let body = document.createElement("tbody");
 
     for (let i = 1; i < data.length; i++) {
         const row = document.createElement("tr")
-        row_data = data[i];
+        let row_data = data[i];
         for (let key in row_data) {
             const cell = document.createElement("td");
             cell.innerHTML = row_data[key];
@@ -63,8 +62,21 @@ function buildTable(data) {
     table.appendChild(body)
 }
 
-const searchForm = document.getElementById("search-form")
-searchForm.addEventListener("submit", async (e) => {
-    e.preventDefault()
-    doKeywordSearch(e)
-})
+function getReviewTable(event) {
+    const form = event.srcElement;
+    const formData = new FormData(form);
+    console.log(form.id);
+    exit()
+
+    fetch(document.URL, {"method": "POST", "body": formData})
+    .then(response => response.json())
+    .then(data => buildTable(data));
+}
+
+export {
+    getColumns,
+    buildDropdown,
+    buildTable,
+    doKeywordSearch,
+    getReviewTable
+}
