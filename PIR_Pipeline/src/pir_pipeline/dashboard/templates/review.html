@@ -1,22 +1,29 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <h1>{% block title %}Home{% endblock %}</h1>
+    <h1 class="page-title">{% block title %}Review{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-    <div>
-        <table>
-            <tr>
-                <th></th>
-                <th>Unique Questions</th>
-            </tr>
-            {% for row in unique_questions %}
-                <tr>
-                    <td>row.unique_questions</td>
-                </tr>
-            {% endfor %}
-                
+    <form id="review-form">
+        <div class="form-container">
+            <div class="form-group">
+                <label for="review-type" class="form-label">Review Type</label>
+                <select class="form-select" name="review-type" id="review-type">
+                    <option hidden disabled selected value>-- Select an Option -- </option>
+                    <option value="unlinked">Unlinked</option>
+                    <option value="intermittent">Intermittent</option>
+                    <option value="inconsistent">Inconsistent</option>
+                </select>
+            </div>
+        </div>
+    </form>
+    <div class="table-box">
+        <table id="review-results-table" class="table table-hover">              
         </table>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="{{ url_for('static', filename='review.js') }}"></script>
 {% endblock %}
