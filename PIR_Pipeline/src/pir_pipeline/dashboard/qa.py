@@ -12,7 +12,7 @@ from flask import (
     session,
     url_for,
 )
-from sqlalchemy import bindparam, select
+from sqlalchemy import bindparam, func, select
 from werkzeug.exceptions import abort
 
 from pir_pipeline.dashboard.db import get_db
@@ -109,6 +109,70 @@ def search():
     )
 
 
-@bp.route("/review")
+@bp.route("/review", methods=["GET", "POST", "PUT"])
 def review():
-    pass
+    db = get_db()
+    if request.method == "POST":
+        review_type = request.form["review-type"]
+        data = get_review_data(review_type, db)
+
+        return json.dumps(data)
+
+    return render_template("review.html", section_id="review-form-section")
+
+
+def get_review_data(review_type: str, db: SQLAlchemyUtils):
+    if review_type == "unlinked":
+        table = db._tables["unlinked"]
+        query = select(table)
+    elif review_type == "intermittent":
+        table = db._tables["question"]
+        year_query = select(func.count(func.distinct(table.c.year))).scalar_subquery()
+        uqid_query = (
+            select(table.c.uqid)
+            .group_by(table.c.uqid)
+            .having(func.count(table.c.uqid) < year_query)
+            .subquery()
+        )
+        query = (
+            select(
+                table.c.uqid,
+                table.c.question_name,
+                table.c.question_number,
+                table.c.question_text,
+                table.c.section,
+                table.c.question_type,
+            )
+            .where(table.c.uqid.in_(uqid_query))
+            .distinct()
+        )
+    else:
+        table = db._tables["linked"]
+        subquery = select(table.c.question_id, table.c.uqid).distinct().subquery()
+        right = (
+            select(subquery.c.uqid)
+            .group_by(subquery.c.uqid)
+            .having(func.count(subquery.c.question_id) > 1)
+            .subquery()
+        )
+        query = (
+            select(
+                table.c.uqid,
+                table.c.question_name,
+                table.c.question_number,
+                table.c.question_text,
+                table.c.section,
+                table.c.question_type,
+            )
+            .join(right, table.c.uqid == right.c.uqid)
+            .distinct()
+        )
+
+    with db.engine.connect() as conn:
+        result = conn.execute(query)
+        data = db.to_dict(result.all(), query.c.keys())
+
+    columns = [clean_name(col, "title") for col in query.c.keys()]
+    data.insert(0, columns)
+
+    return data
