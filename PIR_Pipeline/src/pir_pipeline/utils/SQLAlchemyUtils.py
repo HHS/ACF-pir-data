@@ -1,18 +1,24 @@
 from urllib.parse import quote_plus
 
 import pandas as pd
-from sqlalchemy import create_engine, update
+from sqlalchemy import Engine, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from pir_pipeline.config import db_config
-from pir_pipeline.models.pir_models_sql_alchemy import program, question, response
+from pir_pipeline.models.pir_models_sql_alchemy import (
+    linked,
+    program,
+    question,
+    response,
+    unlinked,
+)
 from pir_pipeline.utils.SQLUtils import SQLUtils
 from pir_pipeline.utils.utils import get_searchable_columns
 
 
 class SQLAlchemyUtils(SQLUtils):
     def __init__(self, user: str, password: str, host: str, port: int, database: str):
-        self._engine = create_engine(
+        self._engine: Engine = create_engine(
             f"mysql+mysqlconnector://{user}:{quote_plus(password)}@{host}:{port}/{database}"
         )
         if self._engine.name == "mysql":
@@ -22,7 +28,26 @@ class SQLAlchemyUtils(SQLUtils):
 
         self.insert = insert
         self._dialect = self._engine.name
-        self._tables = {"response": response, "question": question, "program": program}
+        self._tables: dict[Table] = {
+            "response": response,
+            "question": question,
+            "program": program,
+            "linked": linked,
+            "unlinked": unlinked,
+        }
+        self._database = database
+
+    @property
+    def engine(self):
+        return self._engine
+
+    @property
+    def tables(self):
+        return self._tables
+
+    @property
+    def database(self):
+        return self._database
 
     def make_connection(self):
         pass
@@ -45,8 +70,21 @@ class SQLAlchemyUtils(SQLUtils):
         self._schemas = schemas
         return self
 
-    def get_columns(self, table: str) -> list[str]:
-        return self._tables[table].c.keys()
+    def get_columns(self, table: str, where: str = "") -> list[str]:
+        query = text(
+            f"""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = :table AND table_schema = :schema {where}
+            """
+        )
+        with self._engine.connect() as conn:
+            result = conn.execute(
+                query, {"table": table, "schema": self._database, "where": where}
+            )
+            columns = [res[0] for res in result.all()]
+
+        return columns
 
     def get_records(self, query: str) -> pd.DataFrame:
         return pd.read_sql(query, self._engine)
@@ -83,6 +121,15 @@ class SQLAlchemyUtils(SQLUtils):
                 conn.execute(statement, records)
             else:
                 conn.execute(statement)
+
+    def to_dict(self, records: list[tuple], columns: list[str]) -> list[dict]:
+        data = []
+        for record in records:
+            assert len(record) == len(columns)
+            result_dict = {key: record[i] for i, key in enumerate(columns)}
+            data.append(result_dict)
+
+        return data
 
 
 if __name__ == "__main__":
