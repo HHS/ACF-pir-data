@@ -1,12 +1,12 @@
 """Class for ingesting and linking PIR data"""
 
 import hashlib
-import os
 from typing import Self
 
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
+from sqlalchemy import bindparam
 
 from pir_pipeline.config import db_config
 from pir_pipeline.utils import SQLAlchemyUtils
@@ -14,21 +14,23 @@ from pir_pipeline.utils import SQLAlchemyUtils
 
 class PIRLinker:
     def __init__(self, records: list[tuple] | list[dict], sql: SQLAlchemyUtils):
-        """Initialize a PIRIngestor object
+        """Instantiate instance of PIRLinker object
 
         Args:
-            workbook (str|os.PathLike): File path to an Excel Workbook
+            records (list[tuple] | list[dict]): Records to link
+            sql (SQLAlchemyUtils): A SQLAlchemyUtils object for interacting with the database
         """
         self._data = pd.DataFrame.from_records(records)
         self._data = self._data[~self._data["question_id"].duplicated()]
         self._sql = sql
         self.get_question_data()
+        self._sql.get_schemas(["question"])
 
     def get_question_data(self) -> Self:
-        """Select distinct questions from the question table
+        """Get data from the question table
 
         Returns:
-            Self: PIRIngestor object
+            Self: PIRLinker object
         """
         question_columns = self._sql.get_columns(
             "question",
@@ -42,12 +44,11 @@ class PIRLinker:
         return self
 
     def link(self) -> Self:
-        """Create links between existing questions and newly ingested questions
+        """Attempt to link records provided to records in the database.
 
         Returns:
-            Self: PIRIngestor object
+            Self: PIRLinker object
         """
-
         # Look for a direct match on question_id
         df = self._data.copy()
         df = df.merge(
@@ -99,10 +100,12 @@ class PIRLinker:
         return self
 
     def fuzzy_link(self) -> Self:
-        """Link questions using Levenshtein algorithm
+        """Link questions using a Levenshtein algorithm
+
+        Attempt to link questions heretofore unlinked using a Levenshtein algorithm.
 
         Returns:
-            Self: PIRIngestor object
+            Self: PIRLinker object
         """
 
         def confirm_link(row: pd.Series):
@@ -166,12 +169,13 @@ class PIRLinker:
         return self
 
     def prepare_for_insertion(self) -> Self:
-        """Prepare question data for final insertion
+        """Prepare data for insertion
 
-        Also, prepare to update any newly linked extant records as necessary.
+        Confirm that the data have the appropriate shape and update
+        uqids.
 
         Returns:
-            Self: PIRIngestor object
+            Self: PIRLinker object
         """
         df = self._data
         df = df.merge(
@@ -186,25 +190,24 @@ class PIRLinker:
         del self._unlinked
 
         df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        df["uqid"] = df.apply(lambda row: self.gen_uqid(row), axis=1)
+        uqid_dict = {}
+        df["uqid"] = df.apply(lambda row: self.gen_uqid(row, uqid_dict), axis=1)
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         self._data = df
-        self.update_unlinked()
-        self._data["question"] = self._data["question"][
-            self._sql._schemas["question"]["Field"]
-        ]
+        self._data = self._data[self._sql._schemas["question"]["Field"]]
 
         return self
 
-    def gen_uqid(self, row: pd.Series) -> str | float:
-        """Generate a unique question ID
+    def gen_uqid(self, row: pd.Series, uqid_dict: dict) -> str | float:
+        """Generate a uqid
 
         Args:
-            row (pd.Series): Pandas series containing row information
+            row (pd.Series): A pandas series containing question data
+            uqid_dict (dict): A dictionary holding question_id: uqid pairs
 
         Returns:
-            str | float: A null value or a hashed question ID returned as a string
+            str | float: Unique question ID (uqid)
         """
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
@@ -215,29 +218,33 @@ class PIRLinker:
             ), f"Unexpected value of linked_id: {row["linked_id"]}"
             return row["linked_id"]
 
-        return hashlib.md5(row["linked_id"].encode()).hexdigest()
+        if row["linked_id"] in uqid_dict:
+            return uqid_dict[row["linked_id"]]
+        else:
+            uqid = hashlib.md5(row["linked_id"].encode()).hexdigest()
+            uqid_dict[row["question_id"]] = uqid
+            uqid_dict[row["linked_id"]] = uqid
+            return uqid
 
     def update_unlinked(self) -> Self:
-        """Find any unlinked records that should be updated with a new uqid
+        """Update the uqids in the database
 
         Returns:
-            Self: PIRIngestor object
+            Self: PIRLinker object
         """
+        assert (
+            self._data["question_id"].unique().shape[0]
+            == self._data[~self._data[["question_id", "uqid"]].duplicated()].shape[0]
+        ), "uqid varies within question_id"
 
-        # Get the unlinked records
-        unlinked = self._sql.get_records("SELECT DISTINCT question_id FROM unlinked")
-
-        # Check whether unlinked records are among those to link currently
-        # No need to worry about setting an ID to null, because if an ID in unlinked
-        # matches, then there must be a uqid in self._data["question"]
-        unlinked = unlinked.merge(
-            self._data["question"][["linked_id", "uqid"]],
-            how="inner",
-            left_on="question_id",
-            right_on="linked_id",
+        records = self._data[["question_id", "uqid"]].to_dict(orient="records")
+        table = self._sql.tables["question"]
+        self._sql.update_records(
+            table,
+            {"uqid": bindparam("uqid")},
+            table.c["question_id"] == bindparam("question_id"),
+            records,
         )
-
-        self._unlinked = unlinked
 
         return self
 
