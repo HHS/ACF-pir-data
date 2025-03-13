@@ -56,11 +56,7 @@ class SQLAlchemyUtils(SQLUtils):
         pass
 
     def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
-        valid_tables = (
-            "response",
-            "question",
-            "program",
-        )
+        valid_tables = list(self._tables.keys())
         schemas = {}
         for table in tables:
             assert table in valid_tables, "Invalid table."
@@ -108,13 +104,13 @@ class SQLAlchemyUtils(SQLUtils):
 
     def update_records(
         self,
-        table: str,
+        table: Table,
         set: dict[str],
         where: BinaryExpression | BooleanClauseList,
         records: list[dict] = [],
     ):
 
-        statement = update(self._tables[table]).where(where).values(**set)
+        statement = update(table).where(where).values(**set)
 
         with self._engine.begin() as conn:
             if records:
