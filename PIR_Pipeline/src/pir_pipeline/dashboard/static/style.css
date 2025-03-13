@@ -93,9 +93,9 @@ table#search-results-table thead tr th {
 }
 
 .form-group {
-display: flex;
-flex-direction : column;
-/* margin-right: 40px; */
+    display: flex;
+    flex-direction : column;
+    /* margin-right: 40px; */
 }
 
 /* Custom button styles */

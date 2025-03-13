@@ -51,7 +51,9 @@ function buildTable(data, table) {
     let body = document.createElement("tbody");
 
     for (let i = 1; i < data.length; i++) {
-        const row = document.createElement("tr")
+        const row = document.createElement("tr");
+
+
         let row_data = data[i];
         for (let key in row_data) {
             const cell = document.createElement("td");
@@ -59,11 +61,35 @@ function buildTable(data, table) {
             row.appendChild(cell);
             // console.log(row);
         }
+
+        if (table.id == "review-results-table") {
+            const reviewType = document.getElementById("review-type").value
+            const divID = table.id + "-div-" + i;
+            row.className = "accordion-toggle cursor-pointer";
+            row.setAttribute("data-bs-toggle", "collapse");
+            row.setAttribute("data-bs-target", `#collapse${divID}`);
+            row.setAttribute("onclick", "console.log('PLACEHOLDER CODE')")
+
+            var div = document.createElement("div");
+            div.className = "accordion-collapse collapse";
+            div.id = `collapse${divID}`;
+            div.innerHTML = "PLACEHOLDER TEXT";
+        }
+
         body.appendChild(row);
+        if (table.id == "review-results-table") {
+            body.appendChild(div);
+        }
     }
 
     table.appendChild(body)
 }
+
+// function getQuestionData(event, reviewType) {
+//     // Will make a call to the /match endpoint to get and 
+//     // return potential matches for this row
+//     const row = event.srcElement;
+// }
 
 export {
     getColumns,
