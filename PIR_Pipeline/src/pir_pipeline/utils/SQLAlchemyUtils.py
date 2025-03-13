@@ -1,7 +1,7 @@
 from urllib.parse import quote_plus
 
 import pandas as pd
-from sqlalchemy import Engine, Table, create_engine, update
+from sqlalchemy import Engine, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 
 from pir_pipeline.config import db_config
@@ -35,6 +35,7 @@ class SQLAlchemyUtils(SQLUtils):
             "linked": linked,
             "unlinked": unlinked,
         }
+        self._database = database
 
     @property
     def engine(self):
@@ -43,6 +44,10 @@ class SQLAlchemyUtils(SQLUtils):
     @property
     def tables(self):
         return self._tables
+
+    @property
+    def database(self):
+        return self._database
 
     def make_connection(self):
         pass
@@ -65,8 +70,21 @@ class SQLAlchemyUtils(SQLUtils):
         self._schemas = schemas
         return self
 
-    def get_columns(self, table: str) -> list[str]:
-        return self._tables[table].c.keys()
+    def get_columns(self, table: str, where: str = "") -> list[str]:
+        query = text(
+            f"""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = :table AND table_schema = :schema {where}
+            """
+        )
+        with self._engine.connect() as conn:
+            result = conn.execute(
+                query, {"table": table, "schema": self._database, "where": where}
+            )
+            columns = [res[0] for res in result.all()]
+
+        return columns
 
     def get_records(self, query: str) -> pd.DataFrame:
         return pd.read_sql(query, self._engine)
