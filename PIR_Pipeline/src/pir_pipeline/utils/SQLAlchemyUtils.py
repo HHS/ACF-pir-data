@@ -17,7 +17,15 @@ from pir_pipeline.utils.utils import get_searchable_columns
 
 
 class SQLAlchemyUtils(SQLUtils):
-    def __init__(self, user: str, password: str, host: str, port: int, database: str):
+    def __init__(
+        self,
+        user: str,
+        password: str,
+        host: str,
+        port: int,
+        database: str,
+        sql_alchemy_args: dict = {},
+    ):
         self._engine: Engine = create_engine(
             f"mysql+mysqlconnector://{user}:{quote_plus(password)}@{host}:{port}/{database}"
         )
@@ -86,21 +94,40 @@ class SQLAlchemyUtils(SQLUtils):
         return pd.read_sql(query, self._engine)
 
     def insert_records(self, records: list[dict], table: str):
+        def insert_query(records: list[dict]):
+            with self._engine.begin() as conn:
+                insert_statement = self.insert(self._tables[table])
+                column_dict = {
+                    column.name: column
+                    for column in insert_statement.inserted
+                    if column.name in upsert_columns
+                }
+                if self._dialect == "mysql":
+                    upsert_statement = insert_statement.on_duplicate_key_update(
+                        column_dict
+                    )
+                elif self._dialect == "postgresql":
+                    upsert_statement = insert_statement.on_conflict_do_update(
+                        column_dict
+                    )
+
+                conn.execute(upsert_statement, records)
+
         upsert_columns = get_searchable_columns(self.get_columns(table))
         upsert_columns = [column.lower() for column in upsert_columns]
-        with self._engine.begin() as conn:
-            insert_statement = self.insert(self._tables[table])
-            column_dict = {
-                column.name: column
-                for column in insert_statement.inserted
-                if column.name in upsert_columns
-            }
-            if self._dialect == "mysql":
-                upsert_statement = insert_statement.on_duplicate_key_update(column_dict)
-            elif self._dialect == "postgresql":
-                upsert_statement = insert_statement.on_conflict_do_update(column_dict)
 
-            conn.execute(upsert_statement, records)
+        batch_size = 20000
+        if len(records) > batch_size:
+            num_records = len(records)
+            # Logic sourced from Microsoft Copilot
+            batches = [
+                records[i : i + batch_size] for i in range(0, num_records, batch_size)
+            ]
+
+            for batch in batches:
+                insert_query(batch)
+        else:
+            insert_query(records)
 
     def update_records(
         self,
