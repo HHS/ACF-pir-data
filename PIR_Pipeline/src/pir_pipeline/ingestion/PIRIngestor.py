@@ -33,6 +33,7 @@ class PIRIngestor:
             datefmt="%Y-%m-%d %I:%M:%S",
         )
         self._logger = logging.getLogger(__name__)
+        self._logger.info("Initialized ingestor.")
 
     def make_snake_name(self, name: str) -> str:
         """Convert a name to snake case
@@ -145,7 +146,7 @@ class PIRIngestor:
 
         return ""
 
-    def hash_columns(self, row: pd.Series) -> str:
+    def hash_columns(self, row: str | pd.Series) -> str:
         """Return the md5 hash of a series of columns
 
         Args:
@@ -154,12 +155,17 @@ class PIRIngestor:
         Returns:
             str: Hashed columns
         """
-        assert not row.isna().all(), self._logger.error(
-            "All values in the row are None or nan."
-        )
-        assert not row.empty, self._logger.error("Input row is empty")
 
-        string = "".join([str(item) for item in row])
+        if isinstance(row, pd.Series):
+            assert not row.isna().all(), self._logger.error(
+                -"All values in the row are None or nan."
+            )
+            assert not row.empty, self._logger.error("Input row is empty")
+
+            string = "".join([str(item) for item in row])
+        else:
+            string = row
+
         byte_string = string.encode()
 
         return hashlib.md5(byte_string).hexdigest()
@@ -177,6 +183,9 @@ class PIRIngestor:
         self._year = int(year.group(1))
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
+
+        self._logger.info("Extracted worksheets.")
+
         return self
 
     def load_data(self) -> Self:
@@ -284,6 +293,8 @@ class PIRIngestor:
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
 
+        self._logger.info("Loaded data.")
+
         return self
 
     def append_sections(self) -> Self:
@@ -303,6 +314,8 @@ class PIRIngestor:
 
         for name in to_delete:
             del self._data[name]
+
+        self._logger.info("Appended 'Section' worksheets.")
 
         return self
 
@@ -423,6 +436,8 @@ class PIRIngestor:
 
         self._data["response"] = response
 
+        self._logger.info("Merged response and question data.")
+
         return self
 
     def clean_pir_data(self) -> Self:
@@ -450,8 +465,19 @@ class PIRIngestor:
         assert duplicates.empty, self._logger.error(
             f"Some duplicated records:\n{duplicates}"
         )
-        response["uid"] = response[uid_columns].apply(self.hash_columns, axis=1)
-        response["question_id"] = response[qid_columns].apply(self.hash_columns, axis=1)
+
+        # Logic adapted from GPT
+        for columns in [uid_columns, qid_columns]:
+            assert (
+                response[columns].isna().sum(axis=1) < len(columns)
+            ).all(), self._logger.error(
+                f"One row has missing values for all of: {columns}"
+            )
+        response["uid"] = response[uid_columns].astype(str).agg("".join, axis=1)
+        response["uid"] = response["uid"].apply(self.hash_columns)
+        response["question_id"] = response[qid_columns].astype(str).agg("".join, axis=1)
+        response["question_id"] = response["question_id"].apply(self.hash_columns)
+
         response["answer"] = response["answer"].map(self.stringify)
 
         # Program
@@ -497,6 +523,8 @@ class PIRIngestor:
                 df[var] = None
             df = df[final_columns]
             self._data[frame] = df
+
+        self._logger.info("Cleaned PIR data to prepare for insertion.")
 
         return self
 
@@ -587,6 +615,8 @@ class PIRIngestor:
             self.fuzzy_link()
 
         self.prepare_for_insertion()
+
+        self._logger.info("Linked new questions to extant questions.")
 
         return self
 
@@ -766,6 +796,8 @@ class PIRIngestor:
             ), self._logger.error("Too few questions in response.")
             self._logger.info("Response question count is accurate without duplicates.")
 
+        self._logger.info("Validated data.")
+
         return self
 
     def insert_data(self) -> Self:
@@ -777,8 +809,8 @@ class PIRIngestor:
 
         # Loop through program, question, and response tables and insert records
         for table, df in self._data.items():
-            # if table == "response":
-            #     continue
+            if table == "response":
+                continue
             df.replace({np.nan: None}, inplace=True)
             model = getattr(pir_models, f"{table.title()}Model")
             initial_records = df.to_dict(orient="records")
@@ -793,14 +825,17 @@ class PIRIngestor:
 
         # Update unlinked records if necessary
         if not self._unlinked.empty:
+            self._unlinked.rename(columns={"question_id": "qid"}, inplace=True)
             records = self._unlinked.to_dict(orient="records")
             table = self._sql.tables["question"]
             self._sql.update_records(
                 table,
                 {"uqid": bindparam("uqid")},
-                table.c["question_id"] == bindparam("question_id"),
+                table.c["question_id"] == bindparam("qid"),
                 records,
             )
+
+        self._logger.info(f"Data inserted for {self._year}")
 
         return self
 
@@ -838,8 +873,8 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year < 2023:
-            continue
+        # elif year != 2009:
+        #     continue
 
         try:
             init = time.time()
