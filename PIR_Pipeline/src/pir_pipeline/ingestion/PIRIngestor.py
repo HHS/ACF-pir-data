@@ -108,6 +108,7 @@ class PIRIngestor:
             ]
             .groupby(["question_number", "question_name"])
             .first()
+            .reset_index()
         )
 
         expected_row_count = numrows_q + response.shape[0]
@@ -130,13 +131,13 @@ class PIRIngestor:
             str: The section in which the question appears
         """
         if not isinstance(question_number, str):
-            return ""
+            return None
 
         section = re.search("^([A-Z])", question_number)
         if section:
             return section.group(1)
 
-        return ""
+        return None
 
     def hash_columns(self, row: str | pd.Series) -> str:
         """Return the md5 hash of a series of columns
@@ -359,7 +360,41 @@ class PIRIngestor:
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
 
-            self._data["question"] = question
+        if question["section"].isna().any():
+            grouping_vars = ["category", "subsection"]
+            assert (
+                question.groupby(grouping_vars)["section"]
+                .unique()
+                .map(lambda x: len(x) == 1 or (len(x) == 2 and None in x))
+                .all()
+            ), self._logger.error(
+                "Category and subsection do not uniquely identify section"
+            )
+            assert not any(question[grouping_vars].isna().any()), self._logger.error(
+                f"One of {grouping_vars} is sometimes None: {question[grouping_vars].isna().any()}"
+            )
+            sections = question[grouping_vars + ["section"]].dropna().drop_duplicates()
+            question = question.merge(
+                sections,
+                how="left",
+                on=["category", "subsection"],
+                validate="many_to_one",
+                indicator=True,
+            )
+            # Sometimes all questions in a category/subsection combination are missing section
+            # Also means final check is invalid
+            # assert (question["_merge"] == "both").all(), self._logger.error(
+            #     "Some category/section combinations do not align"
+            # )
+            question["section"] = question["section_x"].combine_first(
+                question["section_y"]
+            )
+            question.drop(columns=["section_x", "section_y", "_merge"], inplace=True)
+            # assert not question["section"].isna().any(), self._logger.error(
+            #     "Some section information still missing"
+            # )
+
+        self._data["question"] = question
 
         # Merge
         original_response = response.copy()
@@ -618,7 +653,7 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .validate_data()
-            # .insert_data()
+            .insert_data()
         )
 
         return self
@@ -638,7 +673,7 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2010:
+        elif year != 2008:
             continue
 
         try:
