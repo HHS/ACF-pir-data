@@ -158,7 +158,7 @@ class PIRIngestor:
 
         if isinstance(row, pd.Series):
             assert not row.isna().all(), self._logger.error(
-                -"All values in the row are None or nan."
+                "All values in the row are None or nan."
             )
             assert not row.empty, self._logger.error("Input row is empty")
 
