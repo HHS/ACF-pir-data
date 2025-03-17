@@ -92,13 +92,7 @@ class PIRLinker:
         self._logger.info("Made links on question_id.")
 
         # Look for a fuzzy match on question_name, question_number, or question_text
-        self._cross = self._unlinked.merge(
-            self._question,
-            how="left",
-            on=["question_type", "section"],
-            validate="many_to_many",
-        )
-        self._cross = self._cross[self._cross["year_x"] != self._cross["year_y"]]
+        self.join_on_type_and_section("unlinked")
         if not self._cross.empty:
             self.fuzzy_link()
 
@@ -106,7 +100,33 @@ class PIRLinker:
 
         return self
 
-    def fuzzy_link(self) -> Self:
+    def join_on_type_and_section(self, which: str):
+        self._cross: pd.DataFrame
+        if which == "unlinked":
+            df = self._unlinked.copy()
+        elif which == "data":
+            df = self._data.copy()
+
+        unique_question_ids = df["question_id"].unique().shape[0]
+
+        df = df.merge(
+            self._question,
+            how="left",
+            on=["question_type", "section"],
+            validate="many_to_many",
+        )
+        self._cross = df[df["year_x"] != df["year_y"]]
+        self._cross = self._cross[
+            ~self._cross[["question_id_x", "question_id_y"]].duplicated()
+        ]
+
+        assert (
+            self._cross["question_id_x"].unique().shape[0] == unique_question_ids
+        ), self._logger.error("Some IDs were lost")
+
+        return self
+
+    def fuzzy_link(self, num_matches: int = None) -> Self:
         """Link questions using a Levenshtein algorithm
 
         Attempt to link questions heretofore unlinked using a Levenshtein algorithm.
@@ -118,6 +138,14 @@ class PIRLinker:
         def confirm_link(row: pd.Series):
             scores = [item == 100 for item in row.filter(like="score")]
             return sum(scores) >= 2
+
+        try:
+            self._cross
+        except AttributeError:
+            assert num_matches > 0 and isinstance(num_matches, int), self._logger.error(
+                f"Number of matches should be an integer greater than 0, not {num_matches}"
+            )
+            self.join_on_type_and_section("data")
 
         # Add similarity score variables
         for column in ["question_name", "question_number", "question_text"]:
@@ -131,12 +159,29 @@ class PIRLinker:
                 lambda row: fuzz.ratio(row[x], row[y]), axis=1
             )
 
+        # Sum similarity score
+        self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
+
+        if num_matches:
+            matches = (
+                self._cross.sort_values(
+                    ["question_id_x", "combined_score"], ascending=False
+                )
+                .groupby(["question_id_x"])
+                .head(num_matches)
+            )
+            matches = matches.filter(regex="_y$|^question_type$|^section$")
+            matches.rename(columns=lambda col: col.replace("_y", ""), inplace=True)
+            columns = self._sql._schemas["question"]["Field"].tolist()
+            columns.remove("category")
+            columns.remove("subsection")
+
+            return matches[columns]
+
         # Determine whether score meets threshold for match
         self._cross["confirmed"] = self._cross.filter(regex="score|section|type").apply(
             confirm_link, axis=1
         )
-        self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
-
         confirmed = self._cross[self._cross["confirmed"]].copy()
 
         # In the event of duplicates, choose the record with the highest combined score
@@ -273,9 +318,9 @@ class PIRLinker:
 
 if __name__ == "__main__":
     sql_alchemy = SQLAlchemyUtils(**db_config, database="pir")
-    records = sql_alchemy.get_records("SELECT * FROM question_copy").to_dict(
+    records = sql_alchemy.get_records("SELECT * FROM unlinked limit 10").to_dict(
         orient="records"
     )
-
-    linker = PIRLinker(records, sql_alchemy).link()
-    linker.update_unlinked()
+    PIRLinker(records, sql_alchemy).fuzzy_link(5)
+    # linker = PIRLinker(records, sql_alchemy).link()
+    # linker.update_unlinked()
