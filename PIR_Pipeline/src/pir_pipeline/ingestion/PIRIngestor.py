@@ -5,7 +5,6 @@ import logging
 import os
 import re
 from datetime import datetime
-from tempfile import TemporaryFile
 from typing import Any, Self
 
 import numpy as np
@@ -785,7 +784,7 @@ class PIRIngestor:
         assert (
             self._data["response"]["uid"].nunique()
             == self._metrics["program"]["record_count"]
-        ), self._logger.error("Too many programs in response.")
+        ), self._logger.error("Incorrect program count in response.")
         try:
             assert (
                 self._data["response"]["question_id"].nunique()
@@ -819,13 +818,6 @@ class PIRIngestor:
             for record in initial_records:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
-
-            # if table == "response":
-            #     temp_file = TemporaryFile(suffix=".csv", dir=self._sql.secure_file_dir)
-            #     pd.DataFrame.from_records(cleaned_records).to_csv(
-            #         temp_file, index=False, header=False, quoting=1
-            #     )
-            #     self._sql.insert_from_file(temp_file.name, "response")
 
             self._sql.insert_records(cleaned_records, table)
 
