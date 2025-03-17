@@ -9,7 +9,7 @@ from fuzzywuzzy import fuzz
 from sqlalchemy import bindparam
 
 from pir_pipeline.config import db_config
-from pir_pipeline.utils import SQLAlchemyUtils
+from pir_pipeline.utils import SQLAlchemyUtils, get_logger
 
 
 class PIRLinker:
@@ -20,11 +20,14 @@ class PIRLinker:
             records (list[tuple] | list[dict]): Records to link
             sql (SQLAlchemyUtils): A SQLAlchemyUtils object for interacting with the database
         """
+        self._logger = get_logger(__name__)
         self._data = pd.DataFrame.from_records(records)
         self._data = self._data[~self._data["question_id"].duplicated()]
         self._sql = sql
         self.get_question_data()
         self._sql.get_schemas(["question"])
+
+        self._logger.info("Initialized linker.")
 
     def get_question_data(self) -> Self:
         """Get data from the question table
@@ -40,6 +43,8 @@ class PIRLinker:
         self._question = self._sql.get_records(
             f"SELECT {question_columns} FROM question",
         )
+
+        self._logger.info("Obtained question data.")
 
         return self
 
@@ -58,7 +63,7 @@ class PIRLinker:
             validate="many_to_many",
             indicator=True,
         )
-        df = df[df["year_x"] != df["year_y"]]
+        df = df[df["year_x"] != df["year_y"]]  # Do not match with self
 
         df = df[~df["question_id"].duplicated()]
         df.rename(columns={"year_x": "year"}, inplace=True)
@@ -83,6 +88,8 @@ class PIRLinker:
             - self._linked.shape[0]
             == self._unlinked.shape[0]
         )
+
+        self._logger.info("Made links on question_id.")
 
         # Look for a fuzzy match on question_name, question_number, or question_text
         self._cross = self._unlinked.merge(
@@ -118,7 +125,7 @@ class PIRLinker:
             x = f"{column}_x"
             score = f"{column}_score"
             for var in [x, y]:
-                self._cross[var] = self._cross[var].fillna("")
+                self._cross.loc[:, var] = self._cross[var].fillna("")
 
             self._cross[score] = self._cross[[x, y]].apply(
                 lambda row: fuzz.ratio(row[x], row[y]), axis=1
@@ -134,9 +141,10 @@ class PIRLinker:
 
         # In the event of duplicates, choose the record with the highest combined score
         confirmed = (
-            confirmed.sort_values(["question_id_x", "combined_score"])
+            confirmed.sort_values(["question_id_x", "combined_score"], ascending=False)
             .groupby(["question_id_x"])
-            .sample(1)
+            .first()
+            .reset_index()
         )
 
         # Truncate confirmed data frame
@@ -166,6 +174,8 @@ class PIRLinker:
 
         del self._cross
 
+        self._logger.info("Made fuzzy links.")
+
         return self
 
     def prepare_for_insertion(self) -> Self:
@@ -194,8 +204,11 @@ class PIRLinker:
         df["uqid"] = df.apply(lambda row: self.gen_uqid(row, uqid_dict), axis=1)
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
+        df.replace({np.nan: None}, inplace=True)
         self._data = df
         self._data = self._data[self._sql._schemas["question"]["Field"]]
+
+        self._logger.info("Records prepared for insertion.")
 
         return self
 
@@ -237,22 +250,32 @@ class PIRLinker:
             == self._data[~self._data[["question_id", "uqid"]].duplicated()].shape[0]
         ), "uqid varies within question_id"
 
-        records = self._data[["question_id", "uqid"]].to_dict(orient="records")
-        table = self._sql.tables["question"]
+        records = (
+            self._data[["question_id", "uqid"]]
+            .rename(columns={"question_id": "qid"})
+            .to_dict(orient="records")
+        )
+        # table = self._sql.tables["question"]
+        from sqlalchemy import MetaData, Table
+
+        table = Table("question_copy", MetaData(), autoload_with=self._sql.engine)
         self._sql.update_records(
             table,
             {"uqid": bindparam("uqid")},
-            table.c["question_id"] == bindparam("question_id"),
+            table.c["question_id"] == bindparam("qid"),
             records,
         )
+
+        self._logger.info("uqid updated in question table.")
 
         return self
 
 
 if __name__ == "__main__":
     sql_alchemy = SQLAlchemyUtils(**db_config, database="pir")
-    records = sql_alchemy.get_records("SELECT * FROM question LIMIT 10").to_dict(
+    records = sql_alchemy.get_records("SELECT * FROM question_copy").to_dict(
         orient="records"
     )
 
-    PIRLinker(records, sql_alchemy).link()
+    linker = PIRLinker(records, sql_alchemy).link()
+    linker.update_unlinked()
