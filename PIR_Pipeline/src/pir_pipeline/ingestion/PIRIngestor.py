@@ -115,7 +115,8 @@ class PIRIngestor:
                 response["question_number"].isin(missing_questions)
             ]
             .groupby(["question_number", "question_name"])
-            .sample(1)
+            .first()
+            .reset_index()
         )
 
         expected_numrows = numrows_q + response.shape[0]
@@ -155,6 +156,9 @@ class PIRIngestor:
         Returns:
             str: Hashed columns
         """
+
+        if isinstance(row, np.record):
+            row = pd.Series(row.tolist(), index=row.dtype.names)
 
         if isinstance(row, pd.Series):
             assert not row.isna().all(), self._logger.error(
@@ -210,6 +214,8 @@ class PIRIngestor:
                 except KeyError:
                     self._metrics["response"] = {}
                     self._metrics["response"]["record_count"] = 0
+                    self._metrics["response"]["uids"] = set()
+                    self._metrics["response"]["question_ids"] = set()
 
                 # Must subtract 1 from the count because first two rows are headers
                 self._metrics["response"]["record_count"] += df.shape[0] - 1
@@ -232,6 +238,24 @@ class PIRIngestor:
                     )
 
                 df.columns = column_names
+
+                records = (
+                    df[["Grant Number", "Program Number", "Type"]]
+                    .iloc[2:,]
+                    .to_records(index=False)
+                )
+                uids = []
+                for record in records:
+                    try:
+                        uids.append(self.hash_columns(record))
+                    except AssertionError:
+                        pass
+                uids = set(uids)
+
+                self._metrics["response"]["uids"] = self._metrics["response"][
+                    "uids"
+                ].union(uids)
+
                 question_names = df.iloc[[0]].melt(
                     var_name="question_number", value_name="question_name"
                 )
@@ -269,8 +293,14 @@ class PIRIngestor:
                 self._metrics[name] = {}
                 self._metrics[name]["record_count"] = df.shape[0]
 
-                df.columns = df.columns.map(self.make_snake_name)
                 unique_columns = ["question_number", "question_name"]
+
+                df.columns = df.columns.map(self.make_snake_name)
+                question_ids = set(
+                    df[unique_columns].apply(self.hash_columns, axis=1).tolist()
+                )
+                self._metrics[name]["question_ids"] = question_ids
+
                 dupes = df[unique_columns].duplicated().sum()
                 try:
                     assert not dupes, self._logger.error(
@@ -289,6 +319,13 @@ class PIRIngestor:
                 name = "program"
                 self._metrics[name] = {}
                 self._metrics[name]["record_count"] = df.shape[0]
+
+                uids = set(
+                    df[["Grant Number", "Program Number", "Program Type"]]
+                    .apply(self.hash_columns, axis=1)
+                    .tolist()
+                )
+                self._metrics[name]["uids"] = uids
 
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
@@ -367,7 +404,7 @@ class PIRIngestor:
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
 
-            self._data["question"] = question
+        self._data["question"] = question
 
         # Merge
         original_response = response.copy()
@@ -768,35 +805,57 @@ class PIRIngestor:
         def check_dupes(metric_dict: dict):
             return metric_dict["record_count"] - metric_dict["dupes"]
 
+        response = self._data["response"]
+        question = self._data["question"]
+        program = self._data["program"]
+        metrics = self._metrics
+
+        # Confirm program record counts and ids
         assert (
-            self._data["program"].shape[0] == self._metrics["program"]["record_count"]
+            program.shape[0] == metrics["program"]["record_count"]
         ), self._logger.error("Program count has changed.")
+        assert (
+            set(program["uid"].unique()) == metrics["program"]["uids"]
+        ), "UIDs have changed"
+
+        # Confirm question record count and ids
         try:
             assert (
-                self._data["question"].shape[0]
-                >= self._metrics["question"]["record_count"]
+                question.shape[0] >= metrics["question"]["record_count"]
             ), self._logger.error("Question count is too low")
         except AssertionError:
-            assert self._data["question"].shape[0] >= check_dupes(
-                self._metrics["question"]
+            assert question.shape[0] >= check_dupes(
+                metrics["question"]
             ), self._logger.error("Question count is too low")
             self._logger.info("Question count is accurate without duplicates.")
+
+        assert set(question["question_id"].unique()).issuperset(
+            metrics["question"]["question_ids"]
+        ), "Question does not contain all original question_ids"
+
+        # Confirm response record count and ids
         assert (
-            self._data["response"]["uid"].nunique()
-            == self._metrics["program"]["record_count"]
+            response["uid"].nunique() == metrics["program"]["record_count"]
         ), self._logger.error("Incorrect program count in response.")
         try:
             assert (
-                self._data["response"]["question_id"].nunique()
-                >= self._metrics["question"]["record_count"]
+                response["question_id"].nunique() >= metrics["question"]["record_count"]
             ), self._logger.error("Too few questions in response.")
         except AssertionError:
-            assert self._data["response"]["question_id"].nunique() >= check_dupes(
-                self._metrics["question"]
+            assert response["question_id"].nunique() >= check_dupes(
+                metrics["question"]
             ), self._logger.error("Too few questions in response.")
             self._logger.info("Response question count is accurate without duplicates.")
 
+        assert (
+            set(response["uid"].unique()) == metrics["response"]["uids"]
+        ), "Some uids added to or missing from response."
+
         self._logger.info("Validated data.")
+        for table in metrics:
+            self._logger.info(
+                f"{table.title()}: Beginning Records - {metrics[table]["record_count"]}; Ending Records - {self._data[table].shape[0]}"
+            )
 
         return self
 
@@ -873,8 +932,8 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        # elif year != 2010:
-        #     continue
+        elif year != 2008:
+            continue
 
         try:
             init = time.time()
