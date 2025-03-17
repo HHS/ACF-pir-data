@@ -5,6 +5,7 @@ import logging
 import os
 import re
 from datetime import datetime
+from tempfile import TemporaryFile
 from typing import Any, Self
 
 import numpy as np
@@ -809,8 +810,6 @@ class PIRIngestor:
 
         # Loop through program, question, and response tables and insert records
         for table, df in self._data.items():
-            if table == "response":
-                continue
             df.replace({np.nan: None}, inplace=True)
             model = getattr(pir_models, f"{table.title()}Model")
             initial_records = df.to_dict(orient="records")
@@ -821,7 +820,16 @@ class PIRIngestor:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
 
+            # if table == "response":
+            #     temp_file = TemporaryFile(suffix=".csv", dir=self._sql.secure_file_dir)
+            #     pd.DataFrame.from_records(cleaned_records).to_csv(
+            #         temp_file, index=False, header=False, quoting=1
+            #     )
+            #     self._sql.insert_from_file(temp_file.name, "response")
+
             self._sql.insert_records(cleaned_records, table)
+
+        self._logger.info(f"Data inserted for {self._year}")
 
         # Update unlinked records if necessary
         if not self._unlinked.empty:
@@ -835,7 +843,7 @@ class PIRIngestor:
                 records,
             )
 
-        self._logger.info(f"Data inserted for {self._year}")
+        self._logger.info(f"Unlinked records updated for {self._year}")
 
         return self
 
@@ -873,7 +881,7 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        # elif year != 2009:
+        # elif year != 2010:
         #     continue
 
         try:
@@ -886,4 +894,6 @@ if __name__ == "__main__":
             print(f"Time to process {year}: {(fin-init)/60} minutes")
         except Exception:
             print(year)
+            fin = time.time()
+            print(f"Time to process {year}: {(fin-init)/60} minutes")
             raise
