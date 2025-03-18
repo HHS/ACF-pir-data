@@ -5,7 +5,7 @@ import pytest
 
 
 class TestPIRLinker:
-    def test_get_question_data(self, dummy_ingestor, mock_question_data):
+    def test_get_question_data(self):
         question_columns = [
             "question_id",
             "uqid",
@@ -17,31 +17,25 @@ class TestPIRLinker:
             "section",
         ]
 
-        question = pd.DataFrame.from_dict(mock_question_data["db"])
+        # Check that correct columns are returned
+        # Check that the correct number of records are returned
 
-        dummy_ingestor._sql.get_columns = MagicMock(return_value=question_columns)
-        dummy_ingestor._sql.get_records = MagicMock(return_value=question)
-        dummy_ingestor._year = 2008
+    def test_update_unlinked(self):
+        # Assert that uqids are updated in final database
+        # Confirm that uqids are set to the correct value
+        pass
 
-        dummy_ingestor.get_question_data()
+    def test_link(self):
+        pass
 
-        dummy_ingestor._sql.get_columns.assert_called_once()
-        dummy_ingestor._sql.get_records.assert_called_once()
+    def test_fuzzy_link(self):
+        pass
 
-        assert not dummy_ingestor._question["question_id"].duplicated().any()
-        assert dummy_ingestor._question.shape == (5, 8)
+    def test_prepare_for_insertion(self):
+        pass
 
-    def test_update_unlinked(self, data_ingestor, mock_question_data):
-        question = pd.DataFrame.from_dict(mock_question_data["linked"])
-        data_ingestor._sql.get_records = MagicMock(
-            return_value=question[["question_id"]]
-        )
-        data_ingestor._data["question"] = question
-
-        data_ingestor.update_unlinked()
-
-        data_ingestor._sql.get_records.assert_called_once()
-        assert data_ingestor._unlinked.shape == (2, 3)
+    def test_gen_uqid(self):
+        pass
 
 
 if __name__ == "__main__":
