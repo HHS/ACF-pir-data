@@ -15,7 +15,7 @@ classifiers = [
 dependencies = [
     "pywin32", "mysql-connector-python", "sphinx", "pandas", 
     "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd",
-    "pydantic", "Flask", "SQLAlchemy"
+    "pydantic", "Flask", "SQLAlchemy", "sqlalchemy-utils"
 ]
 
 [build-system]

@@ -3,13 +3,15 @@ from urllib.parse import quote_plus
 import pandas as pd
 from sqlalchemy import Engine, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pir_pipeline.config import db_config
-from pir_pipeline.models.pir_models_sql_alchemy import (
+from pir_pipeline.models.pir_sql_models import (
     linked,
     program,
     question,
     response,
+    sql_metadata,
     unlinked,
 )
 from pir_pipeline.utils.SQLUtils import SQLUtils
@@ -54,6 +56,19 @@ class SQLAlchemyUtils(SQLUtils):
 
     def close_connection(self):
         pass
+
+    def create_db(self):
+        if not database_exists(self._engine.url):
+            create_database(self._engine.url)
+            assert database_exists(self._engine.url)
+
+        sql_metadata.create_all(self._engine)
+
+        return self
+
+    def drop_db(self):
+        if database_exists(self._engine.url):
+            drop_database(self._engine.url)
 
     def validate_table(self, table: str):
         valid_tables = list(self._tables.keys())
@@ -172,4 +187,4 @@ class SQLAlchemyUtils(SQLUtils):
 
 
 if __name__ == "__main__":
-    print(SQLAlchemyUtils(**db_config, database="pir").get_columns("response"))
+    SQLAlchemyUtils(**db_config, database="pir_test").drop_db()

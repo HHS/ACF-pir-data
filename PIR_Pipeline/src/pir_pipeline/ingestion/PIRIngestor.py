@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 
 from pir_pipeline.models import pir_models
-from pir_pipeline.utils import SQLAlchemyUtils, get_logger
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
+from pir_pipeline.utils.utils import get_logger
 
 
 class PIRIngestor:
@@ -21,6 +22,7 @@ class PIRIngestor:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
         self._data: dict[pd.DataFrame] = {}
+        sql.create_db()
         self._sql = sql
         self._workbook = workbook
         self._metrics: dict = {}
