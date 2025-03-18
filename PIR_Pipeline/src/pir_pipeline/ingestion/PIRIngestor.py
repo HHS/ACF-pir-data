@@ -13,7 +13,7 @@ from fuzzywuzzy import fuzz
 from sqlalchemy import bindparam
 
 from pir_pipeline.models import pir_models
-from pir_pipeline.utils import SQLAlchemyUtils
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 class PIRIngestor:
