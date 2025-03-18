@@ -55,11 +55,14 @@ class SQLAlchemyUtils(SQLUtils):
     def close_connection(self):
         pass
 
-    def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
+    def validate_table(self, table: str):
         valid_tables = list(self._tables.keys())
+        assert table in valid_tables, "Invalid table."
+
+    def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
         schemas = {}
         for table in tables:
-            assert table in valid_tables, "Invalid table."
+            self.validate_table(table)
             query = f"SHOW COLUMNS FROM {table}"
             schemas[table] = pd.read_sql(query, self._engine)
 
@@ -86,21 +89,40 @@ class SQLAlchemyUtils(SQLUtils):
         return pd.read_sql(query, self._engine)
 
     def insert_records(self, records: list[dict], table: str):
+        def insert_query(records: list[dict]):
+            with self._engine.begin() as conn:
+                insert_statement = self.insert(self._tables[table])
+                column_dict = {
+                    column.name: column
+                    for column in insert_statement.inserted
+                    if column.name in upsert_columns
+                }
+                if self._dialect == "mysql":
+                    upsert_statement = insert_statement.on_duplicate_key_update(
+                        column_dict
+                    )
+                elif self._dialect == "postgresql":
+                    upsert_statement = insert_statement.on_conflict_do_update(
+                        column_dict
+                    )
+
+                conn.execute(upsert_statement, records)
+
         upsert_columns = get_searchable_columns(self.get_columns(table))
         upsert_columns = [column.lower() for column in upsert_columns]
-        with self._engine.begin() as conn:
-            insert_statement = self.insert(self._tables[table])
-            column_dict = {
-                column.name: column
-                for column in insert_statement.inserted
-                if column.name in upsert_columns
-            }
-            if self._dialect == "mysql":
-                upsert_statement = insert_statement.on_duplicate_key_update(column_dict)
-            elif self._dialect == "postgresql":
-                upsert_statement = insert_statement.on_conflict_do_update(column_dict)
 
-            conn.execute(upsert_statement, records)
+        batch_size = 20000
+        if len(records) > batch_size:
+            num_records = len(records)
+            # Logic sourced from Microsoft Copilot
+            batches = [
+                records[i : i + batch_size] for i in range(0, num_records, batch_size)
+            ]
+
+            for batch in batches:
+                insert_query(batch)
+        else:
+            insert_query(records)
 
     def update_records(
         self,
@@ -126,6 +148,27 @@ class SQLAlchemyUtils(SQLUtils):
             data.append(result_dict)
 
         return data
+
+    def insert_from_file(self, file: str, table: str):
+        self.validate_table(table)
+        if self._dialect == "mysql":
+            query = text(
+                f"""
+                LOAD DATA 
+                INFILE :file 
+                REPLACE INTO TABLE {table}
+                CHARACTER SET utf8
+                FIELDS TERMINATED BY ','
+                ENCLOSED BY '"'
+                ESCAPED BY '"'
+                LINES TERMINATED BY '\r\n'
+                """
+            )
+        elif self._dialect == "postgresql":
+            pass
+
+        with self._engine.connect() as conn:
+            conn.execute(query, {"file": file})
 
 
 if __name__ == "__main__":
