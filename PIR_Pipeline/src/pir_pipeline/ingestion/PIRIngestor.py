@@ -24,6 +24,7 @@ class PIRIngestor:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
         self._data: dict[pd.DataFrame] = {}
+        sql.create_db()
         self._sql = sql
         self._workbook = workbook
         self._metrics: dict = {}
