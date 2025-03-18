@@ -1,8 +1,20 @@
+"""Abstract SQL class"""
+
 from abc import ABC, abstractmethod
 
 
 class SQLUtils(ABC):
+    """Parent class for SQL utility classes"""
+
     def __init__(self, user: str, password: str, host: str, port: int):
+        """Instantiate a SQL utility object
+
+        Args:
+            user (str): Database username
+            password (str): Database password
+            host (str): Database host
+            port (int): Database port
+        """
         self._db_config = {
             "user": user,
             "password": password,
@@ -12,27 +24,39 @@ class SQLUtils(ABC):
 
     @property
     def db_config(self):
-        pass
+        """Database configuration attribute"""
+        ...
 
     @abstractmethod
-    def make_connection(self, databases: list[str]): ...
+    def make_connection(self, databases: list[str]):
+        """Make a connection to the target database(s)"""
+        ...
 
     def close_connection(self):
-        self._connection.close()
-
-        return self
-
-    @abstractmethod
-    def get_schemas(self, tables: list[str]) -> dict[list | tuple]: ...
+        """Close database connection(s)"""
+        ...
 
     @abstractmethod
-    def get_records(self, query): ...
+    def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
+        """Get schema for target table(s)"""
+        ...
 
     @abstractmethod
-    def get_columns(self, table: str, query: str = None): ...
+    def get_records(self, query):
+        """Execute a select query and return records"""
+        ...
 
     @abstractmethod
-    def insert_records(self): ...
+    def get_columns(self, table: str, query: str = None):
+        "Get column names from the specified table"
+        ...
 
     @abstractmethod
-    def update_records(self): ...
+    def insert_records(self):
+        """Insert records in the target table"""
+        ...
+
+    @abstractmethod
+    def update_records(self):
+        """Update records in the target table"""
+        ...

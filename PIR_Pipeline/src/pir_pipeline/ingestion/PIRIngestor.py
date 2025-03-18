@@ -1,29 +1,39 @@
+"""Class for ingesting and linking PIR data"""
+
 import hashlib
+import logging
 import os
 import re
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
+from sqlalchemy import bindparam
 
 from pir_pipeline.models import pir_models
-from pir_pipeline.utils.MySQLUtils import MySQLUtils
+from pir_pipeline.utils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike, db_config: dict, database: str):
+    def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
         """Initialize a PIRIngestor object
 
         Args:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
         self._data: dict[pd.DataFrame] = {}
-        self._sql = MySQLUtils(**db_config)
-        self._database = database
-
+        self._sql = sql
         self._workbook = workbook
+        self._metrics: dict = {}
+        logging.basicConfig(
+            format="%(asctime)s|%(levelname)s|%(message)s",
+            level=logging.DEBUG,
+            datefmt="%Y-%m-%d %I:%M:%S",
+        )
+        self._logger = logging.getLogger(__name__)
+        self._logger.info("Initialized ingestor.")
 
     def make_snake_name(self, name: str) -> str:
         """Convert a name to snake case
@@ -34,8 +44,16 @@ class PIRIngestor:
         Returns:
             str: Snake-cased name
         """
+        assert isinstance(name, str), self._logger.error(
+            "Input `name` must be a string."
+        )
+        assert name.strip() != "", self._logger.error(
+            "Input `name` cannot be an empty or whitespace-only string."
+        )
+
         snake_name = re.sub(r"\W", "_", name.lower())
         snake_name = re.sub(r"_+", "_", snake_name)
+
         return snake_name
 
     def duplicated_question_error(
@@ -54,7 +72,7 @@ class PIRIngestor:
             pd.DataFrame: A deduplicated data frame
         """
         df.sort_values(columns + ["question_order"], inplace=True)
-        df = df.groupby(columns).sample(1).reset_index().drop(columns="index")
+        df = df.groupby(columns).first().reset_index()
         return df
 
     def missing_question_error(
@@ -70,14 +88,44 @@ class PIRIngestor:
         Returns:
             pd.DataFrame: Question data frame, updated to contain missing questions
         """
+
+        REQUIRED_COLS = ["question_number", "question_name", "section"]
+
+        assert isinstance(
+            response, pd.DataFrame
+        ), "Input `response` must be a dataframe."
+        assert isinstance(
+            question, pd.DataFrame
+        ), "Input `question` must be a dataframe."
+        assert isinstance(
+            missing_questions, set
+        ), "Input `missing_questions` must be a set."
+
+        assert (
+            set(REQUIRED_COLS) - set(response.columns.tolist()) == set()
+        ), f"Input `response` must have columns {REQUIRED_COLS}."
+        assert (
+            set(REQUIRED_COLS) - set(question.columns.tolist()) == set()
+        ), f"Input `question` must have columns {REQUIRED_COLS}."
+
+        numrows_q = question.shape[0]
+
         response = (
             response[["question_number", "question_name", "section"]][
                 response["question_number"].isin(missing_questions)
             ]
             .groupby(["question_number", "question_name"])
-            .sample(1)
+            .first()
+            .reset_index()
         )
+
+        expected_numrows = numrows_q + response.shape[0]
+
         question = pd.concat([question, response])
+
+        assert (
+            question.shape[0] == expected_numrows
+        ), f"Output of missing_question_error is an incorrect length. Expected {expected_numrows}."
 
         return question
 
@@ -99,7 +147,7 @@ class PIRIngestor:
 
         return ""
 
-    def hash_columns(self, row: pd.Series) -> str:
+    def hash_columns(self, row: str | pd.Series) -> str:
         """Return the md5 hash of a series of columns
 
         Args:
@@ -108,7 +156,20 @@ class PIRIngestor:
         Returns:
             str: Hashed columns
         """
-        string = "".join([str(item) for item in row])
+
+        if isinstance(row, np.record):
+            row = pd.Series(row.tolist(), index=row.dtype.names)
+
+        if isinstance(row, pd.Series):
+            assert not row.isna().all(), self._logger.error(
+                "All values in the row are None or nan."
+            )
+            assert not row.empty, self._logger.error("Input row is empty")
+
+            string = "".join([str(item) for item in row])
+        else:
+            string = row
+
         byte_string = string.encode()
 
         return hashlib.md5(byte_string).hexdigest()
@@ -119,9 +180,16 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor object
         """
-        self._year = re.search(r"(\d{4})\.(csv|xlsx?)$", self._workbook).group(1)
+        year = re.search(r"(\d{4})\.(csv|xlsx?)$", self._workbook)
+        assert year, self._logger.error(
+            "Workbook does not contain the year in the file name."
+        )
+        self._year = int(year.group(1))
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
+
+        self._logger.info("Extracted worksheets.")
+
         return self
 
     def load_data(self) -> Self:
@@ -141,6 +209,17 @@ class PIRIngestor:
             df = pd.read_excel(self._workbook, sheet, dtype="object")
 
             if section_condition:
+                try:
+                    self._metrics["response"]
+                except KeyError:
+                    self._metrics["response"] = {}
+                    self._metrics["response"]["record_count"] = 0
+                    self._metrics["response"]["uids"] = set()
+                    self._metrics["response"]["question_ids"] = set()
+
+                # Must subtract 1 from the count because first two rows are headers
+                self._metrics["response"]["record_count"] += df.shape[0] - 1
+
                 df = pd.read_excel(self._workbook, sheet, header=None)
                 duplicated_names = {}
                 column_names = []
@@ -159,6 +238,24 @@ class PIRIngestor:
                     )
 
                 df.columns = column_names
+
+                records = (
+                    df[["Grant Number", "Program Number", "Type"]]
+                    .iloc[2:,]
+                    .to_records(index=False)
+                )
+                uids = []
+                for record in records:
+                    try:
+                        uids.append(self.hash_columns(record))
+                    except AssertionError:
+                        pass
+                uids = set(uids)
+
+                self._metrics["response"]["uids"] = self._metrics["response"][
+                    "uids"
+                ].union(uids)
+
                 question_names = df.iloc[[0]].melt(
                     var_name="question_number", value_name="question_name"
                 )
@@ -192,28 +289,57 @@ class PIRIngestor:
                 ].all(), "Some questions are missing a question name"
 
             elif reference_condition:
-                df.columns = df.columns.map(self.make_snake_name)
+                name = "question"
+                self._metrics[name] = {}
+                self._metrics[name]["record_count"] = df.shape[0]
+
                 unique_columns = ["question_number", "question_name"]
+
+                df.columns = df.columns.map(self.make_snake_name)
+                question_ids = set(
+                    df[unique_columns].apply(self.hash_columns, axis=1).tolist()
+                )
+                self._metrics[name]["question_ids"] = question_ids
+
+                dupes = df[unique_columns].duplicated().sum()
                 try:
-                    assert not df[unique_columns].duplicated().any()
+                    assert not dupes, self._logger.error(
+                        f"{dupes} duplicated questions"
+                    )
                 except AssertionError:
                     df = self.duplicated_question_error(df, unique_columns)
+                    self._metrics["question"]["dupes"] = dupes
                     assert (
                         not df[unique_columns].duplicated().any()
                     ), f"Some observations are still duplicated:\n {df[df[unique_columns].duplicated()]}"
 
                 df["section"] = df["question_number"].map(self.get_section)
-                name = "question"
 
             elif program_condition:
                 name = "program"
+                self._metrics[name] = {}
+                self._metrics[name]["record_count"] = df.shape[0]
+
+                uids = set(
+                    df[["Grant Number", "Program Number", "Program Type"]]
+                    .apply(self.hash_columns, axis=1)
+                    .tolist()
+                )
+                self._metrics[name]["uids"] = uids
 
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
 
+        self._logger.info("Loaded data.")
+
         return self
 
     def append_sections(self) -> Self:
+        """Append the loaded section data to generate the response table
+
+        Returns:
+            Self: PIRIngestor Object
+        """
         df_list = []
         to_delete = []
         for name, df in self._data.items():
@@ -226,10 +352,21 @@ class PIRIngestor:
         for name in to_delete:
             del self._data[name]
 
+        self._logger.info("Appended 'Section' worksheets.")
+
         return self
 
     def merge_response_question(self) -> Self:
-        # Response data
+        """Merge response and question data frames
+
+        Merges the response and question data frames to: 1) get question text onto the
+        response data frame for question_id generation, 2) ensure that all questions
+        that appear in the response data frame appear in the question data frame.
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def gen_question_number(string: str):
             if not isinstance(string, str):
                 return string
@@ -241,6 +378,7 @@ class PIRIngestor:
 
             return string
 
+        # Response data
         response = self._data["response"]
         response["question_number"] = response["question_number"].map(
             gen_question_number
@@ -266,14 +404,49 @@ class PIRIngestor:
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
 
+        self._data["question"] = question
+
         # Merge
+        original_response = response.copy()
+        merge_columns = ["question_number", "question_name"]
         response = response.merge(
-            question.drop(columns=["type"]),
+            question.drop(columns=["type"]),  # Why not just get the necessary columns?
             how="left",
-            on=["question_number", "question_name"],
+            on=merge_columns,
             validate="many_to_one",
             indicator=True,
         )
+        try:
+            num_records = response.shape[0]
+            assert (response["_merge"] == "both").all()
+        except AssertionError:
+            both = response[response["_merge"] == "both"].drop(columns="_merge")
+            left = response[response["_merge"] == "left_only"].drop(columns="_merge")
+            left = left[merge_columns][~left[merge_columns].duplicated()]
+
+            left = (
+                original_response.merge(
+                    left,
+                    how="inner",
+                    on=merge_columns,
+                    validate="many_to_one",
+                )
+                .drop(columns="question_name")
+                .merge(
+                    question.drop(columns=["type"]),
+                    how="left",
+                    on="question_number",
+                    validate="many_to_one",
+                    indicator=True,
+                )
+            )
+
+            assert (left["_merge"] == "both").all()
+            assert set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            appended = pd.concat([both, left])
+            assert appended.shape[0] == num_records
+            response = appended
+
         assert (
             not response[
                 [
@@ -288,6 +461,7 @@ class PIRIngestor:
             .any()
         ), "Some records are duplicated"
 
+        # Combine any columns that appear twice due to merging
         for column in response.columns.tolist():
             if column.endswith("_x"):
                 column_y = column.replace("_x", "_y")
@@ -299,9 +473,17 @@ class PIRIngestor:
 
         self._data["response"] = response
 
+        self._logger.info("Merged response and question data.")
+
         return self
 
     def clean_pir_data(self) -> Self:
+        """Align the PIR data with PIR database schemas
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def get_region(region: str):
             region = re.sub(r"\D+", "", region)
             if region:
@@ -309,9 +491,7 @@ class PIRIngestor:
 
             return None
 
-        self._sql.make_connection(self._database).get_schemas(
-            ["response", "program", "question"]
-        )
+        self._sql.get_schemas(["response", "program", "question"])
         uid_columns = ["grant_number", "program_number", "program_type"]
         qid_columns = ["question_number", "question_name"]
 
@@ -319,9 +499,22 @@ class PIRIngestor:
         response = self._data["response"]
         response.rename(columns={"type": "program_type"}, inplace=True)
         duplicates = response[response[uid_columns + qid_columns].duplicated()]
-        assert duplicates.empty, f"Some duplicated records:\n{duplicates}"
-        response["uid"] = response[uid_columns].apply(self.hash_columns, axis=1)
-        response["question_id"] = response[qid_columns].apply(self.hash_columns, axis=1)
+        assert duplicates.empty, self._logger.error(
+            f"Some duplicated records:\n{duplicates}"
+        )
+
+        # Logic adapted from GPT
+        for columns in [uid_columns, qid_columns]:
+            assert (
+                response[columns].isna().sum(axis=1) < len(columns)
+            ).all(), self._logger.error(
+                f"One row has missing values for all of: {columns}"
+            )
+        response["uid"] = response[uid_columns].astype(str).agg("".join, axis=1)
+        response["uid"] = response["uid"].apply(self.hash_columns)
+        response["question_id"] = response[qid_columns].astype(str).agg("".join, axis=1)
+        response["question_id"] = response["question_id"].apply(self.hash_columns)
+
         response["answer"] = response["answer"].map(self.stringify)
 
         # Program
@@ -336,7 +529,14 @@ class PIRIngestor:
             inplace=True,
         )
         duplicates = program[program[uid_columns].duplicated()]
-        assert duplicates.empty, f"Some duplicated records:\n{duplicates}"
+        try:
+            assert duplicates.empty, self._logger.error(
+                f"Some duplicated records:\n{duplicates}"
+            )
+        except AssertionError:
+            # For now, simply remove duplicates if any occur
+            program = program[~program[uid_columns].duplicated()]
+
         program["uid"] = program[uid_columns].apply(self.hash_columns, axis=1)
         program["region"] = program["region"].map(get_region)
 
@@ -344,13 +544,16 @@ class PIRIngestor:
         question = self._data["question"]
         question.rename(columns={"type": "question_type"}, inplace=True)
         duplicates = question[question[qid_columns].duplicated()]
-        assert duplicates.empty, f"Some duplicated records:\n{duplicates}"
+        assert duplicates.empty, self._logger.error(
+            f"Some duplicated records:\n{duplicates}"
+        )
         question["question_id"] = question[qid_columns].apply(self.hash_columns, axis=1)
 
         # Add year, subset to relevant variables only
-        for frame in ["response", "program", "question"]:
+        data = {"response": response, "program": program, "question": question}
+        for frame in data:
             final_columns = self._sql._schemas[frame]["Field"]
-            df = eval(frame)
+            df = data[frame]
             df["year"] = self._year
             missing_variables = set(final_columns) - set(df.columns)
             for var in missing_variables:
@@ -358,21 +561,40 @@ class PIRIngestor:
             df = df[final_columns]
             self._data[frame] = df
 
+        self._logger.info("Cleaned PIR data to prepare for insertion.")
+
         return self
 
-    def stringify(self, value) -> str:
+    def stringify(self, value: Any) -> str:
+        """Convert values to string
+
+        In the case of dates, this function applies the Month/Day/Year format.
+
+        Args:
+            value (Any): Value to convert to string
+
+        Returns:
+            str: Original value converted to string
+        """
         if isinstance(value, str):
             return value
         elif isinstance(value, datetime):
             return value.strftime("%m/%d/%Y")
-        elif np.isnan(value):
-            return np.nan
         elif isinstance(value, (int, float)):
+            if np.isnan(value):
+                return "nan"
+            if isinstance(value, bool):
+                return value
             return str(value)
 
         return value
 
-    def get_question_data(self):
+    def get_question_data(self) -> Self:
+        """Select distinct questions from the question table
+
+        Returns:
+            Self: PIRIngestor object
+        """
         question_columns = self._sql.get_columns(
             "question",
             "AND (column_name LIKE '%question%' OR column_name IN ('section', 'uqid'))",
@@ -381,14 +603,24 @@ class PIRIngestor:
         self._question = self._sql.get_records(
             f"SELECT DISTINCT {question_columns} FROM question WHERE year != {self._year}",
         )
+        try:
+            assert not self._question["question_id"].duplicated().any()
+        except AssertionError:
+            self._question = (
+                self._question.groupby(["question_id"]).first().reset_index()
+            )
+            assert (
+                not self._question["question_id"].duplicated().any()
+            ), "Duplicated question_ids"
 
         return self
 
-    def link(self):
-        # Look in question table (exclude the current year of data)
-        # If question has a match, look for uqid in linked.
-        #   If no uqid in linked, generate
-        #   Otherwise apply
+    def link(self) -> Self:
+        """Create links between existing questions and newly ingested questions
+
+        Returns:
+            Self: PIRIngestor object
+        """
 
         # Look for a direct match on question_id
         self.get_question_data()
@@ -400,29 +632,41 @@ class PIRIngestor:
             indicator=True,
         )
 
-        df["linked_id"] = df["question_id"]
         df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        df.drop(["uqid_x", "uqid_y"], axis=1, inplace=True)
+        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         self._linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        self._linked["linked_id"] = self._linked["question_id"]
         self._unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
 
         assert not self._linked.duplicated(["question_id"]).any()
 
         # Look for a fuzzy match on question_name, question_number, or question_text
-        self._cross = self._unlinked.merge(self._question, how="cross")
+        self._cross = self._unlinked.merge(
+            self._question,
+            how="left",
+            on=["question_type", "section"],
+            validate="many_to_many",
+        )
         if not self._cross.empty:
             self.fuzzy_link()
 
         self.prepare_for_insertion()
 
+        self._logger.info("Linked new questions to extant questions.")
+
         return self
 
-    def fuzzy_link(self):
+    def fuzzy_link(self) -> Self:
+        """Link questions using Levenshtein algorithm
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def confirm_link(row: pd.Series):
             scores = [item == 100 for item in row.filter(like="score")]
-            section = row["section_x"] == row["section_y"]
-            return sum(scores) >= 2 and section
+            return sum(scores) >= 2
 
         # Add similarity score variables
         for column in ["question_name", "question_number", "question_text"]:
@@ -437,7 +681,7 @@ class PIRIngestor:
             )
 
         # Determine whether score meets threshold for match
-        self._cross["confirmed"] = self._cross.filter(regex="score|section").apply(
+        self._cross["confirmed"] = self._cross.filter(regex="score|section|type").apply(
             confirm_link, axis=1
         )
         self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
@@ -463,8 +707,13 @@ class PIRIngestor:
         df = self._unlinked.merge(
             confirmed, how="left", on="question_id", indicator=True
         )
+        df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
+        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
+
         linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        assert linked["uqid"].all()
         unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
+        assert not unlinked["uqid"].any()
 
         assert not self._linked.duplicated(["question_id"]).any()
         self._linked = pd.concat([self._linked, linked])
@@ -475,10 +724,21 @@ class PIRIngestor:
 
         return self
 
-    def prepare_for_insertion(self):
+    def prepare_for_insertion(self) -> Self:
+        """Prepare question data for final insertion
+
+        Also, prepare to update any newly linked extant records as necessary.
+
+        Returns:
+            Self: PIRIngestor object
+        """
         df = self._data["question"]
+        assert df["uqid"].isna().all()
+        df.drop(columns="uqid", inplace=True)
         df = df.merge(
-            self._linked[["question_id", "linked_id"]], how="left", on="question_id"
+            self._linked[["question_id", "linked_id", "uqid"]],
+            how="left",
+            on="question_id",
         )
         assert self._linked.shape[0] == df["linked_id"].notna().sum()
         assert self._unlinked.shape[0] == df["linked_id"].isna().sum()
@@ -490,47 +750,46 @@ class PIRIngestor:
 
         self._data["question"] = df
         self.update_unlinked()
-        self._data["question"].drop(["linked_id"], inplace=True, axis=1)
+        self._data["question"] = self._data["question"][
+            self._sql._schemas["question"]["Field"]
+        ]
 
         return self
 
-    def gen_uqid(self, row: pd.Series):
+    def gen_uqid(self, row: pd.Series) -> str | float:
+        """Generate a unique question ID
+
+        Args:
+            row (pd.Series): Pandas series containing row information
+
+        Returns:
+            str | float: A null value or a hashed question ID returned as a string
+        """
+
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
         if not isinstance(row["linked_id"], str):
             assert np.isnan(
                 row["linked_id"]
-            ), f"Unexpected value of linked_id: {row["linked_id"]}"
+            ), f"Unexpected value of linked_id: {row['linked_id']}"
             return row["linked_id"]
 
         return hashlib.md5(row["linked_id"].encode()).hexdigest()
 
-    def insert_data(self):
-        for table, df in self._data.items():
-            df.replace({np.nan: None}, inplace=True)
-            model = getattr(pir_models, f"{table.title()}Model")
-            initial_records = df.to_dict(orient="records")
-            cleaned_records = []
-            for record in initial_records:
-                cleaned = model.model_validate(record).model_dump()
-                cleaned_records.append(cleaned)
+    def update_unlinked(self) -> Self:
+        """Find any unlinked records that should be updated with a new uqid
 
-            columns = tuple(df.columns.to_list())
-            self._sql.insert_records(columns, cleaned_records, table)
+        Returns:
+            Self: PIRIngestor object
+        """
 
-        if not self._unlinked.empty:
-            self._unlinked.apply(
-                lambda row: self._sql.update_records(
-                    "question",
-                    {"uqid": row["uqid"]},
-                    f"question_id = '{row["question_id"]}'",
-                ),
-                axis=1,
-            )
-
-    def update_unlinked(self):
+        # Get the unlinked records
         unlinked = self._sql.get_records("SELECT DISTINCT question_id FROM unlinked")
+
+        # Check whether unlinked records are among those to link currently
+        # No need to worry about setting an ID to null, because if an ID in unlinked
+        # matches, then there must be a uqid in self._data["question"]
         unlinked = unlinked.merge(
             self._data["question"][["linked_id", "uqid"]],
             how="inner",
@@ -542,7 +801,109 @@ class PIRIngestor:
 
         return self
 
-    def ingest(self):
+    def validate_data(self) -> Self:
+        def check_dupes(metric_dict: dict):
+            return metric_dict["record_count"] - metric_dict["dupes"]
+
+        response = self._data["response"]
+        question = self._data["question"]
+        program = self._data["program"]
+        metrics = self._metrics
+
+        # Confirm program record counts and ids
+        assert (
+            program.shape[0] == metrics["program"]["record_count"]
+        ), self._logger.error("Program count has changed.")
+        assert (
+            set(program["uid"].unique()) == metrics["program"]["uids"]
+        ), "UIDs have changed"
+
+        # Confirm question record count and ids
+        try:
+            assert (
+                question.shape[0] >= metrics["question"]["record_count"]
+            ), self._logger.error("Question count is too low")
+        except AssertionError:
+            assert question.shape[0] >= check_dupes(
+                metrics["question"]
+            ), self._logger.error("Question count is too low")
+            self._logger.info("Question count is accurate without duplicates.")
+
+        assert set(question["question_id"].unique()).issuperset(
+            metrics["question"]["question_ids"]
+        ), "Question does not contain all original question_ids"
+
+        # Confirm response record count and ids
+        assert (
+            response["uid"].nunique() == metrics["program"]["record_count"]
+        ), self._logger.error("Incorrect program count in response.")
+        try:
+            assert (
+                response["question_id"].nunique() >= metrics["question"]["record_count"]
+            ), self._logger.error("Too few questions in response.")
+        except AssertionError:
+            assert response["question_id"].nunique() >= check_dupes(
+                metrics["question"]
+            ), self._logger.error("Too few questions in response.")
+            self._logger.info("Response question count is accurate without duplicates.")
+
+        assert (
+            set(response["uid"].unique()) == metrics["response"]["uids"]
+        ), "Some uids added to or missing from response."
+
+        self._logger.info("Validated data.")
+        for table in metrics:
+            self._logger.info(
+                f"{table.title()}: Beginning Records - {metrics[table]["record_count"]}; Ending Records - {self._data[table].shape[0]}"
+            )
+
+        return self
+
+    def insert_data(self) -> Self:
+        """Insert data into the target database
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
+        # Loop through program, question, and response tables and insert records
+        for table, df in self._data.items():
+            df.replace({np.nan: None}, inplace=True)
+            model = getattr(pir_models, f"{table.title()}Model")
+            initial_records = df.to_dict(orient="records")
+            cleaned_records = []
+
+            # Validate the records with pydantic model
+            for record in initial_records:
+                cleaned = model.model_validate(record).model_dump()
+                cleaned_records.append(cleaned)
+
+            self._sql.insert_records(cleaned_records, table)
+
+        self._logger.info(f"Data inserted for {self._year}")
+
+        # Update unlinked records if necessary
+        if not self._unlinked.empty:
+            self._unlinked.rename(columns={"question_id": "qid"}, inplace=True)
+            records = self._unlinked.to_dict(orient="records")
+            table = self._sql.tables["question"]
+            self._sql.update_records(
+                table,
+                {"uqid": bindparam("uqid")},
+                table.c["question_id"] == bindparam("qid"),
+                records,
+            )
+
+        self._logger.info(f"Unlinked records updated for {self._year}")
+
+        return self
+
+    def ingest(self) -> Self:
+        """Ingestion entry point
+
+        Returns:
+            Self: PIRIngestor object
+        """
         (
             self.extract_sheets()
             .load_data()
@@ -550,28 +911,16 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .link()
+            .validate_data()
             .insert_data()
         )
 
-        self._sql.close_connection()
-
         return self
-
-    # def linked_checks(self, df: pd.DataFrame):
-    #     """Method for confirming that, upon reingestion, uqid remains consistent.
-
-    #     Args:
-    #         df (pd.DataFrame): Data frame that will ultimately become re-ingested question.
-    #     """
-    #     query = "SELECT * FROM linked WHERE year = %s" % self._year
-    #     linked = self._sql.get_records(query)
-    #     merged = df.merge(linked, on="question_id", how="right", indicator=True)
-
-    #     assert merged["_merge"].map(lambda x: x == "both").all()
-    #     assert merged.apply(lambda row: row["uqid_x"] == row["uqid_y"], axis=1).all()
 
 
 if __name__ == "__main__":
+    import time
+
     from pir_pipeline.config import db_config
     from pir_pipeline.utils.paths import INPUT_DIR
 
@@ -583,7 +932,19 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year > 2009:
+        elif year != 2008:
             continue
 
-        PIRIngestor(os.path.join(INPUT_DIR, file), db_config, database="pir").ingest()
+        try:
+            init = time.time()
+            PIRIngestor(
+                os.path.join(INPUT_DIR, file),
+                SQLAlchemyUtils(**db_config, database="pir"),
+            ).ingest()
+            fin = time.time()
+            print(f"Time to process {year}: {(fin-init)/60} minutes")
+        except Exception:
+            print(year)
+            fin = time.time()
+            print(f"Time to process {year}: {(fin-init)/60} minutes")
+            raise
