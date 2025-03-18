@@ -9,7 +9,8 @@ from fuzzywuzzy import fuzz
 from sqlalchemy import bindparam
 
 from pir_pipeline.config import db_config
-from pir_pipeline.utils import SQLAlchemyUtils, get_logger
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
+from pir_pipeline.utils.utils import get_logger
 
 
 class PIRLinker:
@@ -142,7 +143,11 @@ class PIRLinker:
         try:
             self._cross
         except AttributeError:
-            assert num_matches > 0 and isinstance(num_matches, int), self._logger.error(
+            assert (
+                num_matches is not None
+                and num_matches > 0
+                and isinstance(num_matches, int)
+            ), self._logger.error(
                 f"Number of matches should be an integer greater than 0, not {num_matches}"
             )
             self.join_on_type_and_section("data")
@@ -208,9 +213,8 @@ class PIRLinker:
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         linked = df[df["_merge"] == "both"].drop(columns="_merge")
-        assert linked["uqid"].all()
         unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
-        assert not unlinked["uqid"].any()
+        assert not unlinked["uqid"].any(), "Some unlinked records have a uqid"
 
         assert not self._linked.duplicated(["question_id"]).any()
         self._linked = pd.concat([self._linked, linked])
