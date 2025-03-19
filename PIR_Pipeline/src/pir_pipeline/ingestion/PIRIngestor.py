@@ -1,7 +1,6 @@
 """Class for ingesting and linking PIR data"""
 
 import hashlib
-import logging
 import os
 import re
 from datetime import datetime
@@ -9,11 +8,10 @@ from typing import Any, Self
 
 import numpy as np
 import pandas as pd
-from fuzzywuzzy import fuzz
-from sqlalchemy import bindparam
 
 from pir_pipeline.models import pir_models
-from pir_pipeline.utils import SQLAlchemyUtils
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
+from pir_pipeline.utils.utils import get_logger
 
 
 class PIRIngestor:
@@ -24,15 +22,11 @@ class PIRIngestor:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
         self._data: dict[pd.DataFrame] = {}
+        sql.create_db()
         self._sql = sql
         self._workbook = workbook
         self._metrics: dict = {}
-        logging.basicConfig(
-            format="%(asctime)s|%(levelname)s|%(message)s",
-            level=logging.DEBUG,
-            datefmt="%Y-%m-%d %I:%M:%S",
-        )
-        self._logger = logging.getLogger(__name__)
+        self._logger = get_logger(__name__)
         self._logger.info("Initialized ingestor.")
 
     def make_snake_name(self, name: str) -> str:
@@ -119,13 +113,13 @@ class PIRIngestor:
             .reset_index()
         )
 
-        expected_numrows = numrows_q + response.shape[0]
+        expected_row_count = numrows_q + response.shape[0]
 
         question = pd.concat([question, response])
 
         assert (
-            question.shape[0] == expected_numrows
-        ), f"Output of missing_question_error is an incorrect length. Expected {expected_numrows}."
+            question.shape[0] == expected_row_count
+        ), f"Output of missing_question_error is an incorrect length. Expected {expected_row_count}."
 
         return question
 
@@ -139,13 +133,13 @@ class PIRIngestor:
             str: The section in which the question appears
         """
         if not isinstance(question_number, str):
-            return ""
+            return None
 
         section = re.search("^([A-Z])", question_number)
         if section:
             return section.group(1)
 
-        return ""
+        return None
 
     def hash_columns(self, row: str | pd.Series) -> str:
         """Return the md5 hash of a series of columns
@@ -156,9 +150,6 @@ class PIRIngestor:
         Returns:
             str: Hashed columns
         """
-
-        if isinstance(row, np.record):
-            row = pd.Series(row.tolist(), index=row.dtype.names)
 
         if isinstance(row, pd.Series):
             assert not row.isna().all(), self._logger.error(
@@ -214,8 +205,6 @@ class PIRIngestor:
                 except KeyError:
                     self._metrics["response"] = {}
                     self._metrics["response"]["record_count"] = 0
-                    self._metrics["response"]["uids"] = set()
-                    self._metrics["response"]["question_ids"] = set()
 
                 # Must subtract 1 from the count because first two rows are headers
                 self._metrics["response"]["record_count"] += df.shape[0] - 1
@@ -238,24 +227,6 @@ class PIRIngestor:
                     )
 
                 df.columns = column_names
-
-                records = (
-                    df[["Grant Number", "Program Number", "Type"]]
-                    .iloc[2:,]
-                    .to_records(index=False)
-                )
-                uids = []
-                for record in records:
-                    try:
-                        uids.append(self.hash_columns(record))
-                    except AssertionError:
-                        pass
-                uids = set(uids)
-
-                self._metrics["response"]["uids"] = self._metrics["response"][
-                    "uids"
-                ].union(uids)
-
                 question_names = df.iloc[[0]].melt(
                     var_name="question_number", value_name="question_name"
                 )
@@ -293,14 +264,8 @@ class PIRIngestor:
                 self._metrics[name] = {}
                 self._metrics[name]["record_count"] = df.shape[0]
 
-                unique_columns = ["question_number", "question_name"]
-
                 df.columns = df.columns.map(self.make_snake_name)
-                question_ids = set(
-                    df[unique_columns].apply(self.hash_columns, axis=1).tolist()
-                )
-                self._metrics[name]["question_ids"] = question_ids
-
+                unique_columns = ["question_number", "question_name"]
                 dupes = df[unique_columns].duplicated().sum()
                 try:
                     assert not dupes, self._logger.error(
@@ -319,13 +284,6 @@ class PIRIngestor:
                 name = "program"
                 self._metrics[name] = {}
                 self._metrics[name]["record_count"] = df.shape[0]
-
-                uids = set(
-                    df[["Grant Number", "Program Number", "Program Type"]]
-                    .apply(self.hash_columns, axis=1)
-                    .tolist()
-                )
-                self._metrics[name]["uids"] = uids
 
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
@@ -403,6 +361,40 @@ class PIRIngestor:
             assert (
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
+
+        if question["section"].isna().any():
+            grouping_vars = ["category", "subsection"]
+            assert (
+                question.groupby(grouping_vars)["section"]
+                .unique()
+                .map(lambda x: len(x) == 1 or (len(x) == 2 and None in x))
+                .all()
+            ), self._logger.error(
+                "Category and subsection do not uniquely identify section"
+            )
+            assert not any(question[grouping_vars].isna().any()), self._logger.error(
+                f"One of {grouping_vars} is sometimes None: {question[grouping_vars].isna().any()}"
+            )
+            sections = question[grouping_vars + ["section"]].dropna().drop_duplicates()
+            question = question.merge(
+                sections,
+                how="left",
+                on=["category", "subsection"],
+                validate="many_to_one",
+                indicator=True,
+            )
+            # Sometimes all questions in a category/subsection combination are missing section
+            # Also means final check is invalid
+            # assert (question["_merge"] == "both").all(), self._logger.error(
+            #     "Some category/section combinations do not align"
+            # )
+            question["section"] = question["section_x"].combine_first(
+                question["section_y"]
+            )
+            question.drop(columns=["section_x", "section_y", "_merge"], inplace=True)
+            # assert not question["section"].isna().any(), self._logger.error(
+            #     "Some section information still missing"
+            # )
 
         self._data["question"] = question
 
@@ -589,273 +581,39 @@ class PIRIngestor:
 
         return value
 
-    def get_question_data(self) -> Self:
-        """Select distinct questions from the question table
-
-        Returns:
-            Self: PIRIngestor object
-        """
-        question_columns = self._sql.get_columns(
-            "question",
-            "AND (column_name LIKE '%question%' OR column_name IN ('section', 'uqid'))",
-        )
-        question_columns = ",".join(question_columns)
-        self._question = self._sql.get_records(
-            f"SELECT DISTINCT {question_columns} FROM question WHERE year != {self._year}",
-        )
-        try:
-            assert not self._question["question_id"].duplicated().any()
-        except AssertionError:
-            self._question = (
-                self._question.groupby(["question_id"]).first().reset_index()
-            )
-            assert (
-                not self._question["question_id"].duplicated().any()
-            ), "Duplicated question_ids"
-
-        return self
-
-    def link(self) -> Self:
-        """Create links between existing questions and newly ingested questions
-
-        Returns:
-            Self: PIRIngestor object
-        """
-
-        # Look for a direct match on question_id
-        self.get_question_data()
-        df = self._data["question"].copy()
-        df = df.merge(
-            self._question[["question_id", "uqid"]].drop_duplicates(),
-            how="left",
-            on="question_id",
-            indicator=True,
-        )
-
-        df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
-
-        self._linked = df[df["_merge"] == "both"].drop(columns="_merge")
-        self._linked["linked_id"] = self._linked["question_id"]
-        self._unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
-
-        assert not self._linked.duplicated(["question_id"]).any()
-
-        # Look for a fuzzy match on question_name, question_number, or question_text
-        self._cross = self._unlinked.merge(
-            self._question,
-            how="left",
-            on=["question_type", "section"],
-            validate="many_to_many",
-        )
-        if not self._cross.empty:
-            self.fuzzy_link()
-
-        self.prepare_for_insertion()
-
-        self._logger.info("Linked new questions to extant questions.")
-
-        return self
-
-    def fuzzy_link(self) -> Self:
-        """Link questions using Levenshtein algorithm
-
-        Returns:
-            Self: PIRIngestor object
-        """
-
-        def confirm_link(row: pd.Series):
-            scores = [item == 100 for item in row.filter(like="score")]
-            return sum(scores) >= 2
-
-        # Add similarity score variables
-        for column in ["question_name", "question_number", "question_text"]:
-            y = f"{column}_y"
-            x = f"{column}_x"
-            score = f"{column}_score"
-            for var in [x, y]:
-                self._cross[var] = self._cross[var].fillna("")
-
-            self._cross[score] = self._cross[[x, y]].apply(
-                lambda row: fuzz.ratio(row[x], row[y]), axis=1
-            )
-
-        # Determine whether score meets threshold for match
-        self._cross["confirmed"] = self._cross.filter(regex="score|section|type").apply(
-            confirm_link, axis=1
-        )
-        self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
-
-        confirmed = self._cross[self._cross["confirmed"]].copy()
-
-        # In the event of duplicates, choose the record with the highest combined score
-        confirmed = (
-            confirmed.sort_values(["question_id_x", "combined_score"])
-            .groupby(["question_id_x"])
-            .sample(1)
-        )
-
-        # Truncate confirmed data frame
-        confirmed["question_id"], confirmed["linked_id"] = (
-            confirmed["question_id_x"],
-            confirmed["question_id_y"],
-        )
-        confirmed["uqid"] = confirmed["uqid_x"].combine_first(confirmed["uqid_y"])
-        confirmed = confirmed[["question_id", "linked_id", "uqid"]]
-
-        # Update linked and unlinked
-        df = self._unlinked.merge(
-            confirmed, how="left", on="question_id", indicator=True
-        )
-        df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
-
-        linked = df[df["_merge"] == "both"].drop(columns="_merge")
-        assert linked["uqid"].all()
-        unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
-        assert not unlinked["uqid"].any()
-
-        assert not self._linked.duplicated(["question_id"]).any()
-        self._linked = pd.concat([self._linked, linked])
-        assert not self._linked.duplicated(["question_id"]).any()
-        self._unlinked = unlinked
-
-        del self._cross
-
-        return self
-
-    def prepare_for_insertion(self) -> Self:
-        """Prepare question data for final insertion
-
-        Also, prepare to update any newly linked extant records as necessary.
-
-        Returns:
-            Self: PIRIngestor object
-        """
-        df = self._data["question"]
-        assert df["uqid"].isna().all()
-        df.drop(columns="uqid", inplace=True)
-        df = df.merge(
-            self._linked[["question_id", "linked_id", "uqid"]],
-            how="left",
-            on="question_id",
-        )
-        assert self._linked.shape[0] == df["linked_id"].notna().sum()
-        assert self._unlinked.shape[0] == df["linked_id"].isna().sum()
-
-        del self._linked
-        del self._unlinked
-
-        df["uqid"] = df.apply(lambda row: self.gen_uqid(row), axis=1)
-
-        self._data["question"] = df
-        self.update_unlinked()
-        self._data["question"] = self._data["question"][
-            self._sql._schemas["question"]["Field"]
-        ]
-
-        return self
-
-    def gen_uqid(self, row: pd.Series) -> str | float:
-        """Generate a unique question ID
-
-        Args:
-            row (pd.Series): Pandas series containing row information
-
-        Returns:
-            str | float: A null value or a hashed question ID returned as a string
-        """
-
-        if isinstance(row["uqid"], str) and row["uqid"]:
-            return row["uqid"]
-
-        if not isinstance(row["linked_id"], str):
-            assert np.isnan(
-                row["linked_id"]
-            ), f"Unexpected value of linked_id: {row['linked_id']}"
-            return row["linked_id"]
-
-        return hashlib.md5(row["linked_id"].encode()).hexdigest()
-
-    def update_unlinked(self) -> Self:
-        """Find any unlinked records that should be updated with a new uqid
-
-        Returns:
-            Self: PIRIngestor object
-        """
-
-        # Get the unlinked records
-        unlinked = self._sql.get_records("SELECT DISTINCT question_id FROM unlinked")
-
-        # Check whether unlinked records are among those to link currently
-        # No need to worry about setting an ID to null, because if an ID in unlinked
-        # matches, then there must be a uqid in self._data["question"]
-        unlinked = unlinked.merge(
-            self._data["question"][["linked_id", "uqid"]],
-            how="inner",
-            left_on="question_id",
-            right_on="linked_id",
-        )
-
-        self._unlinked = unlinked
-
-        return self
-
     def validate_data(self) -> Self:
         def check_dupes(metric_dict: dict):
             return metric_dict["record_count"] - metric_dict["dupes"]
 
-        response = self._data["response"]
-        question = self._data["question"]
-        program = self._data["program"]
-        metrics = self._metrics
-
-        # Confirm program record counts and ids
         assert (
-            program.shape[0] == metrics["program"]["record_count"]
+            self._data["program"].shape[0] == self._metrics["program"]["record_count"]
         ), self._logger.error("Program count has changed.")
-        assert (
-            set(program["uid"].unique()) == metrics["program"]["uids"]
-        ), "UIDs have changed"
-
-        # Confirm question record count and ids
         try:
             assert (
-                question.shape[0] >= metrics["question"]["record_count"]
+                self._data["question"].shape[0]
+                >= self._metrics["question"]["record_count"]
             ), self._logger.error("Question count is too low")
         except AssertionError:
-            assert question.shape[0] >= check_dupes(
-                metrics["question"]
+            assert self._data["question"].shape[0] >= check_dupes(
+                self._metrics["question"]
             ), self._logger.error("Question count is too low")
             self._logger.info("Question count is accurate without duplicates.")
-
-        assert set(question["question_id"].unique()).issuperset(
-            metrics["question"]["question_ids"]
-        ), "Question does not contain all original question_ids"
-
-        # Confirm response record count and ids
         assert (
-            response["uid"].nunique() == metrics["program"]["record_count"]
+            self._data["response"]["uid"].nunique()
+            == self._metrics["program"]["record_count"]
         ), self._logger.error("Incorrect program count in response.")
         try:
             assert (
-                response["question_id"].nunique() >= metrics["question"]["record_count"]
+                self._data["response"]["question_id"].nunique()
+                >= self._metrics["question"]["record_count"]
             ), self._logger.error("Too few questions in response.")
         except AssertionError:
-            assert response["question_id"].nunique() >= check_dupes(
-                metrics["question"]
+            assert self._data["response"]["question_id"].nunique() >= check_dupes(
+                self._metrics["question"]
             ), self._logger.error("Too few questions in response.")
             self._logger.info("Response question count is accurate without duplicates.")
 
-        assert (
-            set(response["uid"].unique()) == metrics["response"]["uids"]
-        ), "Some uids added to or missing from response."
-
         self._logger.info("Validated data.")
-        for table in metrics:
-            self._logger.info(
-                f"{table.title()}: Beginning Records - {metrics[table]["record_count"]}; Ending Records - {self._data[table].shape[0]}"
-            )
 
         return self
 
@@ -882,20 +640,6 @@ class PIRIngestor:
 
         self._logger.info(f"Data inserted for {self._year}")
 
-        # Update unlinked records if necessary
-        if not self._unlinked.empty:
-            self._unlinked.rename(columns={"question_id": "qid"}, inplace=True)
-            records = self._unlinked.to_dict(orient="records")
-            table = self._sql.tables["question"]
-            self._sql.update_records(
-                table,
-                {"uqid": bindparam("uqid")},
-                table.c["question_id"] == bindparam("qid"),
-                records,
-            )
-
-        self._logger.info(f"Unlinked records updated for {self._year}")
-
         return self
 
     def ingest(self) -> Self:
@@ -910,7 +654,6 @@ class PIRIngestor:
             .append_sections()
             .merge_response_question()
             .clean_pir_data()
-            .link()
             .validate_data()
             .insert_data()
         )

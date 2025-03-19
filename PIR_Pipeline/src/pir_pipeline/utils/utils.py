@@ -1,5 +1,6 @@
-__all__ = ["get_searchable_columns", "clean_name"]
+__all__ = ["get_searchable_columns", "clean_name", "get_logger"]
 
+import logging
 import re
 
 
@@ -33,3 +34,12 @@ def clean_name(name: str, how: str = "snake") -> str:
         new_name = new_name.title()
 
     return new_name
+
+
+def get_logger(name: str):
+    logging.basicConfig(
+        format="%(asctime)s|%(name)s|%(levelname)s|%(message)s",
+        level=logging.DEBUG,
+        datefmt="%Y-%m-%d %I:%M:%S",
+    )
+    return logging.getLogger(name)
