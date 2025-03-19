@@ -65,19 +65,33 @@ function buildTable(data, table) {
         if (table.id == "review-results-table") {
             const reviewType = document.getElementById("review-type").value
             const divID = table.id + "-div-" + i;
+            const trID = table.id + "-tr-" + i;
+            const tdID = table.id + "-td-" + i;
             row.className = "accordion-toggle cursor-pointer";
             row.setAttribute("data-bs-toggle", "collapse");
-            row.setAttribute("data-bs-target", `#collapse-${divID}`);
+            row.setAttribute("data-bs-target", `#collapse-${trID}`);
             row.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`)
 
-            var div = document.createElement("div");
-            div.className = "accordion-collapse collapse";
+            // Create div to hold table
+            const div = document.createElement("div");
             div.id = `collapse-${divID}`;
+
+            // Create row and cell to hold div
+            // Adapted from Claude logic, needed to maintain alignment
+            var tr = document.createElement("tr");
+            tr.className = "accordion-collapse collapse";
+            tr.id = `collapse-${trID}`;
+            const td = document.createElement("td");
+            td.id = `collapse-${tdID}`;
+            td.setAttribute("colspan", data.length);
+
+            td.appendChild(div);
+            tr.appendChild(td);
         }
 
         body.appendChild(row);
         if (table.id == "review-results-table") {
-            body.appendChild(div);
+            body.appendChild(tr);
         }
     }
 
@@ -85,10 +99,16 @@ function buildTable(data, table) {
 }
 
 function getQuestionData(event, reviewType) {
-    // Will make a call to the /match endpoint to get and 
-    // return potential matches for this row
     const row = event.srcElement.parentElement;
-    const div = row.nextSibling;
+    const tr = document.getElementById(row.getAttribute("data-bs-target").replace("#", ""));
+    const div = document.getElementById(tr.id.replace("-tr-", "-div-"));
+
+    // Exit if the target div already contains a table (i.e. matches have been found once).
+    let table = div.getElementsByTagName("table");
+    if (table.length > 0) {
+        return
+    }
+
     const cells = row.getElementsByTagName("td");
     let record = {}
     for (let i = 0; i < cells.length; i++) {
@@ -99,6 +119,7 @@ function getQuestionData(event, reviewType) {
         "review-type": reviewType,
         "record": record
     }
+    
     fetch("/match", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
     .then(response => response.json())
     .then(data => fillMatchDiv(div, data));
