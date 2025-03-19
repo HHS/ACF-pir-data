@@ -14,7 +14,7 @@ from pir_pipeline.utils.utils import get_logger
 
 
 class PIRLinker:
-    def __init__(self, records: list[tuple] | list[dict], sql: SQLAlchemyUtils):
+    def __init__(self, records: list[dict] | list[dict], sql: SQLAlchemyUtils):
         """Instantiate instance of PIRLinker object
 
         Args:
@@ -135,7 +135,7 @@ class PIRLinker:
 
         return self
 
-    def fuzzy_link(self, num_matches: int = None) -> Self:
+    def fuzzy_link(self, num_matches: int = None) -> Self | pd.DataFrame:
         """Link questions using a Levenshtein algorithm
 
         Attempt to link questions heretofore unlinked using a Levenshtein algorithm.
