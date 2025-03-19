@@ -1,4 +1,4 @@
-import { updateTable } from "./utilities.js"
+import { updateTable, getQuestionData } from "./utilities.js"
 
 const reviewForm = document.getElementById("review-form");
 reviewForm.addEventListener("change", async (e) => {
@@ -7,3 +7,5 @@ reviewForm.addEventListener("change", async (e) => {
     reviewForm.dispatchEvent(faux_event);
     updateTable(faux_event);
 })
+
+document.getQuestionData = getQuestionData;

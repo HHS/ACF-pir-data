@@ -58,8 +58,8 @@ function buildTable(data, table) {
         for (let key in row_data) {
             const cell = document.createElement("td");
             cell.innerHTML = row_data[key];
+            cell.setAttribute("name", key);
             row.appendChild(cell);
-            // console.log(row);
         }
 
         if (table.id == "review-results-table") {
@@ -67,13 +67,12 @@ function buildTable(data, table) {
             const divID = table.id + "-div-" + i;
             row.className = "accordion-toggle cursor-pointer";
             row.setAttribute("data-bs-toggle", "collapse");
-            row.setAttribute("data-bs-target", `#collapse${divID}`);
-            row.setAttribute("onclick", "console.log('PLACEHOLDER CODE')")
+            row.setAttribute("data-bs-target", `#collapse-${divID}`);
+            row.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`)
 
             var div = document.createElement("div");
             div.className = "accordion-collapse collapse";
-            div.id = `collapse${divID}`;
-            div.innerHTML = "PLACEHOLDER TEXT";
+            div.id = `collapse-${divID}`;
         }
 
         body.appendChild(row);
@@ -82,18 +81,41 @@ function buildTable(data, table) {
         }
     }
 
-    table.appendChild(body)
+    table.appendChild(body);
 }
 
-// function getQuestionData(event, reviewType) {
-//     // Will make a call to the /match endpoint to get and 
-//     // return potential matches for this row
-//     const row = event.srcElement;
-// }
+function getQuestionData(event, reviewType) {
+    // Will make a call to the /match endpoint to get and 
+    // return potential matches for this row
+    const row = event.srcElement.parentElement;
+    const div = row.nextSibling;
+    const cells = row.getElementsByTagName("td");
+    let record = {}
+    for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i]; 
+        record[cell.getAttribute("name")] = cell.innerHTML;
+    }
+    let payload = {
+        "review-type": reviewType,
+        "record": record
+    }
+    fetch("/match", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
+    .then(response => response.json())
+    .then(data => fillMatchDiv(div, data));
+}
+
+function fillMatchDiv(div, data) {
+    const table = document.createElement("table");
+    table.className = "table table-hover";
+    div.setAttribute("style", "width: 100%");
+    div.appendChild(table);
+    buildTable(data, table);
+}
 
 export {
     getColumns,
     buildDropdown,
     buildTable,
-    updateTable
+    updateTable,
+    getQuestionData
 }
