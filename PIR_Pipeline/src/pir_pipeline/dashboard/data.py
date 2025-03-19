@@ -1,7 +1,11 @@
 __all__ = ["get_review_data"]
 
+import json
+
 from sqlalchemy import func, select
 
+from pir_pipeline.linking.PIRLinker import PIRLinker
+from pir_pipeline.models.pir_models import QuestionModel
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 from pir_pipeline.utils.utils import clean_name
 
@@ -63,11 +67,18 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
     return data
 
 
-def get_matches(payload: dict, db: SQLAlchemyUtils):
+def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     review_type = payload["review-type"]
 
     if review_type == "unlinked":
-        question = db.tables["question"]
+        record = QuestionModel.model_validate(payload["record"]).model_dump_json()
+        record = json.loads(record)
+        records = [record]
+        matches = PIRLinker(records, db).fuzzy_link(5)
+        records = matches.to_dict(orient="records")
+        records.insert(0, matches.columns.tolist())
+        return records
+
     elif review_type == "intermittent":
         pass
     elif review_type == "inconsistent":
