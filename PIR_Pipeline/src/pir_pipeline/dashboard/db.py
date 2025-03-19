@@ -3,7 +3,7 @@ from datetime import datetime
 import click
 from flask import current_app, g
 
-from pir_pipeline.utils import SQLAlchemyUtils
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 def get_db():
