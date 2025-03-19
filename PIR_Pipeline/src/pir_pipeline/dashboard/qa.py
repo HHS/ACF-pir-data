@@ -15,7 +15,7 @@ from flask import (
 from sqlalchemy import bindparam, select
 from werkzeug.exceptions import abort
 
-from pir_pipeline.dashboard.data import get_review_data
+from pir_pipeline.dashboard.data import get_matches, get_review_data
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils import clean_name, get_searchable_columns
 
@@ -122,9 +122,10 @@ def review():
     return render_template("review.html", section_id="review-form-section")
 
 
-@bp.route("/match")
+@bp.route("/match", methods=["POST"])
 def match():
     db = get_db()
     payload = request.get_json()
+    matches = get_matches(payload, db)
 
-    return None
+    return json.dumps(matches)
