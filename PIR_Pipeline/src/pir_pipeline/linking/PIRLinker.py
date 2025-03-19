@@ -56,6 +56,17 @@ class PIRLinker:
             Self: PIRLinker object
         """
         # Look for a direct match on question_id
+        self.direct_link()
+        # Look for a fuzzy match on question_name, question_number, or question_text
+        self.join_on_type_and_section("unlinked")
+        if not self._cross.empty:
+            self.fuzzy_link()
+
+        self.prepare_for_insertion()
+
+        return self
+
+    def direct_link(self):
         df = self._data.copy()
         df = df.merge(
             self._question[["question_id", "uqid", "year"]].drop_duplicates(),
@@ -83,21 +94,18 @@ class PIRLinker:
             columns="_merge"
         )
 
-        assert not self._linked.duplicated(["question_id"]).any()
+        assert not self._linked.duplicated(["question_id"]).any(), self._logger.error(
+            "Some question_ids are duplicated."
+        )
         assert (
             self._data[~self._data["question_id"].duplicated()].shape[0]
             - self._linked.shape[0]
             == self._unlinked.shape[0]
+        ), self._logger.error(
+            "Unique question_ids in data - unique question_ids in linked != unique question_ids in unlinked"
         )
 
         self._logger.info("Made links on question_id.")
-
-        # Look for a fuzzy match on question_name, question_number, or question_text
-        self.join_on_type_and_section("unlinked")
-        if not self._cross.empty:
-            self.fuzzy_link()
-
-        self.prepare_for_insertion()
 
         return self
 
@@ -242,8 +250,14 @@ class PIRLinker:
             how="left",
             on="question_id",
         )
-        assert self._linked.shape[0] == df["linked_id"].notna().sum()
-        assert self._unlinked.shape[0] == df["linked_id"].isna().sum()
+        assert (
+            self._linked.shape[0] == df["linked_id"].notna().sum()
+        ), self._logger.error(
+            "Count of linked_ids and number of linked records differs."
+        )
+        assert (
+            self._unlinked.shape[0] == df["linked_id"].isna().sum()
+        ), "Count of missing linked_ids and number of unlinked records differs."
 
         del self._linked
         del self._unlinked
@@ -304,10 +318,7 @@ class PIRLinker:
             .rename(columns={"question_id": "qid"})
             .to_dict(orient="records")
         )
-        # table = self._sql.tables["question"]
-        from sqlalchemy import MetaData, Table
-
-        table = Table("question_copy", MetaData(), autoload_with=self._sql.engine)
+        table = self._sql.tables["question"]
         self._sql.update_records(
             table,
             {"uqid": bindparam("uqid")},

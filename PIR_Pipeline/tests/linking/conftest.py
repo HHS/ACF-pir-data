@@ -1,6 +1,3 @@
-import os
-from unittest.mock import MagicMock
-
 import pandas as pd
 import pytest
 
@@ -50,3 +47,20 @@ def create_database(sql_utils, question_records):
 @pytest.fixture
 def pir_linker(sql_utils, question_records):
     return PIRLinker(question_records, sql_utils)
+
+
+@pytest.fixture
+def question_columns():
+    return {
+        "question_id",
+        "year",
+        "category",
+        "question_name",
+        "question_number",
+        "question_order",
+        "question_text",
+        "question_type",
+        "section",
+        "subsection",
+        "uqid",
+    }
