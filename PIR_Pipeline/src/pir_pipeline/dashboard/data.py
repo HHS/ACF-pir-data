@@ -75,12 +75,24 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
         record = json.loads(record)
         records = [record]
         matches = PIRLinker(records, db).fuzzy_link(5)
-        records = matches.to_dict(orient="records")
-        columns = [clean_name(col, "title") for col in matches.columns.tolist()]
-        records.insert(0, columns)
-        return records
-
     elif review_type == "intermittent":
-        pass
+        records = [payload["record"]]
+        year_coverage = db.get_records(
+            f"SELECT `year` FROM question WHERE uqid = '{payload["record"]["uqid"]}'"
+        )["year"].tolist()
+        year_coverage = ", ".join([str(yr) for yr in year_coverage])
+        year_coverage = f"({year_coverage})"
+        matches = (
+            PIRLinker(records, db)
+            .get_question_data(
+                f"SELECT * FROM linked WHERE `year` NOT IN {year_coverage}"
+            )
+            .fuzzy_link(5)
+        )
     elif review_type == "inconsistent":
         pass
+
+    records = matches.to_dict(orient="records")
+    columns = [clean_name(col, "title") for col in matches.columns.tolist()]
+    records.insert(0, columns)
+    return records
