@@ -13,7 +13,7 @@ classifiers = [
     "PRIVATE :: Do Not Upload"
 ]
 dependencies = [
-    "mysql-connector-python", "sphinx", "pandas", 
+    "mysql-connector-python", "sphinx", "pandas", "python-dotenv",
     "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd",
     "pydantic", "Flask", "SQLAlchemy", "sqlalchemy-utils"
 ]
