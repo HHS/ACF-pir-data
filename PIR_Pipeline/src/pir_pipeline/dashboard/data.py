@@ -90,9 +90,36 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
             .fuzzy_link(5)
         )
     elif review_type == "inconsistent":
-        pass
+        matches = db.get_records(
+            f"""
+            SELECT DISTINCT question_id, question_name, question_number, 
+                question_text, section, question_type 
+            FROM question
+            WHERE uqid = "{payload["record"]["uqid"]}"
+            ORDER BY question_id
+            """
+        )
 
     records = matches.to_dict(orient="records")
     columns = [clean_name(col, "title") for col in matches.columns.tolist()]
     records.insert(0, columns)
     return records
+
+
+if __name__ == "__main__":
+    from pir_pipeline.config import db_config
+
+    payload = {
+        "review-type": "intermittent",
+        "record": {
+            "uqid": "9966bba238aa6c26f2e9ee7f3f88f7a0",
+            "question_name": "Number of Pre-kindergarten Collaboration and Resource Sharing Agreements",
+            "question_number": "C.57.a",
+            "question_text": "If yes, the number of formal agreements in which the program is currently participating",
+            "section": "C",
+            "question_type": "Number",
+        },
+    }
+    db = SQLAlchemyUtils(**db_config, database="pir")
+    matches = get_matches(payload, db)
+    print(matches)
