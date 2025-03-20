@@ -76,7 +76,8 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
         records = [record]
         matches = PIRLinker(records, db).fuzzy_link(5)
         records = matches.to_dict(orient="records")
-        records.insert(0, matches.columns.tolist())
+        columns = [clean_name(col, "title") for col in matches.columns.tolist()]
+        records.insert(0, columns)
         return records
 
     elif review_type == "intermittent":

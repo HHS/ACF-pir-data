@@ -32,6 +32,9 @@ def clean_name(name: str, how: str = "snake") -> str:
     elif how == "title":
         new_name = re.sub(r"_", " ", name)
         new_name = new_name.title()
+        new_name = re.sub(r"\bId\b", "ID", new_name)
+        if new_name in ["Uqid", "Uid"]:
+            new_name = new_name.upper()
 
     return new_name
 
