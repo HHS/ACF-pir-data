@@ -1,7 +1,7 @@
 from urllib.parse import quote_plus
 
 import pandas as pd
-from sqlalchemy import Engine, Table, create_engine, text, update
+from sqlalchemy import Engine, Table, create_engine, select, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -37,6 +37,7 @@ class SQLAlchemyUtils(SQLUtils):
             "linked": linked,
             "unlinked": unlinked,
         }
+        self._valid_tables = list(self._tables.keys())
         self._database = database
 
     @property
@@ -71,8 +72,7 @@ class SQLAlchemyUtils(SQLUtils):
             drop_database(self._engine.url)
 
     def validate_table(self, table: str):
-        valid_tables = list(self._tables.keys())
-        assert table in valid_tables, "Invalid table."
+        assert table in self._valid_tables, "Invalid table."
 
     def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
         schemas = {}
@@ -101,6 +101,9 @@ class SQLAlchemyUtils(SQLUtils):
         return columns
 
     def get_records(self, query: str) -> pd.DataFrame:
+        if query in self._valid_tables:
+            query = select(self._tables[query])
+
         return pd.read_sql(query, self._engine)
 
     def insert_records(self, records: list[dict], table: str):
@@ -187,4 +190,4 @@ class SQLAlchemyUtils(SQLUtils):
 
 
 if __name__ == "__main__":
-    SQLAlchemyUtils(**db_config, database="pir_test").drop_db()
+    SQLAlchemyUtils(**db_config, database="pir_test")
