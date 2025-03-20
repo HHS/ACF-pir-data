@@ -1,23 +1,38 @@
 import os
+import tempfile
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
 from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
-
+from pir_pipeline.utils.MockData import MockData
 
 @pytest.fixture
 def dummy_ingestor():
     return PIRIngestor("", MagicMock())
 
+@pytest.fixture
+def temporary_directory():
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_dir_name = temp_dir.name
+    yield temp_dir_name
 
 @pytest.fixture
-def data_ingestor():
-    return PIRIngestor(
-        os.path.join(os.path.dirname(__file__), "test_data_2008.xlsx"), MagicMock()
-    )
+def data_ingestor(request: bool, temporary_directory):
+    mock_data_fixture = request.param
+    
+    if mock_data_fixture:
+        mock_data = MockData(2008, valid = True)
+    else: 
+        mock_data = MockData(2008, valid = False)
+        
+    mock_data.generate_data()
+    mock_data.export(directory=temporary_directory)
 
+    return PIRIngestor(
+        mock_data.path, MagicMock()
+    )
 
 @pytest.fixture
 def invalid_names():
@@ -64,6 +79,18 @@ def mock_question_data():
         "section": {i: "" for i in range(5)},
         "linked_id": {i: value for i, value in enumerate(["A", "B", "F", "G", "H"])},
     }
+    
+    question_unlinked = {
+        "question_id": {i: value for i, value in enumerate(["A", "B", "C", "D", "E"])},
+        "uqid": {i: None for i in range(5)},
+        "question_name": {i: "" for i in range(5)},
+        "question_order": {i: "" for i in range(5)},
+        "question_text": {i: "" for i in range(5)},
+        "question_number": {i: "" for i in range(5)},
+        "question_type": {i: "" for i in range(5)},
+        "section": {i: "" for i in range(5)},
+        "linked_id": {i: value for i, value in enumerate([None])},
+    }
 
     question_merge_pass = {
         "question_number": {i: "A." + str(i + 1) for i in range(6)},
@@ -81,6 +108,7 @@ def mock_question_data():
         "raw": question,
         "db": question_db,
         "linked": question_linked,
+        "unlinked": question_unlinked,
         "question": question,
         "question_merge_pass": question_merge_pass,
         "question_merge_fail": question_merge_fail,

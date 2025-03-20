@@ -15,7 +15,7 @@ from pir_pipeline.utils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
+    def __init__(self, workbook: str | os.PathLike | pd.ExcelFile, sql: SQLAlchemyUtils):
         """Initialize a PIRIngestor object
 
         Args:
@@ -105,10 +105,27 @@ class PIRIngestor:
             .groupby(["question_number", "question_name"])
             .sample(1)
         )
-
-        expected_numrows = numrows_q + response.shape[0]
-
-        question = pd.concat([question, response])
+        
+        
+        # in some cases the question_number is missing but the question_name is present
+        # fill in the missing question_number values
+        question_table_only_missing_question_numbers = response['question_name'].tolist() == question[question['question_name'].isin(response['question_name'])]['question_name'].tolist()
+        if question_table_only_missing_question_numbers:
+            expected_numrows = question.shape[0]
+            question_corrected = question[question['question_number'].isna()].drop(['question_number', 'section'], axis=1).merge(
+                response, 
+                on=['question_name'], 
+                how='left', 
+                validate='one_to_one'
+                )
+            question_corrected = question_corrected.reindex(columns=question.columns) 
+            
+            question = pd.concat([question[question['question_number'].notna()], question_corrected]).sort_values('question_order')
+        
+        # in most cases the response table has a full record that the question table is missing
+        else:
+            expected_numrows = numrows_q + response.shape[0]
+            question = pd.concat([question, response])
 
         assert (
             question.shape[0] == expected_numrows
@@ -162,6 +179,7 @@ class PIRIngestor:
         self._year = int(year.group(1))
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
+        assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
         return self
 
     def load_data(self) -> Self:
@@ -229,7 +247,7 @@ class PIRIngestor:
 
                 assert df[
                     "question_name"
-                ].all(), "Some questions are missing a question name"
+                ].notna().all(), "Some questions are missing a question name"
 
             elif reference_condition:
                 df.columns = df.columns.map(self.make_snake_name)
@@ -250,7 +268,8 @@ class PIRIngestor:
 
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
-
+            
+        self.close_excel_files()
         return self
 
     def append_sections(self) -> Self:
@@ -291,7 +310,7 @@ class PIRIngestor:
             string = re.sub(r"_\d+$", "", string)
 
             if string == "nan":
-                return np.nan
+                string = np.nan
 
             return string
 
@@ -317,6 +336,10 @@ class PIRIngestor:
             missing_questions = set(response["question_number"]) - set(
                 question["question_number"]
             )
+            
+            # in some cases missing question numbers will result in the above set including nan
+            missing_questions = set(question_number for question_number in missing_questions if not np.isnan(question_number))
+                        
             assert (
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
@@ -331,7 +354,7 @@ class PIRIngestor:
             how="left",
             on=merge_columns,
             validate="many_to_one",
-            indicator=True,
+            indicator=True
         )
         try:
             num_records = response.shape[0]
@@ -644,6 +667,8 @@ class PIRIngestor:
 
         self._data["question"] = df
         self.update_unlinked()
+        
+        # Filters question to only columns found in the schema
         self._data["question"] = self._data["question"][
             self._sql._schemas["question"]["Field"]
         ]
@@ -659,7 +684,6 @@ class PIRIngestor:
         Returns:
             str | float: A null value or a hashed question ID returned as a string
         """
-
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
@@ -750,6 +774,17 @@ class PIRIngestor:
         self._sql.close_connection()
 
         return self
+    
+    def close_excel_files(self):
+        """Close all files"""
+        workbooks = self._workbook
+        if isinstance(workbooks, dict):
+            for book in workbooks.values():
+                book.close()
+        else:
+            workbooks.close()
+
+        self._workbook.close()
 
     # def linked_checks(self, df: pd.DataFrame):
     #     """Method for confirming that, upon reingestion, uqid remains consistent.
