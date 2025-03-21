@@ -682,7 +682,9 @@ if __name__ == "__main__":
             init = time.time()
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
-                SQLAlchemyUtils(**db_config, database="pir"),
+                SQLAlchemyUtils(
+                    **db_config, database="pir", drivername="postgresql+psycopg"
+                ),
             ).ingest()
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")
