@@ -9,6 +9,8 @@ jobs:
       - name: Check out repository code
         id: checkout
         uses: actions/checkout@v4
+        with:
+          ref: $ {{ github.ref_name }}
       - name: Format code
         id: format
         run: |
