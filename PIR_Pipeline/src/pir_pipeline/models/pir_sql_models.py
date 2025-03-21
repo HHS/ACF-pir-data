@@ -1,5 +1,3 @@
-from urllib.parse import quote_plus
-
 from sqlalchemy import (
     Column,
     Float,
@@ -9,16 +7,10 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    create_engine,
     select,
 )
 
-from pir_pipeline.config import db_config
 from pir_pipeline.utils.sql_alchemy_view import view
-
-engine = create_engine(
-    f"mysql+mysqlconnector://{db_config["user"]}:{quote_plus(db_config["password"])}@{db_config["host"]}:{db_config["port"]}/pir"
-)
 
 # Get classes
 sql_metadata = MetaData()

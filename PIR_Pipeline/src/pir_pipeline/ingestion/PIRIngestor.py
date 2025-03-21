@@ -17,7 +17,9 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
+    def __init__(
+        self, workbook: str | os.PathLike, sql: SQLAlchemyUtils
+    ):
         """Initialize a PIRIngestor object
 
         Args:
@@ -120,9 +122,33 @@ class PIRIngestor:
             .reset_index()
         )
 
-        expected_numrows = numrows_q + response.shape[0]
+        # in some cases the question_number is missing but the question_name is present
+        # fill in the missing question_number values
+        question_table_only_missing_question_numbers = (
+            response["question_name"].tolist()
+            == question[question["question_name"].isin(response["question_name"])][
+                "question_name"
+            ].tolist()
+        )
+        if question_table_only_missing_question_numbers:
+            expected_numrows = question.shape[0]
+            question_corrected = (
+                question[question["question_number"].isna()]
+                .drop(["question_number", "section"], axis=1)
+                .merge(
+                    response, on=["question_name"], how="left", validate="one_to_one"
+                )
+            )
+            question_corrected = question_corrected[question.columns]
 
-        question = pd.concat([question, response])
+            question = pd.concat(
+                [question[question["question_number"].notna()], question_corrected]
+            ).sort_values("question_order")
+
+        # in most cases the response table has a full record that the question table is missing
+        else:
+            expected_numrows = numrows_q + response.shape[0]
+            question = pd.concat([question, response])
 
         assert (
             question.shape[0] == expected_numrows
@@ -188,6 +214,8 @@ class PIRIngestor:
         self._year = int(year.group(1))
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
+        assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
+
 
         self._logger.info("Extracted worksheets.")
 
@@ -285,9 +313,9 @@ class PIRIngestor:
                 df = df[df["Region"] != "Region"]
                 df = df[df["Grant Number"].notna()]
 
-                assert df[
-                    "question_name"
-                ].all(), "Some questions are missing a question name"
+                assert (
+                    df["question_name"].notna().all()
+                ), "Some questions are missing a question name"
 
             elif reference_condition:
                 name = "question"
@@ -331,6 +359,7 @@ class PIRIngestor:
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
 
+        self.close_excel_files()
         self._logger.info("Loaded data.")
 
         return self
@@ -375,7 +404,7 @@ class PIRIngestor:
             string = re.sub(r"_\d+$", "", string)
 
             if string == "nan":
-                return np.nan
+                string = np.nan
 
             return string
 
@@ -401,6 +430,7 @@ class PIRIngestor:
             missing_questions = set(response["question_number"]) - set(
                 question["question_number"]
             )
+
             assert (
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
@@ -417,14 +447,23 @@ class PIRIngestor:
             validate="many_to_one",
             indicator=True,
         )
+
+        # Check to see if all questions in response have a matching record in question
+        # Can occur because sometimes question name is different in response and question
         try:
             num_records = response.shape[0]
             assert (response["_merge"] == "both").all()
+        # If not, correct this
         except AssertionError:
+            # Extract records matched in both and response only
             both = response[response["_merge"] == "both"].drop(columns="_merge")
             left = response[response["_merge"] == "left_only"].drop(columns="_merge")
+
+            # Drop duplicated questions
             left = left[merge_columns][~left[merge_columns].duplicated()]
 
+            # Get the original records from response and merge to question on
+            # only question_number
             left = (
                 original_response.merge(
                     left,
@@ -442,10 +481,16 @@ class PIRIngestor:
                 )
             )
 
-            assert (left["_merge"] == "both").all()
-            assert set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            assert (
+                left["_merge"] == "both"
+            ).all(), "Some records in response still not found in question"
+            assert (
+                set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            ), "Different columns in both and left"
             appended = pd.concat([both, left])
-            assert appended.shape[0] == num_records
+            assert (
+                appended.shape[0] == num_records
+            ), "Incorrect number of records after dataframe concatenation"
             response = appended
 
         assert (
@@ -751,6 +796,8 @@ class PIRIngestor:
 
         self._data["question"] = df
         self.update_unlinked()
+
+        # Filters question to only columns found in the schema
         self._data["question"] = self._data["question"][
             self._sql._schemas["question"]["Field"]
         ]
@@ -766,7 +813,6 @@ class PIRIngestor:
         Returns:
             str | float: A null value or a hashed question ID returned as a string
         """
-
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
@@ -917,6 +963,17 @@ class PIRIngestor:
         )
 
         return self
+
+    def close_excel_files(self):
+        """Close all files"""
+        workbooks = self._workbook
+        if isinstance(workbooks, dict):
+            for book in workbooks.values():
+                book.close()
+        else:
+            workbooks.close()
+
+        self._workbook.close()
 
 
 if __name__ == "__main__":
