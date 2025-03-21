@@ -1,0 +1,14 @@
+name: Unit Test Suite
+run-name: Pull request for ${{ github.ref }} triggered unit tests.
+on: pull_request
+
+jobs:
+  run-tests-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        id: checkout
+        uses: actions/checkout@v4
+      - name: Run unit tests
+        id: unit_tests
+        run: bash PIR_Pipeline/code/unit_tests.sh

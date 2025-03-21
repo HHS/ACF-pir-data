@@ -13,9 +13,9 @@ classifiers = [
     "PRIVATE :: Do Not Upload"
 ]
 dependencies = [
-    "pywin32", "mysql-connector-python", "sphinx", "pandas", 
+    "mysql-connector-python", "sphinx", "pandas", "python-dotenv",
     "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd",
-    "pydantic", "Flask", "SQLAlchemy"
+    "pydantic", "Flask", "SQLAlchemy", "sqlalchemy-utils"
 ]
 
 [build-system]

@@ -1,0 +1,81 @@
+from sqlalchemy import (
+    Column,
+    Float,
+    ForeignKeyConstraint,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+    select,
+)
+
+from pir_pipeline.utils.sql_alchemy_view import view
+
+# Get classes
+sql_metadata = MetaData()
+
+
+program = Table(
+    "program",
+    sql_metadata,
+    Column("uid", String(255), primary_key=True, index=True),
+    Column("year", Integer, primary_key=True, index=True),
+    Column("grantee_name", String(255)),
+    Column("grant_number", String(255)),
+    Column("program_address_line_1", String(255)),
+    Column("program_address_line_2", String(255)),
+    Column("program_agency_description", String(255)),
+    Column("program_agency_type", String(255)),
+    Column("program_city", String(255)),
+    Column("program_email", String(255)),
+    Column("program_name", String(255)),
+    Column("program_number", String(255)),
+    Column("program_phone", String(255)),
+    Column("program_type", String(255)),
+    Column("program_state", String(255)),
+    Column("program_zip1", String(255)),
+    Column("program_zip2", String(255)),
+    Column("region", Integer),
+)
+question = Table(
+    "question",
+    sql_metadata,
+    Column("question_id", String(255), primary_key=True, index=True),
+    Column("year", Integer, primary_key=True, index=True),
+    Column("uqid", String(255)),
+    Column("category", String(255)),
+    Column("question_name", Text),
+    Column("question_number", String(255)),
+    Column("question_order", Float),
+    Column("question_text", Text),
+    Column("question_type", String(255)),
+    Column("section", String(255)),
+    Column("subsection", String(255)),
+)
+response = Table(
+    "response",
+    sql_metadata,
+    Column("uid", String(255), primary_key=True, index=True),
+    Column("question_id", String(255), primary_key=True, index=True),
+    Column("year", Integer, primary_key=True, index=True),
+    Column("answer", Text),
+    ForeignKeyConstraint(
+        ["uid", "year"],
+        ["program.uid", "program.year"],
+        onupdate="CASCADE",
+        ondelete="CASCADE",
+    ),
+    ForeignKeyConstraint(
+        ["question_id", "year"],
+        ["question.question_id", "question.year"],
+        onupdate="CASCADE",
+        ondelete="CASCADE",
+    ),
+)
+unlinked = view(
+    "unlinked", sql_metadata, select(question).where(question.c.uqid is None)
+)
+linked = view(
+    "linked", sql_metadata, select(question).where(question.c.uqid is not None)
+)
