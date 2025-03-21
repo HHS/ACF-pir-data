@@ -1,9 +1,12 @@
 """Paths to TANF files"""
 
-import getpass
+import os
 
-USER = getpass.getuser()
-ROOT = f"C:/Users/{getpass.getuser()}/OneDrive - HHS Office of the Secretary/OHS PIR Migration"
+USER = os.getenv("username")
+if os.getenv("OneDrive"):
+    ROOT = f"{os.getenv("OneDrive")}/OHS PIR Migration"
+else:
+    ROOT = f"C:/Users/{USER}/Documents/OHS PIR Migration"
 INPUT_DIR = f"{ROOT}/input"
 INTER_DIR = f"{ROOT}/intermediate"
 OUT_DIR = f"{ROOT}/output"
