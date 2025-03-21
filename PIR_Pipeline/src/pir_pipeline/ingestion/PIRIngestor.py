@@ -125,7 +125,7 @@ class PIRIngestor:
                     response, on=["question_name"], how="left", validate="one_to_one"
                 )
             )
-            question_corrected = question_corrected.reindex(columns=question.columns)
+            question_corrected = question_corrected[question.columns]
 
             question = pd.concat(
                 [question[question["question_number"].notna()], question_corrected]
@@ -344,13 +344,6 @@ class PIRIngestor:
             )
             missing_questions = set(response["question_number"]) - set(
                 question["question_number"]
-            )
-
-            # in some cases missing question numbers will result in the above set including nan
-            missing_questions = set(
-                question_number
-                for question_number in missing_questions
-                if not np.isnan(question_number)
             )
 
             assert (

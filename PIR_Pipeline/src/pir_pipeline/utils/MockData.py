@@ -200,16 +200,6 @@ class MockData:
 
             # invalid reference sheet has one duplicate row, the last one generated
             if not self._valid:
-                new_row = [
-                    "CAT",
-                    "D",
-                    "",
-                    i,
-                    question_number,
-                    question_name,
-                    "HS",
-                    "Some question text",
-                ]
                 rows.append(new_row)
 
         if "Program" in type:
