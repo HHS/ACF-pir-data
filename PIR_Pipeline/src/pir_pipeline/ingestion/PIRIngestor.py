@@ -15,7 +15,9 @@ from pir_pipeline.utils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(self, workbook: str | os.PathLike | pd.ExcelFile, sql: SQLAlchemyUtils):
+    def __init__(
+        self, workbook: str | os.PathLike | pd.ExcelFile, sql: SQLAlchemyUtils
+    ):
         """Initialize a PIRIngestor object
 
         Args:
@@ -105,23 +107,30 @@ class PIRIngestor:
             .groupby(["question_number", "question_name"])
             .sample(1)
         )
-        
-        
+
         # in some cases the question_number is missing but the question_name is present
         # fill in the missing question_number values
-        question_table_only_missing_question_numbers = response['question_name'].tolist() == question[question['question_name'].isin(response['question_name'])]['question_name'].tolist()
+        question_table_only_missing_question_numbers = (
+            response["question_name"].tolist()
+            == question[question["question_name"].isin(response["question_name"])][
+                "question_name"
+            ].tolist()
+        )
         if question_table_only_missing_question_numbers:
             expected_numrows = question.shape[0]
-            question_corrected = question[question['question_number'].isna()].drop(['question_number', 'section'], axis=1).merge(
-                response, 
-                on=['question_name'], 
-                how='left', 
-                validate='one_to_one'
+            question_corrected = (
+                question[question["question_number"].isna()]
+                .drop(["question_number", "section"], axis=1)
+                .merge(
+                    response, on=["question_name"], how="left", validate="one_to_one"
                 )
-            question_corrected = question_corrected.reindex(columns=question.columns) 
-            
-            question = pd.concat([question[question['question_number'].notna()], question_corrected]).sort_values('question_order')
-        
+            )
+            question_corrected = question_corrected.reindex(columns=question.columns)
+
+            question = pd.concat(
+                [question[question["question_number"].notna()], question_corrected]
+            ).sort_values("question_order")
+
         # in most cases the response table has a full record that the question table is missing
         else:
             expected_numrows = numrows_q + response.shape[0]
@@ -245,9 +254,9 @@ class PIRIngestor:
                 df = df[df["Region"] != "Region"]
                 df = df[df["Grant Number"].notna()]
 
-                assert df[
-                    "question_name"
-                ].notna().all(), "Some questions are missing a question name"
+                assert (
+                    df["question_name"].notna().all()
+                ), "Some questions are missing a question name"
 
             elif reference_condition:
                 df.columns = df.columns.map(self.make_snake_name)
@@ -268,7 +277,7 @@ class PIRIngestor:
 
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
-            
+
         self.close_excel_files()
         return self
 
@@ -336,10 +345,14 @@ class PIRIngestor:
             missing_questions = set(response["question_number"]) - set(
                 question["question_number"]
             )
-            
+
             # in some cases missing question numbers will result in the above set including nan
-            missing_questions = set(question_number for question_number in missing_questions if not np.isnan(question_number))
-                        
+            missing_questions = set(
+                question_number
+                for question_number in missing_questions
+                if not np.isnan(question_number)
+            )
+
             assert (
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
@@ -354,16 +367,25 @@ class PIRIngestor:
             how="left",
             on=merge_columns,
             validate="many_to_one",
-            indicator=True
+            indicator=True,
         )
+
+        # Check to see if all questions in response have a matching record in question
+        # Can occur because sometimes question name is different in response and question
         try:
             num_records = response.shape[0]
             assert (response["_merge"] == "both").all()
+        # If not, correct this
         except AssertionError:
+            # Extract records matched in both and response only
             both = response[response["_merge"] == "both"].drop(columns="_merge")
             left = response[response["_merge"] == "left_only"].drop(columns="_merge")
+
+            # Drop duplicated questions
             left = left[merge_columns][~left[merge_columns].duplicated()]
 
+            # Get the original records from response and merge to question on
+            # only question_number
             left = (
                 original_response.merge(
                     left,
@@ -381,10 +403,16 @@ class PIRIngestor:
                 )
             )
 
-            assert (left["_merge"] == "both").all()
-            assert set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            assert (
+                left["_merge"] == "both"
+            ).all(), "Some records in response still not found in question"
+            assert (
+                set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            ), "Different columns in both and left"
             appended = pd.concat([both, left])
-            assert appended.shape[0] == num_records
+            assert (
+                appended.shape[0] == num_records
+            ), "Incorrect number of records after dataframe concatenation"
             response = appended
 
         assert (
@@ -667,7 +695,7 @@ class PIRIngestor:
 
         self._data["question"] = df
         self.update_unlinked()
-        
+
         # Filters question to only columns found in the schema
         self._data["question"] = self._data["question"][
             self._sql._schemas["question"]["Field"]
@@ -774,7 +802,7 @@ class PIRIngestor:
         self._sql.close_connection()
 
         return self
-    
+
     def close_excel_files(self):
         """Close all files"""
         workbooks = self._workbook

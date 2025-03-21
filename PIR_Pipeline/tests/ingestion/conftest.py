@@ -1,4 +1,3 @@
-import os
 import tempfile
 from unittest.mock import MagicMock
 
@@ -8,9 +7,11 @@ import pytest
 from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
 from pir_pipeline.utils.MockData import MockData
 
+
 @pytest.fixture
 def dummy_ingestor():
     return PIRIngestor("", MagicMock())
+
 
 @pytest.fixture
 def temporary_directory():
@@ -18,21 +19,16 @@ def temporary_directory():
     temp_dir_name = temp_dir.name
     yield temp_dir_name
 
+
 @pytest.fixture
 def data_ingestor(request: bool, temporary_directory):
-    mock_data_fixture = request.param
-    
-    if mock_data_fixture:
-        mock_data = MockData(2008, valid = True)
-    else: 
-        mock_data = MockData(2008, valid = False)
-        
+    mock_data = MockData(2008, valid=request.param)
+
     mock_data.generate_data()
     mock_data.export(directory=temporary_directory)
 
-    return PIRIngestor(
-        mock_data.path, MagicMock()
-    )
+    return PIRIngestor(mock_data.path, MagicMock())
+
 
 @pytest.fixture
 def invalid_names():
@@ -79,7 +75,7 @@ def mock_question_data():
         "section": {i: "" for i in range(5)},
         "linked_id": {i: value for i, value in enumerate(["A", "B", "F", "G", "H"])},
     }
-    
+
     question_unlinked = {
         "question_id": {i: value for i, value in enumerate(["A", "B", "C", "D", "E"])},
         "uqid": {i: None for i in range(5)},
@@ -258,4 +254,5 @@ def mock_schemas(request):
     request.cls.program_fields = program_fields
     request.cls.question_fields = question_fields
 
+    return schemas
     return schemas
