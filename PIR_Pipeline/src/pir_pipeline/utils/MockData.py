@@ -108,8 +108,12 @@ class MockData:
         else:
             question_columns = INVALID_QUESTION_COLUMNS
 
-        specs = {
-            f"pir_export_{self._year}": {
+        if not isinstance(self._year, list):
+            self._year = [self._year]
+
+        specs = {}
+        for year in self._year:
+            specs[f"pir_export_{year}"] = {
                 "Section A": {
                     "sheet": "Section A",
                     "columns": SECTION_ID_COLUMNS + question_columns,
@@ -132,7 +136,6 @@ class MockData:
                 },
                 "Reference": {"sheet": "Reference", "columns": REFERENCE_COLUMNS},
             }
-        }
 
         self._specs = specs
         return self
@@ -284,6 +287,6 @@ if __name__ == "__main__":
     temp_dir_name = temp_dir.name
 
     mock_data = MockData(2008, valid=True)
-    mock_data.generate_data()
-    mock_data.export(directory=temp_dir_name)
+    mock_data.generate_data().export(pandas=True)
+    print(mock_data._pandas)
     # mock_data.export(os.path.join(test_dir, "mock"))
