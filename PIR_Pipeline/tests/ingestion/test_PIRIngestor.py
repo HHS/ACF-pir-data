@@ -316,4 +316,4 @@ class TestPIRIngestor:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_clean_pir_data"])
+    pytest.main([__file__, "-s"])

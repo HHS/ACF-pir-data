@@ -16,7 +16,7 @@ from pir_pipeline.utils import SQLAlchemyUtils
 
 class PIRIngestor:
     def __init__(
-        self, workbook: str | os.PathLike | pd.ExcelFile, sql: SQLAlchemyUtils
+        self, workbook: str | os.PathLike, sql: SQLAlchemyUtils
     ):
         """Initialize a PIRIngestor object
 

@@ -255,4 +255,3 @@ def mock_schemas(request):
     request.cls.question_fields = question_fields
 
     return schemas
-    return schemas
