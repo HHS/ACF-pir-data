@@ -234,8 +234,8 @@ class TestPIRIngestor:
         assert all([name.find("section") == -1 for name in data_ingestor._data])
 
     @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
-    def test_clean_pir_data(self, data_ingestor, mock_schemas):
-        data_ingestor._sql._schemas = mock_schemas
+    def test_clean_pir_data(self, data_ingestor, mock_columns):
+        data_ingestor._sql.get_columns = MagicMock(side_effect=mock_columns)
         (
             data_ingestor.extract_sheets()
             .load_data()
@@ -280,8 +280,8 @@ class TestPIRIngestor:
         assert dummy_ingestor._question.shape == (5, 8)
 
     @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
-    def test_insert_data(self, data_ingestor, mock_schemas, mock_question_data):
-        data_ingestor._sql._schemas = mock_schemas
+    def test_insert_data(self, data_ingestor, mock_columns, mock_question_data):
+        data_ingestor._sql.get_columns = MagicMock(side_effect=mock_columns)
         data_ingestor._sql.insert_records = MagicMock()
         data_ingestor._sql.update_records = MagicMock()
         question = pd.DataFrame.from_dict(mock_question_data["db"])
@@ -316,4 +316,4 @@ class TestPIRIngestor:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s"])
+    pytest.main([__file__, "-sk", "test_clean_pir_data"])

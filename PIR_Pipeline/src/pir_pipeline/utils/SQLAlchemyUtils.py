@@ -93,29 +93,28 @@ class SQLAlchemyUtils(SQLUtils):
         valid_tables = list(self._tables.keys())
         assert table in valid_tables, "Invalid table."
 
-    def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
-        schemas = {}
-        for table in tables:
-            self.validate_table(table)
-            query = f"SHOW COLUMNS FROM {table}"
-            schemas[table] = pd.read_sql(query, self._engine)
-
-        self._schemas = schemas
-        return self
-
     def get_columns(self, table: str, where: str = "") -> list[str]:
-        query = text(
-            f"""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = :table AND table_schema = :schema {where}
-            """
-        )
-        with self._engine.connect() as conn:
-            result = conn.execute(
-                query, {"table": table, "schema": self._database, "where": where}
+        if not where:
+            self.validate_table(table)
+            columns = self._tables[table].c.keys()
+        else:
+            if self._dialect == "mysql":
+                table_schema = "table_schema"
+            elif self._dialect == "postgresql":
+                table_schema = "table_catalog"
+
+            query = text(
+                f"""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = :table AND {table_schema} = :schema {where}
+                """
             )
-            columns = [res[0] for res in result.all()]
+            with self._engine.connect() as conn:
+                result = conn.execute(
+                    query, {"table": table, "schema": self._database, "where": where}
+                )
+                columns = [res[0] for res in result.all()]
 
         return columns
 
@@ -206,4 +205,6 @@ class SQLAlchemyUtils(SQLUtils):
 
 
 if __name__ == "__main__":
-    SQLAlchemyUtils(**db_config, database="pir_test").drop_db()
+    SQLAlchemyUtils(
+        **db_config, database="pir", drivername="postgresql+psycopg"
+    ).get_columns("response")

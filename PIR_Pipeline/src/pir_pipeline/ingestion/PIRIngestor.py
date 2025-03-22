@@ -17,9 +17,7 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(
-        self, workbook: str | os.PathLike, sql: SQLAlchemyUtils
-    ):
+    def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
         """Initialize a PIRIngestor object
 
         Args:
@@ -215,7 +213,6 @@ class PIRIngestor:
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
         assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
-
 
         self._logger.info("Extracted worksheets.")
 
@@ -537,7 +534,10 @@ class PIRIngestor:
 
             return None
 
-        self._sql.get_schemas(["response", "program", "question"])
+        self._columns = {
+            table: self._sql.get_columns(table)
+            for table in ["response", "question", "program"]
+        }
         uid_columns = ["grant_number", "program_number", "program_type"]
         qid_columns = ["question_number", "question_name"]
 
@@ -598,7 +598,7 @@ class PIRIngestor:
         # Add year, subset to relevant variables only
         data = {"response": response, "program": program, "question": question}
         for frame in data:
-            final_columns = self._sql._schemas[frame]["Field"]
+            final_columns = self._columns[frame]
             df = data[frame]
             df["year"] = self._year
             missing_variables = set(final_columns) - set(df.columns)
@@ -798,9 +798,7 @@ class PIRIngestor:
         self.update_unlinked()
 
         # Filters question to only columns found in the schema
-        self._data["question"] = self._data["question"][
-            self._sql._schemas["question"]["Field"]
-        ]
+        self._data["question"] = self._data["question"][self._columns["question"]]
 
         return self
 
