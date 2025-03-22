@@ -1,7 +1,7 @@
-from urllib.parse import quote_plus
+from typing import Self
 
 import pandas as pd
-from sqlalchemy import Engine, Table, create_engine, text, update
+from sqlalchemy import URL, Engine, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -26,9 +26,16 @@ class SQLAlchemyUtils(SQLUtils):
         host: str,
         port: int,
         database: str,
+        drivername: str = "mysql+mysqlconnector",
     ):
-        self._engine: Engine = create_engine(
-            f"mysql+mysqlconnector://{user}:{quote_plus(password)}@{host}:{port}/{database}"
+        self._engine: Engine
+        self.gen_engine(
+            username=user,
+            password=password,
+            host=host,
+            port=port,
+            database=database,
+            drivername=drivername,
         )
         if self._engine.name == "mysql":
             from sqlalchemy.dialects.mysql import insert
@@ -63,6 +70,11 @@ class SQLAlchemyUtils(SQLUtils):
 
     def close_connection(self):
         pass
+
+    def gen_engine(self, **kwargs) -> Self:
+        engine_url = URL.create(**kwargs)
+        self._engine = create_engine(engine_url)
+        return self
 
     def create_db(self):
         if not database_exists(self._engine.url):
