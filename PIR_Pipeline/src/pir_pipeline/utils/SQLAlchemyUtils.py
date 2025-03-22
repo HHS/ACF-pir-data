@@ -182,27 +182,6 @@ class SQLAlchemyUtils(SQLUtils):
 
         return data
 
-    def insert_from_file(self, file: str, table: str):
-        self.validate_table(table)
-        if self._dialect == "mysql":
-            query = text(
-                f"""
-                LOAD DATA 
-                INFILE :file 
-                REPLACE INTO TABLE {table}
-                CHARACTER SET utf8
-                FIELDS TERMINATED BY ','
-                ENCLOSED BY '"'
-                ESCAPED BY '"'
-                LINES TERMINATED BY '\r\n'
-                """
-            )
-        elif self._dialect == "postgresql":
-            pass
-
-        with self._engine.connect() as conn:
-            conn.execute(query, {"file": file})
-
 
 if __name__ == "__main__":
     SQLAlchemyUtils(
