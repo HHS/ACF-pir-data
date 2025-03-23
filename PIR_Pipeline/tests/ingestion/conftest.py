@@ -191,43 +191,12 @@ def mock_missing_questions():
 
 # Adapted from GPT
 @pytest.fixture
-def mock_columns(request):
-    response_fields = ["uid", "question_id", "year", "answer"]
+def mock_columns(request, program_columns, question_columns, response_columns):
+    response_fields = list(response_columns)
 
-    program_fields = [
-        "uid",
-        "year",
-        "grantee_name",
-        "grant_number",
-        "program_address_line_1",
-        "program_address_line_2",
-        "program_agency_description",
-        "program_agency_type",
-        "program_city",
-        "program_email",
-        "program_name",
-        "program_number",
-        "program_phone",
-        "program_type",
-        "program_state",
-        "program_zip1",
-        "program_zip2",
-        "region",
-    ]
+    program_fields = list(program_columns)
 
-    question_fields = [
-        "question_id",
-        "year",
-        "uqid",
-        "category",
-        "question_name",
-        "question_number",
-        "question_order",
-        "question_text",
-        "question_type",
-        "section",
-        "subsection",
-    ]
+    question_fields = list(question_columns)
 
     request.cls.response_fields = response_fields
     request.cls.program_fields = program_fields

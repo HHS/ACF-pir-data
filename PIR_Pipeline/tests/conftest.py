@@ -8,7 +8,9 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 @pytest.fixture(scope="module")
 def sql_utils():
-    sql = SQLAlchemyUtils(**db_config, database="pir_test")
+    sql = SQLAlchemyUtils(
+        **db_config, database="pir_test", drivername="postgresql+psycopg"
+    )
     return sql
 
 
@@ -19,9 +21,8 @@ def mock_data():
 
 
 @pytest.fixture(scope="class")
-def create_database(sql_utils, question_records):
+def create_database(sql_utils):
     sql_utils.create_db()
-    sql_utils.insert_records(question_records, "question")
     yield
     sql_utils.drop_db()
 
@@ -40,4 +41,33 @@ def question_columns():
         "section",
         "subsection",
         "uqid",
+    }
+
+
+@pytest.fixture
+def response_columns():
+    return {"uid", "question_id", "year", "answer"}
+
+
+@pytest.fixture
+def program_columns():
+    return {
+        "uid",
+        "year",
+        "grantee_name",
+        "grant_number",
+        "program_address_line_1",
+        "program_address_line_2",
+        "program_agency_description",
+        "program_agency_type",
+        "program_city",
+        "program_email",
+        "program_name",
+        "program_number",
+        "program_phone",
+        "program_type",
+        "program_state",
+        "program_zip1",
+        "program_zip2",
+        "region",
     }
