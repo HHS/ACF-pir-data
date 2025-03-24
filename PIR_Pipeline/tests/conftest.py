@@ -71,3 +71,14 @@ def program_columns():
         "program_zip2",
         "region",
     }
+
+
+@pytest.fixture
+def db_columns(program_columns, question_columns, response_columns):
+    db_columns = {
+        "program": program_columns,
+        "question": question_columns,
+        "response": response_columns,
+    }
+
+    return db_columns
