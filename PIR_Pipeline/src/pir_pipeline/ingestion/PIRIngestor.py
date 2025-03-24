@@ -326,6 +326,9 @@ class PIRIngestor:
                     df[unique_columns].apply(self.hash_columns, axis=1).tolist()
                 )
                 self._metrics[name]["question_ids"] = question_ids
+                self._metrics[name]["nan_question_number"] = df[
+                    df["question_number"].isna()
+                ]
 
                 dupes = df[unique_columns].duplicated().sum()
                 try:
@@ -874,9 +877,25 @@ class PIRIngestor:
             ), self._logger.error("Question count is too low")
             self._logger.info("Question count is accurate without duplicates.")
 
-        assert set(question["question_id"].unique()).issuperset(
-            metrics["question"]["question_ids"]
-        ), "Question does not contain all original question_ids"
+        try:
+            set_diff = set(question["question_id"].unique()).symmetric_difference(
+                metrics["question"]["question_ids"]
+            )
+            assert set_diff, self._logger.error(
+                f"question_ids differ in raw and processed data: {set_diff}"
+            )
+        except AssertionError:
+            question_diff = question[
+                [qid in set_diff for qid in question["question_id"]]
+            ]
+            assert set(question_diff["question_name"]) == set(
+                self._metrics["question"]["nan_question_number"]["question_name"]
+            ), self._logger.error(
+                "question_ids differ after accounting for nan question_numbers"
+            )
+            self._logger.info(
+                "question_ids align after accounting for nan question_numbers"
+            )
 
         # Confirm response record count and ids
         assert (
