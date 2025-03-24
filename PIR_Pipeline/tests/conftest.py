@@ -17,7 +17,7 @@ def sql_utils():
 @pytest.fixture(scope="class")
 def mock_data():
     mock_data = MockData()
-    mock_data.generate_data().export(pandas=True)
+    mock_data.generate_data().export(how="ExcelFile")
 
 
 @pytest.fixture(scope="class")
