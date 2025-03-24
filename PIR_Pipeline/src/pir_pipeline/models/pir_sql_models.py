@@ -81,8 +81,8 @@ response = Table(
     ),
 )
 unlinked = view(
-    "unlinked", sql_metadata, select(question).where(question.c.uqid is None)
+    "unlinked", sql_metadata, select(question).where(question.c.uqid.is_(None))
 )
 linked = view(
-    "linked", sql_metadata, select(question).where(question.c.uqid is not None)
+    "linked", sql_metadata, select(question).where(question.c.uqid.is_not(None))
 )
