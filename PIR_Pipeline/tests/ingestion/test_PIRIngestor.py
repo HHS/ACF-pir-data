@@ -214,7 +214,11 @@ class TestPIRIngestor:
     def test_append_sections(self, data_ingestor):
         data_ingestor.extract_sheets().load_data().append_sections()
         df = data_ingestor._data["response"]
-        assert df.shape == (60, 14)
+        expected_row_count = (
+            data_ingestor._metrics["program"]["record_count"]
+            * data_ingestor._metrics["question"]["record_count"]
+        )
+        assert df.shape == (expected_row_count, 14)
         assert df.columns.tolist() == [
             "region",
             "state",
