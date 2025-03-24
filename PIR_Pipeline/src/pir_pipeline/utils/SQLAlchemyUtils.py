@@ -125,9 +125,15 @@ class SQLAlchemyUtils(SQLUtils):
         def insert_query(records: list[dict]):
             with self._engine.begin() as conn:
                 insert_statement = self.insert(self._tables[table])
+
+                if self._dialect == "mysql":
+                    values = insert_statement.inserted
+                elif self._dialect == "postgresql":
+                    values = insert_statement.excluded
+
                 column_dict = {
                     column.name: column
-                    for column in insert_statement.inserted
+                    for column in values
                     if column.name in upsert_columns
                 }
                 if self._dialect == "mysql":
@@ -135,8 +141,13 @@ class SQLAlchemyUtils(SQLUtils):
                         column_dict
                     )
                 elif self._dialect == "postgresql":
+                    index_elements = set(insert_statement.table.c.keys()) - set(
+                        upsert_columns
+                    )
+                    index_elements = list(index_elements)
                     upsert_statement = insert_statement.on_conflict_do_update(
-                        column_dict
+                        constraint=f"pk_{table}",
+                        set_=column_dict,
                     )
 
                 conn.execute(upsert_statement, records)

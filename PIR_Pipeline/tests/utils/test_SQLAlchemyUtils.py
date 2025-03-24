@@ -52,10 +52,27 @@ class TestSQLAlchemyUtils:
         assert set(columns) == {"program_zip1", "program_zip2"}
         assert isinstance(columns, list), "Columns are not in a list"
 
-    def test_get_records(self):
-        pass
+    def test_insert_records(self, mock_data, sql_utils):
+        insertable = mock_data().generate_data().export(how="Insertable")
+        validation = {}
+        for workbook in insertable._data.values():
+            for table, data in workbook.items():
+                if validation.get(table):
+                    validation[table] += data.shape[0]
+                else:
+                    validation[table] = data.shape[0]
 
-    def test_insert_records(self):
+                records = data.to_dict(orient="records")
+                sql_utils.insert_records(records, table)
+
+        for table in validation:
+            with sql_utils._engine.connect() as conn:
+                result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                record_count = result.first()[0]
+
+            assert record_count == validation[table]
+
+    def test_get_records(self):
         pass
 
     def test_update_records(self):
@@ -66,4 +83,4 @@ class TestSQLAlchemyUtils:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_gen_engine"])
+    pytest.main([__file__, "-sk", "test_insert_records"])
