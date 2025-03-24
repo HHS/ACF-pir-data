@@ -12,8 +12,15 @@ from sqlalchemy import (
 
 from pir_pipeline.utils.sql_alchemy_view import view
 
-# Get classes
-sql_metadata = MetaData()
+# Taken from https://docs.sqlalchemy.org/en/20/core/constraints.html#constraint-naming-conventions
+convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+sql_metadata = MetaData(naming_convention=convention)
 
 
 program = Table(
