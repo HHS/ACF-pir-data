@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from sqlalchemy import select, text
 
@@ -52,28 +53,47 @@ class TestSQLAlchemyUtils:
         assert set(columns) == {"program_zip1", "program_zip2"}
         assert isinstance(columns, list), "Columns are not in a list"
 
-    def test_insert_records(self, mock_data, sql_utils):
-        insertable = mock_data().generate_data().export(how="Insertable")
-        validation = {}
+    def test_insert_records(self, insertable, sql_utils):
         for workbook in insertable._data.values():
             for table, data in workbook.items():
-                if validation.get(table):
-                    validation[table] += data.shape[0]
-                else:
-                    validation[table] = data.shape[0]
-
                 records = data.to_dict(orient="records")
                 sql_utils.insert_records(records, table)
 
-        for table in validation:
+        for table in self.validation:
             with sql_utils._engine.connect() as conn:
                 result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
                 record_count = result.first()[0]
 
-            assert record_count == validation[table]
+            assert record_count == self.validation[table]
 
-    def test_get_records(self):
-        pass
+    def test_get_records(self, insertable, db_columns, sql_utils):
+        for workbook in insertable._data.values():
+            for table, data in workbook.items():
+                data.replace({np.nan: None}, inplace=True)
+                records = data.to_dict(orient="records")
+                sql_utils.insert_records(records, table)
+
+        queries = [
+            (
+                "SELECT * FROM response",
+                self.validation["response"],
+                db_columns["response"],
+            ),
+            (
+                "SELECT * FROM question WHERE section = 'A'",
+                self.validation["question"] / 4,
+                db_columns["question"],
+            ),
+            (
+                "SELECT * FROM unlinked",
+                self.validation["question"],
+                db_columns["question"],
+            ),
+        ]
+        for query in queries:
+            frame = sql_utils.get_records(query[0])
+            assert frame.shape[0] == query[1]
+            assert set(frame.columns) == query[2]
 
     def test_update_records(self):
         pass
@@ -83,4 +103,4 @@ class TestSQLAlchemyUtils:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_insert_records"])
+    pytest.main([__file__, "-sk", "test_get_records"])
