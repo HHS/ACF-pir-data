@@ -14,10 +14,10 @@ def sql_utils():
     return sql
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def mock_data():
-    mock_data = MockData()
-    mock_data.generate_data().export(how="ExcelFile")
+    mock_data = MockData
+    return mock_data
 
 
 @pytest.fixture(scope="class")

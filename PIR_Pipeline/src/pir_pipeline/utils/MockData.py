@@ -349,6 +349,8 @@ class MockData:
                 )
                 self._data[path] = ingestor._data
 
+        return self
+
 
 if __name__ == "__main__":
     # from otld.paths import test_dir
