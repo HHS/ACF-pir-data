@@ -1,7 +1,6 @@
 name: Update Documentation
-run-name: ${{ github.actor }} has closed a pull request; updating documentation.
-on: 
-  pull_request
+run-name: ${{ github.actor }} has made or updated a pull request; updating documentation.
+on: pull_request
 
 jobs:
   update-documentation:
