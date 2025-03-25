@@ -17,9 +17,7 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 class PIRIngestor:
-    def __init__(
-        self, workbook: str | os.PathLike, sql: SQLAlchemyUtils
-    ):
+    def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
         """Initialize a PIRIngestor object
 
         Args:
@@ -215,7 +213,6 @@ class PIRIngestor:
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
         assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
-
 
         self._logger.info("Extracted worksheets.")
 
