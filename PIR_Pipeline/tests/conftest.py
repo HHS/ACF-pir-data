@@ -20,7 +20,7 @@ def mock_data():
     return mock_data
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def create_database(sql_utils):
     sql_utils.create_db()
     yield

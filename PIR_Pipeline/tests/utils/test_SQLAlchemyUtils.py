@@ -1,13 +1,12 @@
-import numpy as np
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import bindparam, select, text
 
 from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 @pytest.mark.usefixtures("create_database")
-class TestSQLAlchemyUtils:
+class TestSQLAlchemyUtilsNoData:
     def test_gen_engine(self):
         db_config.update({"username": db_config["user"]})
         db_config.pop("user")
@@ -66,13 +65,10 @@ class TestSQLAlchemyUtils:
 
             assert record_count == self.validation[table]
 
-    def test_get_records(self, insertable, db_columns, sql_utils):
-        for workbook in insertable._data.values():
-            for table, data in workbook.items():
-                data.replace({np.nan: None}, inplace=True)
-                records = data.to_dict(orient="records")
-                sql_utils.insert_records(records, table)
 
+@pytest.mark.usefixtures("create_database", "inserted")
+class TestSQLAlchemyUtilsData:
+    def test_get_records(self, db_columns, sql_utils):
         queries = [
             (
                 "SELECT * FROM response",
@@ -95,12 +91,46 @@ class TestSQLAlchemyUtils:
             assert frame.shape[0] == query[1]
             assert set(frame.columns) == query[2]
 
-    def test_update_records(self):
-        pass
+    def test_update_records(self, sql_utils):
+        table = sql_utils.tables["question"]
+        sql_utils.update_records(table, {"uqid": "1"}, True)
+        uqids = sql_utils.get_records("question")["uqid"].tolist()
+        assert set(uqids) == {"1"}, f"Incorrect uqids: {set(uqids)}"
 
-    def test_to_dict(self):
-        pass
+        section_a = sql_utils.get_records("SELECT * FROM question WHERE section = 'A'")
+        section_a.rename(columns={"question_id": "qid"}, inplace=True)
+        section_a["uqid"] = "A"
+        records = section_a.to_dict(orient="records")
+        sql_utils.update_records(
+            table,
+            {"uqid": bindparam("uqid")},
+            table.c["question_id"] == bindparam("qid"),
+            records,
+        )
+        uqids = sql_utils.get_records("question")["uqid"].tolist()
+        assert set(uqids) == {"1", "A"}, f"Incorrect uqids: {set(uqids)}"
+        assert len(
+            [uqid for uqid in uqids if uqid == "A"]
+        ), "Incorrect number of 'A' uqids"
+
+    def test_to_dict(self, sql_utils):
+        with sql_utils._engine.connect() as conn:
+            result = conn.execute(text("SELECT * FROM response"))
+            columns = list(result.keys())
+            records = result.all()
+
+        expected_rows = len(records)
+        record_dict = sql_utils.to_dict(records, columns)
+        assert set(record_dict[0].keys()) == {
+            "uid",
+            "question_id",
+            "year",
+            "answer",
+        }, f"Incorrect columns: {set(record_dict[0].keys())}"
+        assert (
+            len(record_dict) == expected_rows
+        ), f"Incorrect number of rows: {len(record_dict)}"
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_get_records"])
+    pytest.main([__file__, "-sk", "test_to_dict"])
