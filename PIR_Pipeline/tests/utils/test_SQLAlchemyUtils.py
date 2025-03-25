@@ -4,6 +4,8 @@ from sqlalchemy import bindparam, select, text
 from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
+print(db_config)
+
 
 def test_create_db(sql_utils):
     sql_utils.create_db()
