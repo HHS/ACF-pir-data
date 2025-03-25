@@ -5,6 +5,20 @@ on: pull_request
 jobs:
   run-tests-linux:
     runs-on: ubuntu-latest
+    # Adapted from 
+    # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/creating-postgresql-service-containers
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          5432:5432
     steps:
       - name: Check out repository code
         id: checkout
@@ -12,3 +26,7 @@ jobs:
       - name: Run unit tests
         id: unit_tests
         run: bash PIR_Pipeline/code/unit_tests.sh
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          ON_RUNNER: 1
