@@ -1,19 +1,8 @@
-import os
-
 import pytest
 from sqlalchemy import bindparam, select, text
 
+from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-
-if os.getenv("ON_RUNNER"):
-    db_config = {
-        "user": os.getenv("POSTGRES_USER"),
-        "password": os.getenv("POSTGRES_PASSWORD"),
-        "host": os.getenv("POSTGRES_HOST"),
-        "port": os.getenv("POSTGRES_PORT"),
-    }
-else:
-    from pir_pipeline.config import db_config
 
 
 def test_create_db(sql_utils):
