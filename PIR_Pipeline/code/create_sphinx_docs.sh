@@ -6,7 +6,7 @@ source .venv/bin/activate
 
 # install packages
 pip install -U pip
-pip install .
+pip install PIR_Pipeline
 
 # remove old documentation and regenerate
 rm -rf documentation/_autosummary
