@@ -1,4 +1,3 @@
-import pandas as pd
 import pytest
 
 from pir_pipeline.config import db_config

@@ -5,6 +5,33 @@ from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
+def test_create_db(sql_utils):
+    sql_utils.create_db()
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
+        )
+        exists = result.first()[0]
+
+    assert exists, "pir_test database does not exist"
+
+
+def test_drop_db(sql_utils):
+    sql_utils.drop_db()
+    sql_utils.engine.dispose()
+    sql = SQLAlchemyUtils(
+        **db_config, database="postgres", drivername="postgresql+psycopg"
+    )
+    with sql.engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
+        )
+        exists = result.first()
+
+    assert not exists, "pir_test database still exists"
+    sql.engine.dispose()
+
+
 @pytest.mark.usefixtures("create_database")
 class TestSQLAlchemyUtilsNoData:
     def test_gen_engine(self):
@@ -18,13 +45,6 @@ class TestSQLAlchemyUtilsNoData:
             value = result.first()
 
         assert value[0] == "Connection Made", "Incorrect value."
-
-    # How to test this and drop_db when it is in the fixture?
-    def test_create_db(self):
-        pass
-
-    def test_drop_db(self):
-        pass
 
     def test_validate_table(self, sql_utils):
         for table in ["invalid1", "drop table response", "invalid_2"]:
@@ -66,7 +86,7 @@ class TestSQLAlchemyUtilsNoData:
             assert record_count == self.validation[table]
 
 
-@pytest.mark.usefixtures("create_database", "inserted")
+@pytest.mark.usefixtures("inserted")
 class TestSQLAlchemyUtilsData:
     def test_get_records(self, db_columns, sql_utils):
         queries = [
