@@ -24,6 +24,13 @@ jobs:
       - name: Check out repository code
         id: checkout
         uses: actions/checkout@v4
+      # Adapted from chatgpt
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 5
+          done
       - name: Run unit tests
         id: unit_tests
         run: bash PIR_Pipeline/code/unit_tests.sh
