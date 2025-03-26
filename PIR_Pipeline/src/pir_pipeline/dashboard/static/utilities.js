@@ -36,23 +36,43 @@ function updateTable(event) {
 }
 
 function buildTable(data, table) {
+    // Constant buttons
+    const expandButtonBase = document.createElement("button");
+    expandButtonBase.className = "btn btn-primary";
+    expandButtonBase.setAttribute("type", "button");
+    expandButtonBase.setAttribute("data-bs-toggle", "collapse");
+    expandButtonBase.setAttribute("aria-expanded", "false");
+
+    const linkButtonBase = document.createElement("button");
+    linkButtonBase.className = "btn btn-primary";
+    linkButtonBase.setAttribute("onclick", "storeLink(event)");
+
+    // Other constants
+    const reviewType = document.getElementById("review-type").value
+
+    // Set table header row
     table.innerHTML = '';
+
     let header = data[0];
     let head = document.createElement("thead");
     let headerRow = document.createElement("tr");
     head.appendChild(headerRow)
+
+    // Add column headers
     for (let i = 0; i < header.length; i++) {
         const column = document.createElement("th");
         column.innerHTML = header[i];
         headerRow.appendChild(column);
     }
+    let actionsColumn = document.createElement("th");
+    actionsColumn.innerHTML = "Actions"; 
+    headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
     let body = document.createElement("tbody");
 
     for (let i = 1; i < data.length; i++) {
         const row = document.createElement("tr");
-
 
         let row_data = data[i];
         for (let key in row_data) {
@@ -63,14 +83,17 @@ function buildTable(data, table) {
         }
 
         if (table.id == "review-results-table") {
-            const reviewType = document.getElementById("review-type").value
             const divID = table.id + "-div-" + i;
             const trID = table.id + "-tr-" + i;
             const tdID = table.id + "-td-" + i;
-            row.className = "accordion-toggle cursor-pointer";
-            row.setAttribute("data-bs-toggle", "collapse");
-            row.setAttribute("data-bs-target", `#collapse-${trID}`);
-            row.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`)
+            const expandButton = expandButtonBase.cloneNode(true);
+            expandButton.innerHTML = "Expand";
+            expandButton.setAttribute("data-bs-target", `#collapse-${trID}`);
+            expandButton.setAttribute("aria-controls", `collapse-${trID}`);
+            expandButton.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`);
+            const actionsCell = document.createElement("td");
+            actionsCell.appendChild(expandButton);
+            row.appendChild(actionsCell);
 
             // Create div to hold table
             const div = document.createElement("div");
@@ -88,6 +111,24 @@ function buildTable(data, table) {
             td.appendChild(div);
             tr.appendChild(td);
         }
+        else if (table.id.includes("proposed-matches-table")) {
+            const actionsCell = document.createElement("td");
+            if (["unlinked", "intermittent"].find(item => item == reviewType)) {
+                const linkButton = linkButtonBase.cloneNode(true);
+                linkButton.value = "link";
+                linkButton.innerHTML = "Link";
+                actionsCell.append(linkButton);
+            }
+            else if (reviewType == "inconsistent") {
+                const unlinkButton = linkButtonBase.cloneNode(true);
+                unlinkButton.value = "unlink";
+                unlinkButton.innerHTML = "Unlink";
+                actionsCell.append(unlinkButton);
+            }
+            
+
+            row.append(actionsCell);
+        } 
 
         body.appendChild(row);
         if (table.id == "review-results-table") {
@@ -99,8 +140,9 @@ function buildTable(data, table) {
 }
 
 function getQuestionData(event, reviewType) {
-    const row = event.srcElement.parentElement;
-    const tr = document.getElementById(row.getAttribute("data-bs-target").replace("#", ""));
+    const row = event.srcElement.parentElement.parentElement;
+    const button = event.srcElement
+    const tr = document.getElementById(button.getAttribute("aria-controls"));
     const div = document.getElementById(tr.id.replace("-tr-", "-div-"));
 
     // Exit if the target div already contains a table (i.e. matches have been found once).
@@ -112,7 +154,9 @@ function getQuestionData(event, reviewType) {
     const cells = row.getElementsByTagName("td");
     let record = {}
     for (let i = 0; i < cells.length; i++) {
-        const cell = cells[i]; 
+        const cell = cells[i];
+        const name = cell.getAttribute("name");
+        if (name == null) continue;
         record[cell.getAttribute("name")] = cell.innerHTML;
     }
     let payload = {
@@ -127,7 +171,9 @@ function getQuestionData(event, reviewType) {
 
 function fillMatchDiv(div, data) {
     const table = document.createElement("table");
+    const idNumber = div.id.replace("collapse-review-results-table-div-", "")
     table.className = "table table-hover";
+    table.setAttribute("id", `proposed-matches-table-${idNumber}`);
     div.setAttribute("style", "width: 100%");
     div.appendChild(table);
     buildTable(data, table);
