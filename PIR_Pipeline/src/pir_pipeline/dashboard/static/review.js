@@ -1,4 +1,4 @@
-import { updateTable, getQuestionData } from "./utilities.js"
+import { updateTable, getQuestionData, storeLink } from "./utilities.js"
 
 const reviewForm = document.getElementById("review-form");
 reviewForm.addEventListener("change", async (e) => {
@@ -9,3 +9,4 @@ reviewForm.addEventListener("change", async (e) => {
 })
 
 document.getQuestionData = getQuestionData;
+document.storeLink = storeLink;

@@ -65,7 +65,7 @@ function buildTable(data, table) {
         headerRow.appendChild(column);
     }
     let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Actions"; 
+    actionsColumn.innerHTML = "Action"; 
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
@@ -139,6 +139,18 @@ function buildTable(data, table) {
     table.appendChild(body);
 }
 
+function rowToJSON(row) {
+    const cells = row.getElementsByTagName("td");
+    let record = {}
+    for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        const name = cell.getAttribute("name");
+        if (name == null) continue;
+        record[cell.getAttribute("name")] = cell.innerHTML;
+    }
+    return record
+}
+
 function getQuestionData(event, reviewType) {
     const row = event.srcElement.parentElement.parentElement;
     const button = event.srcElement
@@ -151,14 +163,7 @@ function getQuestionData(event, reviewType) {
         return
     }
 
-    const cells = row.getElementsByTagName("td");
-    let record = {}
-    for (let i = 0; i < cells.length; i++) {
-        const cell = cells[i];
-        const name = cell.getAttribute("name");
-        if (name == null) continue;
-        record[cell.getAttribute("name")] = cell.innerHTML;
-    }
+    let record = rowToJSON(row);
     let payload = {
         "review-type": reviewType,
         "record": record
@@ -179,10 +184,33 @@ function fillMatchDiv(div, data) {
     buildTable(data, table);
 }
 
+function storeLink(event) {
+    const button = event.srcElement;
+    const matchRow = button.closest("tr");
+    const matchID = matchRow.closest("table").closest("tr").id;
+    const baseRow = document.querySelector(`button[aria-controls="${matchID}"`).closest("tr");
+    let baseRecord = rowToJSON(baseRow);
+    let matchRecord = rowToJSON(matchRow);
+    const linkDetails = {
+        "link_type": button.value,
+        "base_question_id": baseRecord.question_id,
+        "base_uqid": baseRecord.uqid,
+        "match_question_id": matchRecord.question_id,
+        "match_uqid": matchRecord.uqid
+    }
+    const payload = {
+        "action": "build",
+        "data": linkDetails
+    }
+    
+    fetch("/link", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
+}
+
 export {
     getColumns,
     buildDropdown,
     buildTable,
     updateTable,
-    getQuestionData
+    getQuestionData,
+    storeLink
 }
