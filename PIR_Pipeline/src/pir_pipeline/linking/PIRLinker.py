@@ -72,9 +72,9 @@ class PIRLinker:
             self.get_question_data()
 
         try:
-            self._sql._schemas
+            self._question_columns
         except AttributeError:
-            self._sql.get_schemas(["question"])
+            self._question_columns = self._sql.get_columns("question")
 
         # Look for a direct match on question_id
         self.direct_link()
@@ -144,7 +144,10 @@ class PIRLinker:
             df = self._data.copy()
             self._original_columns = self._data.columns.tolist()
 
-        unique_ids = df[self._unique_question_id].nunique()
+        unique_ids = set(df[self._unique_question_id].unique())
+        missing_section = set(
+            df[df["section"].isna()][self._unique_question_id].unique()
+        )
 
         df = df.merge(
             self._question,
@@ -163,8 +166,9 @@ class PIRLinker:
             ].duplicated()
         ]
 
+        cross_unique_ids = set(self._cross[f"{self._unique_question_id}_x"].unique())
         assert (
-            self._cross[f"{self._unique_question_id}_x"].nunique() == unique_ids
+            cross_unique_ids.union(missing_section) == unique_ids
         ), self._logger.error("Some IDs were lost")
 
         return self
@@ -282,9 +286,9 @@ class PIRLinker:
             Self: PIRLinker object
         """
         try:
-            self._sql._schemas
+            self._question_columns
         except AttributeError:
-            self._sql.get_schemas(["question"])
+            self._question_columns = self._sql.get_columns("question")
 
         df = self._data
         df = df.merge(
@@ -311,7 +315,7 @@ class PIRLinker:
 
         df.replace({np.nan: None}, inplace=True)
         self._data = df
-        self._data = self._data[self._sql._schemas["question"]["Field"]]
+        self._data = self._data[self._question_columns]
 
         self._logger.info("Records prepared for insertion.")
 
@@ -375,10 +379,10 @@ class PIRLinker:
 
 
 if __name__ == "__main__":
-    sql_alchemy = SQLAlchemyUtils(**db_config, database="pir")
-    records = sql_alchemy.get_records("SELECT * FROM unlinked limit 10").to_dict(
+    sql_alchemy = SQLAlchemyUtils(
+        **db_config, database="pir", drivername="postgresql+psycopg"
+    )
+    records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"
     )
-    print(PIRLinker(records, sql_alchemy).fuzzy_link(5))
-    # linker = PIRLinker(records, sql_alchemy).link()
-    # linker.update_unlinked()
+    linker = PIRLinker(records, sql_alchemy).link().update_unlinked()

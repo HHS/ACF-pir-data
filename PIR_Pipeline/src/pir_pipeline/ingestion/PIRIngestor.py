@@ -483,7 +483,10 @@ class PIRIngestor:
 
             return None
 
-        self._sql.get_schemas(["response", "program", "question"])
+        self._columns = {
+            table: self._sql.get_columns(table)
+            for table in ["response", "question", "program"]
+        }
         uid_columns = ["grant_number", "program_number", "program_type"]
         qid_columns = ["question_number", "question_name"]
 
@@ -544,7 +547,7 @@ class PIRIngestor:
         # Add year, subset to relevant variables only
         data = {"response": response, "program": program, "question": question}
         for frame in data:
-            final_columns = self._sql._schemas[frame]["Field"]
+            final_columns = self._columns[frame]
             df = data[frame]
             df["year"] = self._year
             missing_variables = set(final_columns) - set(df.columns)
@@ -636,6 +639,9 @@ class PIRIngestor:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
 
+            if table == "response":
+                continue
+
             self._sql.insert_records(cleaned_records, table)
 
         self._logger.info(f"Data inserted for {self._year}")
@@ -675,14 +681,16 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2008:
-            continue
+        # elif year != 2008:
+        #     continue
 
         try:
             init = time.time()
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
-                SQLAlchemyUtils(**db_config, database="pir"),
+                SQLAlchemyUtils(
+                    **db_config, database="pir", drivername="postgresql+psycopg"
+                ),
             ).ingest()
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")
