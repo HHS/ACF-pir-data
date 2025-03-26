@@ -1,4 +1,4 @@
-__all__ = ["get_review_data"]
+__all__ = ["get_review_data", "get_matches"]
 
 import json
 
