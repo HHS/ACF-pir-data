@@ -339,7 +339,8 @@ class PIRLinker:
         if row["linked_id"] in uqid_dict:
             return uqid_dict[row["linked_id"]]
         else:
-            uqid = hashlib.md5(row["linked_id"].encode()).hexdigest()
+            qids_concat = row["question_id"] + row["linked_id"]
+            uqid = hashlib.md5(qids_concat.encode()).hexdigest()
             uqid_dict[row["question_id"]] = uqid
             uqid_dict[row["linked_id"]] = uqid
             return uqid
