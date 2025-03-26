@@ -1,8 +1,9 @@
 __all__ = ["get_review_data", "get_matches"]
 
 import json
+from hashlib import md5
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, bindparam, distinct, func, select
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.models.pir_models import QuestionModel
@@ -106,20 +107,161 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     return records
 
 
+class QuestionLinker:
+    def __init__(self, data: dict, db: SQLAlchemyUtils):
+        self._data = data
+        self._db = db
+
+    def link(self):
+        record = self._record
+        question = db.tables["question"]
+        distinct_year_query = (
+            select(question.c["year"])
+            .where(question.c["uqid"] == bindparam("uqid"))
+            .distinct()
+        )
+        base_uqid = record.get("base_uqid")
+        base_qid = record.get("base_question_id")
+        match_uqid = record.get("match_uqid")
+        match_qid = record.get("match_question_id")
+
+        # Matching two questions with existing uqids (intermittent)
+        if base_uqid and match_uqid:
+            with db.engine.connect() as conn:
+                result = conn.execute(distinct_year_query, {"uqid": base_uqid})
+                base_year_range = result.scalars().all()
+
+            with db.engine.connect() as conn:
+                result = conn.execute(distinct_year_query, {"uqid": match_uqid})
+                match_year_range = result.scalars().all()
+
+            if len(match_year_range) < len(base_year_range):
+                base_uqid, match_uqid = match_uqid, base_uqid
+
+            self._db.update_records(
+                question,
+                {"uqid": bindparam("match_uqid")},
+                question.c["uqid"] == bindparam("base_uqid"),
+                [{"base_uqid": base_uqid, "match_uqid": match_uqid}],
+            )
+
+        # Matching two questions with one or no uqid
+        elif not base_uqid:
+            if not match_uqid:
+                qids_encoded = (base_qid + match_qid).encode("utf-8")
+                match_uqid = md5(qids_encoded).hexdigest()
+
+            self._db.update_records(
+                question,
+                {"uqid": bindparam("match_uqid")},
+                question.c["question_id"] == bindparam("base_qid"),
+                [{"base_qid": base_qid, "match_uqid": match_uqid}],
+            )
+
+    def unlink(self):
+        record = self._record
+        question = db.tables["question"]
+        base_uqid = record.get("base_uqid")
+        base_qid = record.get("base_question_id")
+        match_qid = record.get("match_question_id")
+
+        assert (
+            base_qid and match_qid
+        ), f"Base ({base_qid}) or match ({match_qid}) missing"
+
+        # Get rows with question_id
+        qid_count_query = select(func.count(question.c["question_id"])).where(
+            question.c["question_id"] == bindparam("qid")
+        )
+
+        # Handle base
+        qid_in_uqid_statement = select(
+            func.count(distinct(question.c["question_id"]))
+        ).where(
+            and_(
+                question.c["uqid"] == bindparam("base_uqid"),
+                question.c["question_id"] != bindparam("match_qid"),
+            )
+        )
+        with db.engine.connect() as conn:
+            result = conn.execute(
+                qid_in_uqid_statement, {"base_uqid": base_uqid, "match_qid": match_qid}
+            )
+            remaining_qids = result.scalars().all()
+
+        # If only one remaining qid, ensure there is more than one occurrence otherwise
+        # uqid should be removed entirely
+        if len(remaining_qids) == 1:
+            with db.engine.connect() as conn:
+                result = conn.execute(qid_count_query, {"qid": remaining_qids[0]})
+                qid_count = result.scalar()
+
+            if qid_count == 1:
+                db.update_records(
+                    question,
+                    {"uqid": bindparam("uqid")},
+                    question.c["uqid"] == bindparam("base_uqid"),
+                    [{"uqid": None, "base_uqid": base_uqid}],
+                )
+
+        # Handle match_qid
+        with db.engine.connect() as conn:
+            result = conn.execute(qid_count_query, {"qid": match_qid})
+            qid_count = result.scalar()
+
+        # If there is only one occurrence of this qid, uqid should now be none
+        if qid_count == 1:
+            match_uqid = None
+        # Otherwise, ensure uqid is equal to what should occur if matched with self
+        elif qid_count > 1:
+            qids_encoded = (match_qid + match_qid).encode("utf-8")
+            match_uqid = md5(qids_encoded).hexdigest()
+        else:
+            raise Exception("No matching question_id!")
+
+        # If the newly generate match_uqid is the same as the base_uqid, update the base_uqid
+        if match_uqid == base_uqid:
+            qids_encoded = (base_qid + base_qid).encode("utf-8")
+            new_uqid = md5(qids_encoded).hexdigest()
+
+            db.update_records(
+                question,
+                {"uqid": bindparam("uqid")},
+                question.c["uqid"] == bindparam("base_uqid"),
+                [{"uqid": new_uqid, "base_uqid": base_uqid}],
+            )
+
+        # Update the matched uqid
+        db.update_records(
+            question,
+            {"uqid": bindparam("uqid")},
+            question.c["question_id"] == bindparam("match_qid"),
+            [{"uqid": match_uqid, "match_qid": match_qid}],
+        )
+
+    def update_links(self):
+        for key, value in self._data.items():
+            self._record = value
+            link_type = value["link_type"]
+            if link_type == "link":
+                self.link()
+            elif link_type == "unlink":
+                self.unlink()
+            else:
+                raise AttributeError("Link type should be either 'link' or 'unlink'")
+
+
 if __name__ == "__main__":
     from pir_pipeline.config import db_config
 
     payload = {
-        "review-type": "intermittent",
-        "record": {
-            "uqid": "9966bba238aa6c26f2e9ee7f3f88f7a0",
-            "question_name": "Number of Pre-kindergarten Collaboration and Resource Sharing Agreements",
-            "question_number": "C.57.a",
-            "question_text": "If yes, the number of formal agreements in which the program is currently participating",
-            "section": "C",
-            "question_type": "Number",
+        "60c274e649282ae77a614d07d39cf117": {
+            "link_type": "link",
+            "base_question_id": "00651687997bac132e7162c24894e8f6",
+            "base_uqid": "",
+            "match_question_id": "5f0d2515f94334b507e70f1548795664",
+            "match_uqid": "39859bcb2164236ad93b499eeeaa1e01",
         },
     }
     db = SQLAlchemyUtils(**db_config, database="pir")
-    matches = get_matches(payload, db)
-    print(matches)
+    linker = QuestionLinker(payload, db).update_links()
