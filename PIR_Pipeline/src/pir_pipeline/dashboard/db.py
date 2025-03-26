@@ -9,7 +9,9 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 def get_db():
     if "db" not in g:
         g.db = SQLAlchemyUtils(
-            **current_app.config["DB_CONFIG"], database=current_app.config["DB_NAME"]
+            **current_app.config["DB_CONFIG"],
+            database=current_app.config["DB_NAME"],
+            drivername="postgresql+psycopg"
         )
 
     return g.db

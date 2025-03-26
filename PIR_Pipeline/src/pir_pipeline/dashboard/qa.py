@@ -50,7 +50,7 @@ def index():
     unique_questions = unique_questions.to_dict(orient="index")
 
     years = db.get_records(
-        "SELECT COUNT(`year`) AS count, `year` FROM question GROUP BY `year` ORDER BY `year`"
+        "SELECT COUNT(year) AS count, year FROM question GROUP BY year ORDER BY year"
     )
     years = years.to_dict(orient="index")
 
