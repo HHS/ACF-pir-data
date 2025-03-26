@@ -1,7 +1,7 @@
-from urllib.parse import quote_plus
+from typing import Self
 
 import pandas as pd
-from sqlalchemy import Engine, Table, create_engine, select, text, update
+from sqlalchemy import URL, Engine, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -19,9 +19,23 @@ from pir_pipeline.utils.utils import get_searchable_columns
 
 
 class SQLAlchemyUtils(SQLUtils):
-    def __init__(self, user: str, password: str, host: str, port: int, database: str):
-        self._engine: Engine = create_engine(
-            f"mysql+mysqlconnector://{user}:{quote_plus(password)}@{host}:{port}/{database}"
+    def __init__(
+        self,
+        user: str,
+        password: str,
+        host: str,
+        port: int,
+        database: str,
+        drivername: str = "mysql+mysqlconnector",
+    ):
+        self._engine: Engine
+        self.gen_engine(
+            username=user,
+            password=password,
+            host=host,
+            port=port,
+            database=database,
+            drivername=drivername,
         )
         if self._engine.name == "mysql":
             from sqlalchemy.dialects.mysql import insert
@@ -37,7 +51,6 @@ class SQLAlchemyUtils(SQLUtils):
             "linked": linked,
             "unlinked": unlinked,
         }
-        self._valid_tables = list(self._tables.keys())
         self._database = database
 
     @property
@@ -58,6 +71,11 @@ class SQLAlchemyUtils(SQLUtils):
     def close_connection(self):
         pass
 
+    def gen_engine(self, **kwargs) -> Self:
+        engine_url = URL.create(**kwargs)
+        self._engine = create_engine(engine_url)
+        return self
+
     def create_db(self):
         if not database_exists(self._engine.url):
             create_database(self._engine.url)
@@ -72,47 +90,50 @@ class SQLAlchemyUtils(SQLUtils):
             drop_database(self._engine.url)
 
     def validate_table(self, table: str):
-        assert table in self._valid_tables, "Invalid table."
-
-    def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
-        schemas = {}
-        for table in tables:
-            self.validate_table(table)
-            query = f"SHOW COLUMNS FROM {table}"
-            schemas[table] = pd.read_sql(query, self._engine)
-
-        self._schemas = schemas
-        return self
+        valid_tables = list(self._tables.keys())
+        assert table in valid_tables, "Invalid table."
 
     def get_columns(self, table: str, where: str = "") -> list[str]:
-        query = text(
-            f"""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = :table AND table_schema = :schema {where}
-            """
-        )
-        with self._engine.connect() as conn:
-            result = conn.execute(
-                query, {"table": table, "schema": self._database, "where": where}
+        if not where:
+            self.validate_table(table)
+            columns = self._tables[table].c.keys()
+        else:
+            if self._dialect == "mysql":
+                table_schema = "table_schema"
+            elif self._dialect == "postgresql":
+                table_schema = "table_catalog"
+
+            query = text(
+                f"""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = :table AND {table_schema} = :schema {where}
+                """
             )
-            columns = [res[0] for res in result.all()]
+            with self._engine.connect() as conn:
+                result = conn.execute(
+                    query, {"table": table, "schema": self._database, "where": where}
+                )
+                columns = [res[0] for res in result.all()]
 
         return columns
 
     def get_records(self, query: str) -> pd.DataFrame:
-        if query in self._valid_tables:
-            query = select(self._tables[query])
-
         return pd.read_sql(query, self._engine)
 
     def insert_records(self, records: list[dict], table: str):
         def insert_query(records: list[dict]):
             with self._engine.begin() as conn:
                 insert_statement = self.insert(self._tables[table])
+
+                if self._dialect == "mysql":
+                    values = insert_statement.inserted
+                elif self._dialect == "postgresql":
+                    values = insert_statement.excluded
+
                 column_dict = {
                     column.name: column
-                    for column in insert_statement.inserted
+                    for column in values
                     if column.name in upsert_columns
                 }
                 if self._dialect == "mysql":
@@ -120,8 +141,13 @@ class SQLAlchemyUtils(SQLUtils):
                         column_dict
                     )
                 elif self._dialect == "postgresql":
+                    index_elements = set(insert_statement.table.c.keys()) - set(
+                        upsert_columns
+                    )
+                    index_elements = list(index_elements)
                     upsert_statement = insert_statement.on_conflict_do_update(
-                        column_dict
+                        constraint=f"pk_{table}",
+                        set_=column_dict,
                     )
 
                 conn.execute(upsert_statement, records)
@@ -167,27 +193,8 @@ class SQLAlchemyUtils(SQLUtils):
 
         return data
 
-    def insert_from_file(self, file: str, table: str):
-        self.validate_table(table)
-        if self._dialect == "mysql":
-            query = text(
-                f"""
-                LOAD DATA 
-                INFILE :file 
-                REPLACE INTO TABLE {table}
-                CHARACTER SET utf8
-                FIELDS TERMINATED BY ','
-                ENCLOSED BY '"'
-                ESCAPED BY '"'
-                LINES TERMINATED BY '\r\n'
-                """
-            )
-        elif self._dialect == "postgresql":
-            pass
-
-        with self._engine.connect() as conn:
-            conn.execute(query, {"file": file})
-
 
 if __name__ == "__main__":
-    SQLAlchemyUtils(**db_config, database="pir_test")
+    SQLAlchemyUtils(
+        **db_config, database="pir", drivername="postgresql+psycopg"
+    ).get_columns("response")
