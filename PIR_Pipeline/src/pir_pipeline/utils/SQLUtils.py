@@ -37,11 +37,6 @@ class SQLUtils(ABC):
         ...
 
     @abstractmethod
-    def get_schemas(self, tables: list[str]) -> dict[list | tuple]:
-        """Get schema for target table(s)"""
-        ...
-
-    @abstractmethod
     def get_records(self, query):
         """Execute a select query and return records"""
         ...

@@ -191,67 +191,21 @@ def mock_missing_questions():
 
 # Adapted from GPT
 @pytest.fixture
-def mock_schemas(request):
-    def create_schema(fields):
-        num_fields = len(fields)
-        schema = {
-            "Field": {i: field for i, field in enumerate(fields)},
-            "Type": {i: "" for i in range(num_fields)},
-            "Null": {i: "" for i in range(num_fields)},
-            "Key": {i: "" for i in range(num_fields)},
-            "Default": {i: "" for i in range(num_fields)},
-            "Extra": {i: "" for i in range(num_fields)},
-        }
-        return schema
+def mock_columns(request, program_columns, question_columns, response_columns):
+    response_fields = list(response_columns)
 
-    response_fields = ["uid", "question_id", "year", "answer"]
-    response = create_schema(response_fields)
+    program_fields = list(program_columns)
 
-    program_fields = [
-        "uid",
-        "year",
-        "grantee_name",
-        "grant_number",
-        "program_address_line_1",
-        "program_address_line_2",
-        "program_agency_description",
-        "program_agency_type",
-        "program_city",
-        "program_email",
-        "program_name",
-        "program_number",
-        "program_phone",
-        "program_type",
-        "program_state",
-        "program_zip1",
-        "program_zip2",
-        "region",
-    ]
-    program = create_schema(program_fields)
-
-    question_fields = [
-        "question_id",
-        "year",
-        "uqid",
-        "category",
-        "question_name",
-        "question_number",
-        "question_order",
-        "question_text",
-        "question_type",
-        "section",
-        "subsection",
-    ]
-    question = create_schema(question_fields)
-
-    schemas = {
-        "response": pd.DataFrame.from_dict(response),
-        "program": pd.DataFrame.from_dict(program),
-        "question": pd.DataFrame.from_dict(question),
-    }
+    question_fields = list(question_columns)
 
     request.cls.response_fields = response_fields
     request.cls.program_fields = program_fields
     request.cls.question_fields = question_fields
 
-    return schemas
+    columns = {
+        "response": response_fields,
+        "question": question_fields,
+        "program": program_fields,
+    }
+
+    return columns.get
