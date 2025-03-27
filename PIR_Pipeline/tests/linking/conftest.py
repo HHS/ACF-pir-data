@@ -8,7 +8,9 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 @pytest.fixture(scope="module")
 def sql_utils():
-    sql = SQLAlchemyUtils(**db_config, database="pir_test")
+    sql = SQLAlchemyUtils(
+        **db_config, database="pir_test", drivername="postgresql+psycopg"
+    )
     return sql
 
 
