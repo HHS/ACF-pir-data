@@ -6,7 +6,7 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
-from sqlalchemy import bindparam
+from sqlalchemy import bindparam, text
 
 from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -325,6 +325,17 @@ class PIRLinker:
             table.c["question_id"] == bindparam("qid"),
             records,
         )
+
+        # Check that uqids are consistent
+        with self._sql.engine.connect() as conn:
+            result = conn.execute(
+                text(
+                    "SELECT COUNT(DISTINCT question_id) FROM question GROUP BY question_id HAVING COUNT(DISTINCT uqid) > 1"
+                )
+            )
+            assert not result.all(), self._logger.error(
+                "Some question_ids have more than one uqid"
+            )
 
         self._logger.info("uqid updated in question table.")
 
