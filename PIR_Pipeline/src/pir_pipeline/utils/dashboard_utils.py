@@ -79,14 +79,14 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     elif review_type == "intermittent":
         records = [payload["record"]]
         year_coverage = db.get_records(
-            f"SELECT `year` FROM question WHERE uqid = '{payload["record"]["uqid"]}'"
+            f"SELECT year FROM question WHERE uqid = '{payload["record"]["uqid"]}'"
         )["year"].tolist()
         year_coverage = ", ".join([str(yr) for yr in year_coverage])
         year_coverage = f"({year_coverage})"
         matches = (
             PIRLinker(records, db)
             .get_question_data(
-                f"SELECT * FROM linked WHERE `year` NOT IN {year_coverage}"
+                f"SELECT * FROM linked WHERE year NOT IN {year_coverage}"
             )
             .fuzzy_link(5)
         )
@@ -114,7 +114,7 @@ class QuestionLinker:
 
     def link(self):
         record = self._record
-        question = db.tables["question"]
+        question = self._db.tables["question"]
         distinct_year_query = (
             select(question.c["year"])
             .where(question.c["uqid"] == bindparam("uqid"))
@@ -127,11 +127,11 @@ class QuestionLinker:
 
         # Matching two questions with existing uqids (intermittent)
         if base_uqid and match_uqid:
-            with db.engine.connect() as conn:
+            with self._db.engine.connect() as conn:
                 result = conn.execute(distinct_year_query, {"uqid": base_uqid})
                 base_year_range = result.scalars().all()
 
-            with db.engine.connect() as conn:
+            with self._db.engine.connect() as conn:
                 result = conn.execute(distinct_year_query, {"uqid": match_uqid})
                 match_year_range = result.scalars().all()
 
@@ -160,7 +160,7 @@ class QuestionLinker:
 
     def unlink(self):
         record = self._record
-        question = db.tables["question"]
+        question = self._db.tables["question"]
         base_uqid = record.get("base_uqid")
         base_qid = record.get("base_question_id")
         match_qid = record.get("match_question_id")
@@ -175,29 +175,26 @@ class QuestionLinker:
         )
 
         # Handle base
-        qid_in_uqid_statement = select(
-            func.count(distinct(question.c["question_id"]))
-        ).where(
+        qid_in_uqid_statement = select(distinct(question.c["question_id"])).where(
             and_(
                 question.c["uqid"] == bindparam("base_uqid"),
                 question.c["question_id"] != bindparam("match_qid"),
             )
         )
-        with db.engine.connect() as conn:
+        with self._db.engine.connect() as conn:
             result = conn.execute(
                 qid_in_uqid_statement, {"base_uqid": base_uqid, "match_qid": match_qid}
             )
             remaining_qids = result.scalars().all()
-
         # If only one remaining qid, ensure there is more than one occurrence otherwise
         # uqid should be removed entirely
         if len(remaining_qids) == 1:
-            with db.engine.connect() as conn:
+            with self._db.engine.connect() as conn:
                 result = conn.execute(qid_count_query, {"qid": remaining_qids[0]})
                 qid_count = result.scalar()
 
             if qid_count == 1:
-                db.update_records(
+                self._db.update_records(
                     question,
                     {"uqid": bindparam("uqid")},
                     question.c["uqid"] == bindparam("base_uqid"),
@@ -205,7 +202,7 @@ class QuestionLinker:
                 )
 
         # Handle match_qid
-        with db.engine.connect() as conn:
+        with self._db.engine.connect() as conn:
             result = conn.execute(qid_count_query, {"qid": match_qid})
             qid_count = result.scalar()
 
@@ -219,12 +216,14 @@ class QuestionLinker:
         else:
             raise Exception("No matching question_id!")
 
-        # If the newly generate match_uqid is the same as the base_uqid, update the base_uqid
+        # If the newly generated match_uqid is the same as the base_uqid, update the base_uqid
+        # Maybe something more sophisticated here to simulate what would happen in the
+        # real process?
         if match_uqid == base_uqid:
             qids_encoded = (base_qid + base_qid).encode("utf-8")
             new_uqid = md5(qids_encoded).hexdigest()
 
-            db.update_records(
+            self._db.update_records(
                 question,
                 {"uqid": bindparam("uqid")},
                 question.c["uqid"] == bindparam("base_uqid"),
@@ -232,7 +231,7 @@ class QuestionLinker:
             )
 
         # Update the matched uqid
-        db.update_records(
+        self._db.update_records(
             question,
             {"uqid": bindparam("uqid")},
             question.c["question_id"] == bindparam("match_qid"),
