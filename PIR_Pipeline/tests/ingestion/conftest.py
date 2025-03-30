@@ -1,10 +1,11 @@
-import os
+import tempfile
 from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
 from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
+from pir_pipeline.utils.MockData import MockData
 
 
 @pytest.fixture
@@ -13,10 +14,20 @@ def dummy_ingestor():
 
 
 @pytest.fixture
-def data_ingestor():
-    return PIRIngestor(
-        os.path.join(os.path.dirname(__file__), "test_data_2008.xlsx"), MagicMock()
-    )
+def temporary_directory():
+    temp_dir = tempfile.TemporaryDirectory()
+    temp_dir_name = temp_dir.name
+    yield temp_dir_name
+
+
+@pytest.fixture
+def data_ingestor(request: bool, temporary_directory):
+    mock_data = MockData(2008, valid=request.param)
+
+    mock_data.generate_data()
+    mock_data.export(directory=temporary_directory)
+
+    return PIRIngestor(mock_data.path, MagicMock())
 
 
 @pytest.fixture
@@ -65,6 +76,18 @@ def mock_question_data():
         "linked_id": {i: value for i, value in enumerate(["A", "B", "F", "G", "H"])},
     }
 
+    question_unlinked = {
+        "question_id": {i: value for i, value in enumerate(["A", "B", "C", "D", "E"])},
+        "uqid": {i: None for i in range(5)},
+        "question_name": {i: "" for i in range(5)},
+        "question_order": {i: "" for i in range(5)},
+        "question_text": {i: "" for i in range(5)},
+        "question_number": {i: "" for i in range(5)},
+        "question_type": {i: "" for i in range(5)},
+        "section": {i: "" for i in range(5)},
+        "linked_id": {i: value for i, value in enumerate([None])},
+    }
+
     question_merge_pass = {
         "question_number": {i: "A." + str(i + 1) for i in range(6)},
         "question_name": {x: "Q" + str(x + 1) for x in range(6)},
@@ -81,6 +104,7 @@ def mock_question_data():
         "raw": question,
         "db": question_db,
         "linked": question_linked,
+        "unlinked": question_unlinked,
         "question": question,
         "question_merge_pass": question_merge_pass,
         "question_merge_fail": question_merge_fail,
@@ -167,67 +191,21 @@ def mock_missing_questions():
 
 # Adapted from GPT
 @pytest.fixture
-def mock_schemas(request):
-    def create_schema(fields):
-        num_fields = len(fields)
-        schema = {
-            "Field": {i: field for i, field in enumerate(fields)},
-            "Type": {i: "" for i in range(num_fields)},
-            "Null": {i: "" for i in range(num_fields)},
-            "Key": {i: "" for i in range(num_fields)},
-            "Default": {i: "" for i in range(num_fields)},
-            "Extra": {i: "" for i in range(num_fields)},
-        }
-        return schema
+def mock_columns(request, program_columns, question_columns, response_columns):
+    response_fields = list(response_columns)
 
-    response_fields = ["uid", "question_id", "year", "answer"]
-    response = create_schema(response_fields)
+    program_fields = list(program_columns)
 
-    program_fields = [
-        "uid",
-        "year",
-        "grantee_name",
-        "grant_number",
-        "program_address_line_1",
-        "program_address_line_2",
-        "program_agency_description",
-        "program_agency_type",
-        "program_city",
-        "program_email",
-        "program_name",
-        "program_number",
-        "program_phone",
-        "program_type",
-        "program_state",
-        "program_zip1",
-        "program_zip2",
-        "region",
-    ]
-    program = create_schema(program_fields)
-
-    question_fields = [
-        "question_id",
-        "year",
-        "uqid",
-        "category",
-        "question_name",
-        "question_number",
-        "question_order",
-        "question_text",
-        "question_type",
-        "section",
-        "subsection",
-    ]
-    question = create_schema(question_fields)
-
-    schemas = {
-        "response": pd.DataFrame.from_dict(response),
-        "program": pd.DataFrame.from_dict(program),
-        "question": pd.DataFrame.from_dict(question),
-    }
+    question_fields = list(question_columns)
 
     request.cls.response_fields = response_fields
     request.cls.program_fields = program_fields
     request.cls.question_fields = question_fields
 
-    return schemas
+    columns = {
+        "response": response_fields,
+        "question": question_fields,
+        "program": program_fields,
+    }
+
+    return columns.get

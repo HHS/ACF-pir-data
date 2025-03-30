@@ -128,6 +128,7 @@ class TestPIRIngestor:
             else:
                 assert result == expected, error_message
 
+    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
     def test_extract_sheets(self, data_ingestor, dummy_ingestor):
         with pytest.raises(AssertionError):
             dummy_ingestor.extract_sheets()
@@ -146,10 +147,78 @@ class TestPIRIngestor:
             "Reference",
         ], "Incorrect sheets returned"
 
+    @pytest.mark.parametrize("data_ingestor", [False], indirect=True)
+    def test_load_data_with_invalid_data(self, data_ingestor):
+
+        with pytest.raises(AssertionError):
+            data_ingestor.extract_sheets().load_data()
+
+    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
+    def test_load_data_with_valid_data(self, data_ingestor):
+        data_ingestor.extract_sheets().load_data()
+        assert (
+            not data_ingestor._data["question"][["question_number", "question_name"]]
+            .duplicated()
+            .any()
+        ), "Unexpected duplicate values in _data['question'][['question_name', 'question_number']]"
+
+        expected_keys = [
+            "section_a",
+            "section_b",
+            "section_c",
+            "section_d",
+            "program",
+            "question",
+        ]
+        assert [
+            "section_a",
+            "section_b",
+            "section_c",
+            "section_d",
+            "program",
+            "question",
+        ] == list(
+            data_ingestor._data.keys()
+        ), f"Output dict_keys of load_data doesn't match expected keys {expected_keys}"
+
+        # modified from gpt
+        for df_name, df in data_ingestor._data.items():
+            assert not df.empty, f"{df_name} DataFrame is empty."
+
+            for col in df.columns:
+                snake_col = re.sub(r"\W", "_", col.lower())
+                snake_col = re.sub(r"_+", "_", snake_col)
+                assert (
+                    col == snake_col
+                ), f"Column '{col}' in DataFrame '{df_name}' is not in snake_case."
+
+    def test_gen_uqid(self, dummy_ingestor):
+
+        valid_row = pd.Series({"uqid": "abcdef", "linked_id": np.nan})
+        value = dummy_ingestor.gen_uqid(valid_row)
+        assert (
+            value == valid_row["uqid"]
+        ), "Output uqid value doesn't match input uqid value."
+
+        valid_row = pd.Series({"uqid": None, "linked_id": "a"})
+        value = dummy_ingestor.gen_uqid(valid_row)
+        assert (
+            value == "0cc175b9c0f1b6a831c399e269772661"
+        ), "Incorrect hash returned by gen_uqid on linked_id."
+
+        invalid_row = pd.Series({"uqid": None, "linked_id": 3.14})
+        with pytest.raises(AssertionError):
+            assert dummy_ingestor.gen_uqid(invalid_row)
+
+    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
     def test_append_sections(self, data_ingestor):
         data_ingestor.extract_sheets().load_data().append_sections()
         df = data_ingestor._data["response"]
-        assert df.shape == (80, 14)
+        expected_row_count = (
+            data_ingestor._metrics["program"]["record_count"]
+            * data_ingestor._metrics["question"]["record_count"]
+        )
+        assert df.shape == (expected_row_count, 14)
         assert df.columns.tolist() == [
             "region",
             "state",
@@ -168,8 +237,9 @@ class TestPIRIngestor:
         ]
         assert all([name.find("section") == -1 for name in data_ingestor._data])
 
-    def test_clean_pir_data(self, data_ingestor, mock_schemas):
-        data_ingestor._sql._schemas = mock_schemas
+    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
+    def test_clean_pir_data(self, data_ingestor, mock_columns):
+        data_ingestor._sql.get_columns = MagicMock(side_effect=mock_columns)
         (
             data_ingestor.extract_sheets()
             .load_data()

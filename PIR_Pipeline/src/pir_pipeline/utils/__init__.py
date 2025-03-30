@@ -1,3 +1,1 @@
-from .MySQLUtils import MySQLUtils
-from .SQLUtils import SQLUtils
-from .utils import *
+from .SQLUtils import SQLUtils  # noqa: F401
