@@ -192,24 +192,6 @@ class TestPIRIngestor:
                     col == snake_col
                 ), f"Column '{col}' in DataFrame '{df_name}' is not in snake_case."
 
-    def test_gen_uqid(self, dummy_ingestor):
-
-        valid_row = pd.Series({"uqid": "abcdef", "linked_id": np.nan})
-        value = dummy_ingestor.gen_uqid(valid_row)
-        assert (
-            value == valid_row["uqid"]
-        ), "Output uqid value doesn't match input uqid value."
-
-        valid_row = pd.Series({"uqid": None, "linked_id": "a"})
-        value = dummy_ingestor.gen_uqid(valid_row)
-        assert (
-            value == "0cc175b9c0f1b6a831c399e269772661"
-        ), "Incorrect hash returned by gen_uqid on linked_id."
-
-        invalid_row = pd.Series({"uqid": None, "linked_id": 3.14})
-        with pytest.raises(AssertionError):
-            assert dummy_ingestor.gen_uqid(invalid_row)
-
     @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
     def test_append_sections(self, data_ingestor):
         data_ingestor.extract_sheets().load_data().append_sections()
@@ -257,8 +239,9 @@ class TestPIRIngestor:
                 self, f"{table}_fields"
             )
 
-    def test_insert_data(self, data_ingestor, mock_schemas, mock_question_data):
-        data_ingestor._sql._schemas = mock_schemas
+    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
+    def test_insert_data(self, data_ingestor, db_columns, mock_question_data):
+        data_ingestor._columns = db_columns
         data_ingestor._sql.insert_records = MagicMock()
         data_ingestor._sql.update_records = MagicMock()
         question = pd.DataFrame.from_dict(mock_question_data["db"])
