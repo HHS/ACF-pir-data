@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 
 from pir_pipeline.config import db_config
@@ -8,13 +10,14 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 @pytest.fixture(scope="module")
 def sql_utils(request):
     try:
-        sql = SQLAlchemyUtils(**db_config, database="pir_test")
-        request.module.drivername = "mysql+mysqlconnector"
-    except Exception:
-        sql = SQLAlchemyUtils(
-            **db_config, database="pir_test", drivername="postgresql+psycopg"
-        )
+        subprocess.run(["psql", "--version"])
         request.module.drivername = "postgresql+psycopg"
+    except Exception:
+        request.module.drivername = "mysql+mysqlconnector"
+
+    sql = SQLAlchemyUtils(
+        **db_config, database="pir_test", drivername=request.module.drivername
+    )
 
     return sql
 
@@ -86,4 +89,5 @@ def db_columns(program_columns, question_columns, response_columns):
         "response": response_columns,
     }
 
+    return db_columns
     return db_columns
