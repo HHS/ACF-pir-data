@@ -6,7 +6,7 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
-from sqlalchemy import bindparam, text
+from sqlalchemy import bindparam
 
 from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -14,7 +14,7 @@ from pir_pipeline.utils.utils import get_logger
 
 
 class PIRLinker:
-    def __init__(self, records: list[tuple] | list[dict], sql: SQLAlchemyUtils):
+    def __init__(self, records: list[dict] | list[dict], sql: SQLAlchemyUtils):
         """Instantiate instance of PIRLinker object
 
         Args:
@@ -23,27 +23,38 @@ class PIRLinker:
         """
         self._logger = get_logger(__name__)
         self._data = pd.DataFrame.from_records(records)
-        self._data = self._data[~self._data["question_id"].duplicated()]
+        if "question_id" in self._data.columns:
+            self._data = self._data[~self._data["question_id"].duplicated()]
+            self._unique_question_id = "question_id"
+        else:
+            self._unique_question_id = "uqid"
+
         self._sql = sql
-        self.get_question_data()
-        self._sql.get_schemas(["question"])
 
         self._logger.info("Initialized linker.")
 
-    def get_question_data(self) -> Self:
+    def get_question_data(self, which: str = "all") -> Self:
         """Get data from the question table
 
         Returns:
             Self: PIRLinker object
         """
-        question_columns = self._sql.get_columns(
-            "question",
-            "AND (column_name NOT IN ('subsection', 'category'))",
-        )
-        question_columns = ",".join(question_columns)
-        self._question = self._sql.get_records(
-            f"SELECT {question_columns} FROM question",
-        )
+        if which == "all":
+            # IDEA: Follow example of linked and unlinked and just drop undesired columns
+            question_columns = self._sql.get_columns(
+                "question",
+                "AND (column_name NOT IN ('subsection', 'category'))",
+            )
+            question_columns = ",".join(question_columns)
+            self._question = self._sql.get_records(
+                f"SELECT {question_columns} FROM question",
+            )
+        elif which == "linked":
+            self._question = self._sql.get_records("linked")
+        elif which == "unlinked":
+            self._question = self._sql.get_records("unlinked")
+        else:
+            self._question = self._sql.get_records(which)
 
         self._logger.info("Obtained question data.")
 
@@ -55,8 +66,19 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+        try:
+            self._question
+        except AttributeError:
+            self.get_question_data()
+
+        try:
+            self._question_columns
+        except AttributeError:
+            self._question_columns = self._sql.get_columns("question")
+
         # Look for a direct match on question_id
         self.direct_link()
+
         # Look for a fuzzy match on question_name, question_number, or question_text
         self.join_on_type_and_section("unlinked")
         if not self._cross.empty:
@@ -67,6 +89,11 @@ class PIRLinker:
         return self
 
     def direct_link(self):
+        try:
+            self._question
+        except AttributeError:
+            self.get_question_data()
+
         df = self._data.copy()
         df = df.merge(
             self._question[["question_id", "uqid", "year"]].drop_duplicates(),
@@ -115,8 +142,12 @@ class PIRLinker:
             df = self._unlinked.copy()
         elif which == "data":
             df = self._data.copy()
+            self._original_columns = self._data.columns.tolist()
 
-        unique_question_ids = df["question_id"].unique().shape[0]
+        unique_ids = set(df[self._unique_question_id].unique())
+        missing_section = set(
+            df[df["section"].isna()][self._unique_question_id].unique()
+        )
 
         df = df.merge(
             self._question,
@@ -124,18 +155,25 @@ class PIRLinker:
             on=["question_type", "section"],
             validate="many_to_many",
         )
-        self._cross = df[df["year_x"] != df["year_y"]]
+        if self._unique_question_id == "question_id":
+            self._cross = df[df["year_x"] != df["year_y"]]
+        else:
+            self._cross = df[df["uqid_x"] != df["uqid_y"]]
+
         self._cross = self._cross[
-            ~self._cross[["question_id_x", "question_id_y"]].duplicated()
+            ~self._cross[
+                [f"{self._unique_question_id}_x", f"{self._unique_question_id}_y"]
+            ].duplicated()
         ]
 
+        cross_unique_ids = set(self._cross[f"{self._unique_question_id}_x"].unique())
         assert (
-            self._cross["question_id_x"].unique().shape[0] == unique_question_ids
+            cross_unique_ids.union(missing_section) == unique_ids
         ), self._logger.error("Some IDs were lost")
 
         return self
 
-    def fuzzy_link(self, num_matches: int = None) -> Self:
+    def fuzzy_link(self, num_matches: int = None) -> Self | pd.DataFrame:
         """Link questions using a Levenshtein algorithm
 
         Attempt to link questions heretofore unlinked using a Levenshtein algorithm.
@@ -147,6 +185,11 @@ class PIRLinker:
         def confirm_link(row: pd.Series):
             scores = [item == 100 for item in row.filter(like="score")]
             return sum(scores) >= 2
+
+        try:
+            self._question
+        except AttributeError:
+            self.get_question_data()
 
         try:
             self._cross
@@ -178,18 +221,16 @@ class PIRLinker:
         if num_matches:
             matches = (
                 self._cross.sort_values(
-                    ["question_id_x", "combined_score"], ascending=False
+                    [f"{self._unique_question_id}_x", "combined_score"], ascending=False
                 )
-                .groupby(["question_id_x"])
+                .groupby([f"{self._unique_question_id}_x"])
                 .head(num_matches)
             )
-            matches = matches.filter(regex="_y$|^question_type$|^section$")
+            drop_columns = matches.filter(regex="(_x|_score)$").columns
+            matches.drop(columns=drop_columns, inplace=True)
             matches.rename(columns=lambda col: col.replace("_y", ""), inplace=True)
-            columns = self._sql._schemas["question"]["Field"].tolist()
-            columns.remove("category")
-            columns.remove("subsection")
 
-            return matches[columns]
+            return matches[self._original_columns]
 
         # Determine whether score meets threshold for match
         self._cross["confirmed"] = self._cross.filter(regex="score|section|type").apply(
@@ -244,6 +285,11 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+        try:
+            self._question_columns
+        except AttributeError:
+            self._question_columns = self._sql.get_columns("question")
+
         df = self._data
         df = df.merge(
             self._linked[["question_id", "linked_id", "uqid"]],
@@ -269,7 +315,7 @@ class PIRLinker:
 
         df.replace({np.nan: None}, inplace=True)
         self._data = df
-        self._data = self._data[self._sql._schemas["question"]["Field"]]
+        self._data = self._data[self._question_columns]
 
         self._logger.info("Records prepared for insertion.")
 
@@ -297,7 +343,8 @@ class PIRLinker:
         if row["linked_id"] in uqid_dict:
             return uqid_dict[row["linked_id"]]
         else:
-            uqid = hashlib.md5(row["linked_id"].encode()).hexdigest()
+            qids_concat = row["question_id"] + row["linked_id"]
+            uqid = hashlib.md5(qids_concat.encode()).hexdigest()
             uqid_dict[row["question_id"]] = uqid
             uqid_dict[row["linked_id"]] = uqid
             return uqid
@@ -326,27 +373,16 @@ class PIRLinker:
             records,
         )
 
-        # Check that uqids are consistent
-        with self._sql.engine.connect() as conn:
-            result = conn.execute(
-                text(
-                    "SELECT COUNT(DISTINCT question_id) FROM question GROUP BY question_id HAVING COUNT(DISTINCT uqid) > 1"
-                )
-            )
-            assert not result.all(), self._logger.error(
-                "Some question_ids have more than one uqid"
-            )
-
         self._logger.info("uqid updated in question table.")
 
         return self
 
 
 if __name__ == "__main__":
-    sql_alchemy = SQLAlchemyUtils(**db_config, database="pir")
-    records = sql_alchemy.get_records("SELECT * FROM unlinked limit 10").to_dict(
+    sql_alchemy = SQLAlchemyUtils(
+        **db_config, database="pir", drivername="postgresql+psycopg"
+    )
+    records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"
     )
-    PIRLinker(records, sql_alchemy).fuzzy_link(5)
-    # linker = PIRLinker(records, sql_alchemy).link()
-    # linker.update_unlinked()
+    linker = PIRLinker(records, sql_alchemy).link().update_unlinked()
