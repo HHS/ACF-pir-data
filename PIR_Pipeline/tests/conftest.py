@@ -6,10 +6,16 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 @pytest.fixture(scope="module")
-def sql_utils():
-    sql = SQLAlchemyUtils(
-        **db_config, database="pir_test", drivername="postgresql+psycopg"
-    )
+def sql_utils(request):
+    try:
+        sql = SQLAlchemyUtils(**db_config, database="pir_test")
+        request.module.drivername = "mysql+mysqlconnector"
+    except Exception:
+        sql = SQLAlchemyUtils(
+            **db_config, database="pir_test", drivername="postgresql+psycopg"
+        )
+        request.module.drivername = "postgresql+psycopg"
+
     return sql
 
 
