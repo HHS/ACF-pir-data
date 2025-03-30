@@ -1,15 +1,7 @@
 import pandas as pd
 import pytest
 
-from pir_pipeline.config import db_config
 from pir_pipeline.linking.PIRLinker import PIRLinker
-from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-
-
-@pytest.fixture(scope="module")
-def sql_utils():
-    sql = SQLAlchemyUtils(**db_config, database="pir_test")
-    return sql
 
 
 @pytest.fixture(scope="class")
