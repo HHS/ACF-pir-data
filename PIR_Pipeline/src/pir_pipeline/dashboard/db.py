@@ -1,3 +1,4 @@
+import subprocess
 from datetime import datetime
 
 import click
@@ -8,10 +9,15 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 def get_db():
     if "db" not in g:
+        try:
+            subprocess.run(["psql", "--version"])
+            drivername = "postgresql+psycopg"
+        except Exception:
+            drivername = "mysql+mysqlconnector"
         g.db = SQLAlchemyUtils(
             **current_app.config["DB_CONFIG"],
             database=current_app.config["DB_NAME"],
-            drivername="postgresql+psycopg"
+            drivername=drivername
         )
 
     return g.db
