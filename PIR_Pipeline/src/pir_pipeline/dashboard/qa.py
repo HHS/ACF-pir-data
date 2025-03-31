@@ -115,7 +115,7 @@ def search():
     )
 
 
-@bp.route("/review", methods=["GET", "POST", "PUT"])
+@bp.route("/review", methods=["GET", "POST"])
 def review():
     db = get_db()
     if request.method == "POST":
