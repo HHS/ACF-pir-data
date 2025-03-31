@@ -38,10 +38,13 @@ function updateTable(event) {
 function buildTable(data, table) {
     // Constant buttons
     const expandButtonBase = document.createElement("button");
-    expandButtonBase.className = "btn btn-primary";
+    expandButtonBase.className = "accordion-button collapsed";
     expandButtonBase.setAttribute("type", "button");
     expandButtonBase.setAttribute("data-bs-toggle", "collapse");
     expandButtonBase.setAttribute("aria-expanded", "false");
+
+    const accordionDivBase = document.createElement("div");
+    accordionDivBase.className = "accordion";
 
     const linkButtonBase = document.createElement("button");
     linkButtonBase.className = "btn btn-primary";
@@ -87,12 +90,14 @@ function buildTable(data, table) {
             const trID = table.id + "-tr-" + i;
             const tdID = table.id + "-td-" + i;
             const expandButton = expandButtonBase.cloneNode(true);
-            expandButton.innerHTML = "Expand";
+            expandButton.innerHTML = "";
             expandButton.setAttribute("data-bs-target", `#collapse-${trID}`);
             expandButton.setAttribute("aria-controls", `collapse-${trID}`);
             expandButton.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`);
+            const accordionDiv = accordionDivBase.cloneNode(true);
+            accordionDiv.appendChild(expandButton);
             const actionsCell = document.createElement("td");
-            actionsCell.appendChild(expandButton);
+            actionsCell.appendChild(accordionDiv);
             row.appendChild(actionsCell);
 
             // Create div to hold table
@@ -152,7 +157,8 @@ function rowToJSON(row) {
 }
 
 function getQuestionData(event, reviewType) {
-    const row = event.srcElement.parentElement.parentElement;
+    const row = event.srcElement.closest("tr");
+    console.log(row);
     const button = event.srcElement
     const tr = document.getElementById(button.getAttribute("aria-controls"));
     const div = document.getElementById(tr.id.replace("-tr-", "-div-"));
