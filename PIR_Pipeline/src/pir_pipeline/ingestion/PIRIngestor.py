@@ -253,9 +253,11 @@ class PIRIngestor:
                     )
 
                 df.columns = column_names
+                # Get question names by reshaping long
                 question_names = df.iloc[[0]].melt(
                     var_name="question_number", value_name="question_name"
                 )
+                # Reshape entire dataset long and merge question names
                 df = df.melt(
                     id_vars=[
                         "Region",
@@ -291,6 +293,8 @@ class PIRIngestor:
                 self._metrics[name]["record_count"] = df.shape[0]
 
                 df.columns = df.columns.map(self.make_snake_name)
+
+                # Hash columns to track original question ids for validation
                 unique_columns = ["question_number", "question_name"]
                 question_ids = set(
                     df[unique_columns].apply(self.hash_columns, axis=1).tolist()
@@ -310,7 +314,9 @@ class PIRIngestor:
                     self._metrics["question"]["dupes"] = dupes
                     assert (
                         not df[unique_columns].duplicated().any()
-                    ), f"Some observations are still duplicated:\n {df[df[unique_columns].duplicated()]}"
+                    ), self._logger.error(
+                        f"Some observations are still duplicated:\n {df[df[unique_columns].duplicated()]}"
+                    )
 
                 df["section"] = df["question_number"].map(self.get_section)
 
@@ -398,6 +404,7 @@ class PIRIngestor:
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
 
+        # If section is ever missing, attempt to merge it on using category and subsection
         if question["section"].isna().any():
             grouping_vars = ["category", "subsection"]
             assert (
@@ -485,9 +492,9 @@ class PIRIngestor:
                 set(both.columns.tolist()) - set(left.columns.tolist()) == set()
             ), "Different columns in both and left"
             appended = pd.concat([both, left])
-            assert (
-                appended.shape[0] == num_records
-            ), "Incorrect number of records after dataframe concatenation"
+            assert appended.shape[0] == num_records, self._logger.error(
+                "Incorrect number of records after dataframe concatenation"
+            )
             response = appended
 
         assert (
@@ -502,7 +509,7 @@ class PIRIngestor:
             ]
             .duplicated()
             .any()
-        ), "Some records are duplicated"
+        ), self._logger.error("Some records are duplicated")
 
         # Combine any columns that appear twice due to merging
         for column in response.columns.tolist():
@@ -739,7 +746,7 @@ class PIRIngestor:
         return self
 
     def close_excel_files(self):
-        """Close all files"""
+        """Close all Excel files"""
         workbooks = self._workbook
         if isinstance(workbooks, dict):
             for book in workbooks.values():
