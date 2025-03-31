@@ -72,11 +72,21 @@ class SQLAlchemyUtils(SQLUtils):
         pass
 
     def gen_engine(self, **kwargs) -> Self:
+        """Generate database engine
+
+        Returns:
+            Self: Object of class SQLAlchemyUtils
+        """
         engine_url = URL.create(**kwargs)
         self._engine = create_engine(engine_url)
         return self
 
-    def create_db(self):
+    def create_db(self) -> Self:
+        """Create the target database
+
+        Returns:
+            Self: Object of class SQLAlchemyUtils
+        """
         if not database_exists(self._engine.url):
             create_database(self._engine.url)
             assert database_exists(self._engine.url)
@@ -85,15 +95,34 @@ class SQLAlchemyUtils(SQLUtils):
 
         return self
 
-    def drop_db(self):
+    def drop_db(self) -> Self:
+        """Drop the target database
+
+        Returns:
+            Self: Object of class SQLAlchemyUtils
+        """
         if database_exists(self._engine.url):
             drop_database(self._engine.url)
 
     def validate_table(self, table: str):
+        """Assert that the table provided is among the list of valid tables.
+
+        Args:
+            table (str): Table name
+        """
         valid_tables = list(self._tables.keys())
         assert table in valid_tables, "Invalid table."
 
     def get_columns(self, table: str, where: str = "") -> list[str]:
+        """Get column names from the specified table
+
+        Args:
+            table (str): Table name
+            where (str): Additional where condition by which to filter columns returned.
+
+        Returns:
+            list[str]: A list of column names
+        """
         if not where:
             self.validate_table(table)
             columns = self._tables[table].c.keys()
@@ -119,10 +148,30 @@ class SQLAlchemyUtils(SQLUtils):
         return columns
 
     def get_records(self, query: str) -> pd.DataFrame:
+        """Return a dataframe from containing the results of a SQL query
+
+        Args:
+            query (str): A string SQL query
+
+        Returns:
+            pd.DataFrame: Results of the SQL query
+        """
         return pd.read_sql(query, self._engine)
 
     def insert_records(self, records: list[dict], table: str):
+        """Insert records into the target table
+
+        Args:
+            records (list[dict]): A list of records for insertion
+            table (str): Table name
+        """
+
         def insert_query(records: list[dict]):
+            """Create an insertion query
+
+            Args:
+                records (list[dict]): A list of records for insertion
+            """
             with self._engine.begin() as conn:
                 insert_statement = self.insert(self._tables[table])
 
@@ -152,9 +201,11 @@ class SQLAlchemyUtils(SQLUtils):
 
                 conn.execute(upsert_statement, records)
 
+        # Remove primary key columns for upserting
         upsert_columns = get_searchable_columns(self.get_columns(table))
         upsert_columns = [column.lower() for column in upsert_columns]
 
+        # If there are more than 20000 records, ingest in batches
         batch_size = 20000
         if len(records) > batch_size:
             num_records = len(records)
@@ -175,6 +226,14 @@ class SQLAlchemyUtils(SQLUtils):
         where: BinaryExpression | BooleanClauseList,
         records: list[dict] = [],
     ):
+        """Update records in the database
+
+        Args:
+            table (Table): Table name
+            set (dict[str]): Dictionary indicating how to update values.
+            where (BinaryExpression | BooleanClauseList): Clause indicating which values to update.
+            records (list[dict], optional): List of records to use in update. Defaults to [].
+        """
 
         statement = update(table).where(where).values(**set)
 
@@ -185,6 +244,15 @@ class SQLAlchemyUtils(SQLUtils):
                 conn.execute(statement)
 
     def to_dict(self, records: list[tuple], columns: list[str]) -> list[dict]:
+        """Convert a list of tuples to a list of dictionaries
+
+        Args:
+            records (list[tuple]): Records, i.e. values in the resultant dictionaries.
+            columns (list[str]): Columns, i.e. keys in the resultant dictionaries.
+
+        Returns:
+            list[dict]: List of dictionaries.
+        """
         data = []
         for record in records:
             assert len(record) == len(columns)
