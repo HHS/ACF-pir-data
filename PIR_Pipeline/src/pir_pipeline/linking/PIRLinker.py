@@ -36,19 +36,18 @@ class PIRLinker:
     def get_question_data(self, which: str = "all") -> Self:
         """Get data from the question table
 
+        Args:
+            which (str): which can be used to specify what data is returned from the question table.
+                Options include 'all', 'linked', and 'unlinked' which return data from the
+                full question table, linked view, and unlinked view respectively. A custom
+                query can also be specified using the which argument.
+
         Returns:
             Self: PIRLinker object
         """
         if which == "all":
-            # IDEA: Follow example of linked and unlinked and just drop undesired columns
-            question_columns = self._sql.get_columns(
-                "question",
-                "AND (column_name NOT IN ('subsection', 'category'))",
-            )
-            question_columns = ",".join(question_columns)
-            self._question = self._sql.get_records(
-                f"SELECT {question_columns} FROM question",
-            )
+            self._question = self._sql.get_records("question")
+            self._question = self._question.drop(columns=["category", "subsection"])
         elif which == "linked":
             self._question = self._sql.get_records("linked")
         elif which == "unlinked":
@@ -88,7 +87,12 @@ class PIRLinker:
 
         return self
 
-    def direct_link(self):
+    def direct_link(self) -> Self:
+        """Make a direct link on question_id
+
+        Returns:
+            Self: PIRLinker Object
+        """
         try:
             self._question
         except AttributeError:
@@ -137,6 +141,15 @@ class PIRLinker:
         return self
 
     def join_on_type_and_section(self, which: str):
+        """Execute many-to-many join on type and section
+
+        Args:
+            which (str): Which dataset should be the left-hand side of the join? Options
+                include 'unlinked' and 'data'.
+
+        Returns:
+            _type_: _description_
+        """
         self._cross: pd.DataFrame
         if which == "unlinked":
             df = self._unlinked.copy()
@@ -149,23 +162,29 @@ class PIRLinker:
             df[df["section"].isna()][self._unique_question_id].unique()
         )
 
+        # Many-to-many merge on question type and section to enable checking all potential
+        # matches
         df = df.merge(
             self._question,
             how="left",
             on=["question_type", "section"],
             validate="many_to_many",
         )
+
+        # Drop cases where year is equal or uqid is equal
         if self._unique_question_id == "question_id":
             self._cross = df[df["year_x"] != df["year_y"]]
         else:
             self._cross = df[df["uqid_x"] != df["uqid_y"]]
 
+        # Remove cases where unique_question_id combination is duplicated
         self._cross = self._cross[
             ~self._cross[
                 [f"{self._unique_question_id}_x", f"{self._unique_question_id}_y"]
             ].duplicated()
         ]
 
+        # Check that the cross join has every unique ID that isn't missing a section
         cross_unique_ids = set(self._cross[f"{self._unique_question_id}_x"].unique())
         assert (
             cross_unique_ids.union(missing_section) == unique_ids
@@ -176,10 +195,11 @@ class PIRLinker:
     def fuzzy_link(self, num_matches: int = None) -> Self | pd.DataFrame:
         """Link questions using a Levenshtein algorithm
 
-        Attempt to link questions heretofore unlinked using a Levenshtein algorithm.
+        Args:
+            num_matches (int, optional): Number of potential matches to return. Defaults to None.
 
         Returns:
-            Self: PIRLinker object
+            Self | pd.DataFrame: PIRLinker object or a dataframe containing potential matches.
         """
 
         def confirm_link(row: pd.Series):
@@ -218,6 +238,8 @@ class PIRLinker:
         # Sum similarity score
         self._cross["combined_score"] = self._cross.filter(like="score").sum(axis=1)
 
+        # If a number of matches is specified, get that number of matches and return
+        # the resultant dataframe
         if num_matches:
             matches = (
                 self._cross.sort_values(

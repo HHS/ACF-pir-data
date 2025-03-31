@@ -643,6 +643,12 @@ class PIRIngestor:
         return value
 
     def validate_data(self) -> Self:
+        """Validate the cleaned PIR data
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def check_dupes(metric_dict: dict):
             return metric_dict["record_count"] - metric_dict["dupes"]
 
