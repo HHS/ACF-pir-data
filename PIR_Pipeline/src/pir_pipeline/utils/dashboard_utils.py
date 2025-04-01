@@ -134,23 +134,69 @@ def get_search_results(
         column
     )  # But why not just have the snake_name as the value for the option?
 
-    query = (
+    keyword_query = (
         select(table)
         .where(table.c[column].regexp_match(bindparam("keyword")))
         .order_by(table.c[id_column], table.c["year"].desc())
     )
 
+    # Get the maximum year
+    max_year_query = (
+        select(table.c[id_column], func.max(table.c.year).label("year"))
+        .group_by(table.c[id_column])
+        .subquery()
+    )
+
+    # Get the range of years covered
+    year_range_query = (
+        select(
+            table.c[id_column],
+            func.concat(func.min(table.c.year), "-", func.max(table.c.year)).label(
+                "year_range"
+            ),
+        )
+        .group_by(table.c[id_column])
+        .subquery()
+    )
+
+    # Get get data for the most recent year to create a header row
+    header_row_query = (
+        select(table, year_range_query.c["year_range"])
+        .join(
+            max_year_query,
+            and_(
+                table.c[id_column] == max_year_query.c[id_column],
+                table.c.year == max_year_query.c.year,
+            ),
+        )
+        .join(year_range_query, table.c[id_column] == year_range_query.c[id_column])
+        .where(table.c[id_column] == bindparam(id_column))
+    )
+
+    # Put column headers in search results dictionary
     search_dict = {}
     search_dict["columns"] = [clean_name(col, "title") for col in table.c.keys()]
+
     with db.engine.connect() as conn:
-        result = conn.execute(query, {"keyword": keyword})
+        # Get all search results
+        result = conn.execute(keyword_query, {"keyword": keyword})
+
+        # Convert results to dictionary
         for res in result.all():
-            result_dict = {key: res[i] for i, key in enumerate(table.c.keys())}
+            result_dict = db.to_dict([res], table.c.keys())[0]
             ident = result_dict[id_column]
+
+            # Append instances of the same question_id to an existing list
             if ident in search_dict:
                 search_dict[ident].append(result_dict)
+            # Otherwise, create a summary header row and append that and maximal year
             else:
-                search_dict[ident] = [result_dict]
+                header = conn.execute(header_row_query, {id_column: ident})
+                header_row = header.one()
+                header_row = {key: header_row[i] for i, key in enumerate(header.keys())}
+                header_row.update({"year": header_row["year_range"]})
+                del header_row["year_range"]
+                search_dict[ident] = [header_row, result_dict]
 
     return search_dict
 
