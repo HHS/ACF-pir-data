@@ -4,30 +4,38 @@ from sqlalchemy import bindparam, select, text
 from pir_pipeline.config import db_config
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
-print(db_config)
 
-
-def test_create_db(sql_utils):
+def test_create_db(sql_utils, request):
     sql_utils.create_db()
-    with sql_utils.engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
+    if request.module.drivername == "mysql+mysqlconnector":
+        query = text(
+            "SELECT table_schema FROM information_schema.tables WHERE table_schema = 'pir_test'"
         )
+    else:
+        query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(query)
         exists = result.first()[0]
 
     assert exists, "pir_test database does not exist"
 
 
-def test_drop_db(sql_utils):
+def test_drop_db(sql_utils, request):
     sql_utils.drop_db()
     sql_utils.engine.dispose()
+    if request.module.drivername == "mysql+mysqlconnector":
+        database = "mysql"
+        query = text(
+            "SELECT table_schema FROM information_schema.tables WHERE table_schema = 'pir_test'"
+        )
+    else:
+        database = "postgres"
+        query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
     sql = SQLAlchemyUtils(
-        **db_config, database="postgres", drivername="postgresql+psycopg"
+        **db_config, database=database, drivername=request.module.drivername
     )
     with sql.engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
-        )
+        result = conn.execute(query)
         exists = result.first()
 
     assert not exists, "pir_test database still exists"
@@ -36,12 +44,12 @@ def test_drop_db(sql_utils):
 
 @pytest.mark.usefixtures("create_database")
 class TestSQLAlchemyUtilsNoData:
-    def test_gen_engine(self):
+    def test_gen_engine(self, request):
         db_config.update({"username": db_config["user"]})
         db_config.pop("user")
         query = select(text("'Connection Made'"))
         with SQLAlchemyUtils.__new__(SQLAlchemyUtils).gen_engine(
-            **db_config, database="pir_test", drivername="postgresql+psycopg"
+            **db_config, database="pir_test", drivername=request.module.drivername
         )._engine.connect() as conn:
             result = conn.execute(query)
             value = result.first()
@@ -155,4 +163,4 @@ class TestSQLAlchemyUtilsData:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_to_dict"])
+    pytest.main([__file__, "-sk", "test_insert_records"])

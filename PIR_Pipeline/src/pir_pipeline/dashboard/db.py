@@ -15,6 +15,7 @@ def get_db():
     return g.db
 
 
+# Need to revisit
 def close_db(e=None):
     db = g.pop("db", None)
 
@@ -22,5 +23,6 @@ def close_db(e=None):
         db.close_connection()
 
 
+# Need to revisit
 def init_app(app):
     app.teardown_appcontext(close_db)

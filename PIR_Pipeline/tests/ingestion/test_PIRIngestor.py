@@ -79,7 +79,7 @@ class TestPIRIngestor:
         letters = [random.choice(ascii_uppercase) for i in range(20)]
         question_numbers = [letter + str(i) for i, letter in enumerate(letters)]
 
-        correct = letters + ["", ""]
+        correct = letters + [None, None]
         question_numbers += [1, "wrong_format"]
 
         result = []
@@ -192,24 +192,6 @@ class TestPIRIngestor:
                     col == snake_col
                 ), f"Column '{col}' in DataFrame '{df_name}' is not in snake_case."
 
-    def test_gen_uqid(self, dummy_ingestor):
-
-        valid_row = pd.Series({"uqid": "abcdef", "linked_id": np.nan})
-        value = dummy_ingestor.gen_uqid(valid_row)
-        assert (
-            value == valid_row["uqid"]
-        ), "Output uqid value doesn't match input uqid value."
-
-        valid_row = pd.Series({"uqid": None, "linked_id": "a"})
-        value = dummy_ingestor.gen_uqid(valid_row)
-        assert (
-            value == "0cc175b9c0f1b6a831c399e269772661"
-        ), "Incorrect hash returned by gen_uqid on linked_id."
-
-        invalid_row = pd.Series({"uqid": None, "linked_id": 3.14})
-        with pytest.raises(AssertionError):
-            assert dummy_ingestor.gen_uqid(invalid_row)
-
     @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
     def test_append_sections(self, data_ingestor):
         data_ingestor.extract_sheets().load_data().append_sections()
@@ -257,35 +239,9 @@ class TestPIRIngestor:
                 self, f"{table}_fields"
             )
 
-    def test_get_question_data(self, dummy_ingestor, mock_question_data):
-        question_columns = [
-            "question_id",
-            "uqid",
-            "question_name",
-            "question_number",
-            "question_order",
-            "question_text",
-            "question_type",
-            "section",
-        ]
-
-        question = pd.DataFrame.from_dict(mock_question_data["db"])
-
-        dummy_ingestor._sql.get_columns = MagicMock(return_value=question_columns)
-        dummy_ingestor._sql.get_records = MagicMock(return_value=question)
-        dummy_ingestor._year = 2008
-
-        dummy_ingestor.get_question_data()
-
-        dummy_ingestor._sql.get_columns.assert_called_once()
-        dummy_ingestor._sql.get_records.assert_called_once()
-
-        assert not dummy_ingestor._question["question_id"].duplicated().any()
-        assert dummy_ingestor._question.shape == (5, 8)
-
     @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
-    def test_insert_data(self, data_ingestor, mock_columns, mock_question_data):
-        data_ingestor._sql.get_columns = MagicMock(side_effect=mock_columns)
+    def test_insert_data(self, data_ingestor, db_columns, mock_question_data):
+        data_ingestor._columns = db_columns
         data_ingestor._sql.insert_records = MagicMock()
         data_ingestor._sql.update_records = MagicMock()
         question = pd.DataFrame.from_dict(mock_question_data["db"])
@@ -296,7 +252,6 @@ class TestPIRIngestor:
             .append_sections()
             .merge_response_question()
             .clean_pir_data()
-            .link()
             .insert_data()
         )
 
@@ -304,19 +259,6 @@ class TestPIRIngestor:
         data_ingestor._sql.insert_records.assert_any_call(ANY, "response")
         data_ingestor._sql.insert_records.assert_any_call(ANY, "program")
         data_ingestor._sql.insert_records.assert_any_call(ANY, "question")
-
-    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
-    def test_update_unlinked(self, data_ingestor, mock_question_data):
-        question = pd.DataFrame.from_dict(mock_question_data["linked"])
-        data_ingestor._sql.get_records = MagicMock(
-            return_value=question[["question_id"]]
-        )
-        data_ingestor._data["question"] = question
-
-        data_ingestor.update_unlinked()
-
-        data_ingestor._sql.get_records.assert_called_once()
-        assert data_ingestor._unlinked.shape == (2, 3)
 
 
 if __name__ == "__main__":

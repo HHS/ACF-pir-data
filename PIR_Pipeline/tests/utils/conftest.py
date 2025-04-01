@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from pir_pipeline.utils.MockData import MockData
@@ -10,6 +11,7 @@ def insertable(request, mock_data):
     validation = {}
     for workbook in insertable._data.values():
         for table, data in workbook.items():
+            data.replace({np.nan: None}, inplace=True)
             if validation.get(table):
                 validation[table] += data.shape[0]
             else:
@@ -27,6 +29,7 @@ def inserted(request, sql_utils):
     validation = {}
     for workbook in mock_data._data.values():
         for table, data in workbook.items():
+            data.replace({np.nan: None}, inplace=True)
             if validation.get(table):
                 validation[table] += data.shape[0]
             else:
