@@ -1,12 +1,10 @@
 __all__ = ["get_review_data", "get_matches"]
 
-import json
 from hashlib import md5
 
 from sqlalchemy import and_, bindparam, distinct, func, select
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
-from pir_pipeline.models.pir_models import QuestionModel
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 from pir_pipeline.utils.utils import clean_name
 
@@ -14,7 +12,12 @@ from pir_pipeline.utils.utils import clean_name
 def get_review_data(review_type: str, db: SQLAlchemyUtils):
     if review_type == "unlinked":
         table = db._tables["unlinked"]
-        query = select(table)
+        query = select(
+            table.c.question_id,
+            table.c.question_name,
+            table.c.question_number,
+            table.c.question_text,
+        )
     elif review_type == "intermittent":
         table = db._tables["question"]
         year_query = select(func.count(func.distinct(table.c.year))).scalar_subquery()
@@ -30,8 +33,6 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
                 table.c.question_name,
                 table.c.question_number,
                 table.c.question_text,
-                table.c.section,
-                table.c.question_type,
             )
             .where(table.c.uqid.in_(uqid_query))
             .distinct()
@@ -51,8 +52,6 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
                 table.c.question_name,
                 table.c.question_number,
                 table.c.question_text,
-                table.c.section,
-                table.c.question_type,
             )
             .join(right, table.c.uqid == right.c.uqid)
             .distinct()
@@ -70,17 +69,32 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
 
 def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     review_type = payload["review-type"]
+    question_table = db.tables["question"]
 
     if review_type == "unlinked":
-        record = QuestionModel.model_validate(payload["record"]).model_dump_json()
-        record = json.loads(record)
-        records = [record]
+        query = select(question_table).where(
+            question_table.c.question_id == bindparam("question_id")
+        )
+
+        records = db.get_records(query, payload["record"])
         matches = PIRLinker(records, db).fuzzy_link(5)
+        matches = matches[payload["record"].keys()]
     elif review_type == "intermittent":
-        records = [payload["record"]]
-        year_coverage = db.get_records(
-            f"SELECT year FROM question WHERE uqid = '{payload["record"]["uqid"]}'"
-        )["year"].tolist()
+        record_query = (
+            select(question_table)
+            .where(
+                question_table.c.uqid == bindparam("uqid"),
+                question_table.c.question_name == bindparam("question_name"),
+                question_table.c.question_number == bindparam("question_number"),
+                question_table.c.question_text == bindparam("question_text"),
+            )
+            .limit(1)
+        )
+        records = db.get_records(record_query, payload["record"])
+        year_query = select(question_table.c.year).where(
+            question_table.c.uqid == bindparam("uqid")
+        )
+        year_coverage = db.get_records(year_query, payload["record"])["year"].tolist()
         year_coverage = ", ".join([str(yr) for yr in year_coverage])
         year_coverage = f"({year_coverage})"
         matches = (
@@ -90,16 +104,20 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
             )
             .fuzzy_link(5)
         )
+        matches = matches[payload["record"].keys()]
     elif review_type == "inconsistent":
-        matches = db.get_records(
-            f"""
-            SELECT DISTINCT question_id, question_name, question_number, 
-                question_text, section, question_type 
-            FROM question
-            WHERE uqid = "{payload["record"]["uqid"]}"
-            ORDER BY question_id
-            """
+        match_query = (
+            select(
+                question_table.c.question_id,
+                question_table.c.question_name,
+                question_table.c.question_number,
+                question_table.c.question_text,
+            )
+            .where(question_table.c.uqid == bindparam("uqid"))
+            .order_by(question_table.c.question_id)
+            .distinct()
         )
+        matches = db.get_records(match_query, payload["record"])
 
     records = matches.to_dict(orient="records")
     columns = [clean_name(col, "title") for col in matches.columns.tolist()]

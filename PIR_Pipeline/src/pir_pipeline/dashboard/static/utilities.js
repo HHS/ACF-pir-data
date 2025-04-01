@@ -29,7 +29,7 @@ function updateTable(event) {
     // Get the table to be updated
     const tables = document.getElementsByTagName("table");
     const table = tables[0];
-    console.log(table.id);
+
     fetch(document.URL, {"method": "POST", "body": formData})
     .then(response => response.json())
     .then(data => { if(table.id.match("review")) {buildTable(data, table)} else {buildSearchTable(data, table)}});
