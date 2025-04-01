@@ -14,7 +14,7 @@ from pir_pipeline.utils.utils import get_logger
 
 
 class PIRLinker:
-    def __init__(self, records: list[dict] | list[dict], sql: SQLAlchemyUtils):
+    def __init__(self, records: list[dict] | pd.DataFrame, sql: SQLAlchemyUtils):
         """Instantiate instance of PIRLinker object
 
         Args:
@@ -22,7 +22,14 @@ class PIRLinker:
             sql (SQLAlchemyUtils): A SQLAlchemyUtils object for interacting with the database
         """
         self._logger = get_logger(__name__)
-        self._data = pd.DataFrame.from_records(records)
+
+        if isinstance(records, pd.DataFrame):
+            self._data = records
+        elif isinstance(records, list[dict]):
+            self._data = pd.DataFrame.from_records(records)
+        else:
+            raise TypeError("records should be of type list[dict] or pd.DataFrme")
+
         if "question_id" in self._data.columns:
             self._data = self._data[~self._data["question_id"].duplicated()]
             self._unique_question_id = "question_id"
