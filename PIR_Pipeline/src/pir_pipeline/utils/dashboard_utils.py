@@ -10,6 +10,7 @@ from pir_pipeline.utils.utils import clean_name
 
 
 def get_review_data(review_type: str, db: SQLAlchemyUtils):
+    # Questions missing a uqid
     if review_type == "unlinked":
         table = db._tables["unlinked"]
         query = select(
@@ -18,6 +19,7 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
             table.c.question_number,
             table.c.question_text,
         )
+    # Questions without a link covering the full time period
     elif review_type == "intermittent":
         table = db._tables["question"]
         year_query = select(func.count(func.distinct(table.c.year))).scalar_subquery()
@@ -37,7 +39,8 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
             .where(table.c.uqid.in_(uqid_query))
             .distinct()
         )
-    else:
+    # uqids containing variable question_ids
+    elif review_type == "inconsistent":
         table = db._tables["linked"]
         subquery = select(table.c.question_id, table.c.uqid).distinct().subquery()
         right = (
@@ -159,7 +162,7 @@ def get_search_results(
         .subquery()
     )
 
-    # Get get data for the most recent year to create a header row
+    # Get data for the most recent year to create a header row
     header_row_query = (
         select(table, year_range_query.c["year_range"])
         .join(
