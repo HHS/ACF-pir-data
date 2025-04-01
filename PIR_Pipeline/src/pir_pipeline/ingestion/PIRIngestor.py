@@ -1,4 +1,4 @@
-"""Class for ingesting and linking PIR data"""
+"""Class for ingesting PIR data"""
 
 import hashlib
 import os

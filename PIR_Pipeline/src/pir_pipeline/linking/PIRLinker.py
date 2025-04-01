@@ -1,4 +1,4 @@
-"""Class for ingesting and linking PIR data"""
+"""Class for linking PIR data"""
 
 import hashlib
 from typing import Self

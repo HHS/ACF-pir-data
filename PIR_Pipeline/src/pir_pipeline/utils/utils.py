@@ -1,3 +1,5 @@
+"""General utility functions"""
+
 __all__ = ["get_searchable_columns", "get_logger"]
 
 import logging

@@ -1,3 +1,5 @@
+"""Pydantic models for validating PIR data"""
+
 from typing import Optional
 
 from pydantic import BaseModel

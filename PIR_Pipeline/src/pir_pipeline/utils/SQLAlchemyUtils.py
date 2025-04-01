@@ -1,3 +1,5 @@
+"""Utilities for interacting with SQL via SQLAlchemy"""
+
 from typing import Self
 
 import pandas as pd
@@ -55,14 +57,17 @@ class SQLAlchemyUtils(SQLUtils):
 
     @property
     def engine(self):
+        """Return the database engine"""
         return self._engine
 
     @property
     def tables(self):
+        """Return the tables in the database"""
         return self._tables
 
     @property
     def database(self):
+        """Return the database name"""
         return self._database
 
     def make_connection(self):

@@ -1,3 +1,5 @@
+"""SQLAlchemy models for creating and interacting with the PIR database"""
+
 from sqlalchemy import (
     Column,
     Float,
