@@ -59,16 +59,20 @@ class PIRLinker:
 
         return self
 
+    def question_data_check(self):
+        """Check for question data and get it if not present"""
+        try:
+            self._question
+        except AttributeError:
+            self.get_question_data()
+
     def link(self) -> Self:
         """Attempt to link records provided to records in the database.
 
         Returns:
             Self: PIRLinker object
         """
-        try:
-            self._question
-        except AttributeError:
-            self.get_question_data()
+        self.question_data_check()
 
         try:
             self._question_columns
@@ -93,10 +97,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker Object
         """
-        try:
-            self._question
-        except AttributeError:
-            self.get_question_data()
+        self.question_data_check()
 
         df = self._data.copy()
         df = df.merge(
@@ -206,10 +207,7 @@ class PIRLinker:
             scores = [item == 100 for item in row.filter(like="score")]
             return sum(scores) >= 2
 
-        try:
-            self._question
-        except AttributeError:
-            self.get_question_data()
+        self.question_data_check()
 
         try:
             self._cross
