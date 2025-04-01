@@ -45,11 +45,12 @@ def test_drop_db(sql_utils, request):
 @pytest.mark.usefixtures("create_database")
 class TestSQLAlchemyUtilsNoData:
     def test_gen_engine(self, request):
-        db_config.update({"username": db_config["user"]})
-        db_config.pop("user")
+        config = db_config.copy()
+        config.update({"username": db_config["user"]})
+        config.pop("user")
         query = select(text("'Connection Made'"))
         with SQLAlchemyUtils.__new__(SQLAlchemyUtils).gen_engine(
-            **db_config, database="pir_test", drivername=request.module.drivername
+            **config, database="pir_test", drivername=request.module.drivername
         )._engine.connect() as conn:
             result = conn.execute(query)
             value = result.first()

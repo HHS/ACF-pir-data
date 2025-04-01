@@ -17,13 +17,13 @@ from sqlalchemy import bindparam, select
 from werkzeug.exceptions import abort
 
 from pir_pipeline.dashboard.db import get_db
-from pir_pipeline.utils import clean_name, get_searchable_columns
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
     get_review_data,
     get_search_results,
 )
+from pir_pipeline.utils.utils import clean_name, get_searchable_columns
 
 bp = Blueprint("qa", __name__)
 

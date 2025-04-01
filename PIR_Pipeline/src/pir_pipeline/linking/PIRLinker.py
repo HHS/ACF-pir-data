@@ -23,12 +23,18 @@ class PIRLinker:
         """
         self._logger = get_logger(__name__)
 
+        invalid_type = None
         if isinstance(records, pd.DataFrame):
             self._data = records
-        elif isinstance(records, list[dict]):
+        elif isinstance(records, list):
+            if not all([isinstance(record, dict) for record in records]):
+                invalid_type = True
             self._data = pd.DataFrame.from_records(records)
         else:
-            raise TypeError("records should be of type list[dict] or pd.DataFrme")
+            invalid_type = True
+
+        if invalid_type:
+            raise TypeError("records should be of type list[dict] or pd.DataFrame")
 
         if "question_id" in self._data.columns:
             self._data = self._data[~self._data["question_id"].duplicated()]

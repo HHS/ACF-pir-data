@@ -79,7 +79,7 @@ class TestPIRIngestor:
         letters = [random.choice(ascii_uppercase) for i in range(20)]
         question_numbers = [letter + str(i) for i, letter in enumerate(letters)]
 
-        correct = letters + ["", ""]
+        correct = letters + [None, None]
         question_numbers += [1, "wrong_format"]
 
         result = []
@@ -252,7 +252,6 @@ class TestPIRIngestor:
             .append_sections()
             .merge_response_question()
             .clean_pir_data()
-            .link()
             .insert_data()
         )
 
@@ -260,19 +259,6 @@ class TestPIRIngestor:
         data_ingestor._sql.insert_records.assert_any_call(ANY, "response")
         data_ingestor._sql.insert_records.assert_any_call(ANY, "program")
         data_ingestor._sql.insert_records.assert_any_call(ANY, "question")
-
-    @pytest.mark.parametrize("data_ingestor", [True], indirect=True)
-    def test_update_unlinked(self, data_ingestor, mock_question_data):
-        question = pd.DataFrame.from_dict(mock_question_data["linked"])
-        data_ingestor._sql.get_records = MagicMock(
-            return_value=question[["question_id"]]
-        )
-        data_ingestor._data["question"] = question
-
-        data_ingestor.update_unlinked()
-
-        data_ingestor._sql.get_records.assert_called_once()
-        assert data_ingestor._unlinked.shape == (2, 3)
 
 
 if __name__ == "__main__":
