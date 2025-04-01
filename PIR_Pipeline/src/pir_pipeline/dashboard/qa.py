@@ -22,6 +22,7 @@ from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
     get_review_data,
+    get_search_results,
 )
 
 bp = Blueprint("qa", __name__)
@@ -76,30 +77,16 @@ def search():
             table = response["value"]
             columns = db.get_columns(table)
             columns = get_searchable_columns(columns)
+
             return json.dumps(columns)
         else:
             table = request.form["table-select"]
             column = request.form["column-select"]
             keyword = request.form["keyword-search"]
 
-            table = db.tables[table]
-            column = clean_name(
-                column
-            )  # But why not just have the snake_name as the value for the option?
+            results = get_search_results(column, table, keyword, db)
 
-            query = select(table).where(
-                table.c[column].regexp_match(bindparam("keyword"))
-            )
-
-            data = []
-            data.append([clean_name(col, "title") for col in table.c.keys()])
-            with db.engine.connect() as conn:
-                result = conn.execute(query, {"keyword": keyword})
-                for res in result.all():
-                    result_dict = {key: res[i] for i, key in enumerate(table.c.keys())}
-                    data.append(result_dict)
-
-            return json.dumps(data)
+            return json.dumps(results)
 
     tables = db.get_records("SHOW TABLES").iloc[:, 0].tolist()
     tables = [

@@ -107,6 +107,36 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     return records
 
 
+def get_search_results(
+    column: str, table: str, keyword: str, db: SQLAlchemyUtils
+) -> dict:
+    table = db.tables[table]
+    id_column = [col for col in table.primary_key.c.keys() if col.endswith("id")][0]
+    column = clean_name(
+        column
+    )  # But why not just have the snake_name as the value for the option?
+
+    query = (
+        select(table)
+        .where(table.c[column].regexp_match(bindparam("keyword")))
+        .order_by(table.c[id_column], table.c["year"].desc())
+    )
+
+    search_dict = {}
+    search_dict["columns"] = [clean_name(col, "title") for col in table.c.keys()]
+    with db.engine.connect() as conn:
+        result = conn.execute(query, {"keyword": keyword})
+        for res in result.all():
+            result_dict = {key: res[i] for i, key in enumerate(table.c.keys())}
+            ident = result_dict[id_column]
+            if ident in search_dict:
+                search_dict[ident].append(result_dict)
+            else:
+                search_dict[ident] = [result_dict]
+
+    return search_dict
+
+
 class QuestionLinker:
     def __init__(self, data: dict, db: SQLAlchemyUtils):
         self._data = data
@@ -253,14 +283,15 @@ class QuestionLinker:
 if __name__ == "__main__":
     from pir_pipeline.config import db_config
 
-    payload = {
-        "60c274e649282ae77a614d07d39cf117": {
-            "link_type": "link",
-            "base_question_id": "00651687997bac132e7162c24894e8f6",
-            "base_uqid": "",
-            "match_question_id": "5f0d2515f94334b507e70f1548795664",
-            "match_uqid": "39859bcb2164236ad93b499eeeaa1e01",
-        },
-    }
+    # payload = {
+    #     "60c274e649282ae77a614d07d39cf117": {
+    #         "link_type": "link",
+    #         "base_question_id": "00651687997bac132e7162c24894e8f6",
+    #         "base_uqid": "",
+    #         "match_question_id": "5f0d2515f94334b507e70f1548795664",
+    #         "match_uqid": "39859bcb2164236ad93b499eeeaa1e01",
+    #     },
+    # }
     db = SQLAlchemyUtils(**db_config, database="pir")
-    linker = QuestionLinker(payload, db).update_links()
+    # linker = QuestionLinker(payload, db).update_links()
+    get_search_results("question_name", "question", "children", db)

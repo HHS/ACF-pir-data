@@ -1,4 +1,4 @@
-import { updateTable, getColumns } from "./utilities.js";
+import { updateTable, getColumns} from "./utilities.js";
 
 const searchForm = document.getElementById("search-form")
 searchForm.addEventListener("submit", async (e) => {

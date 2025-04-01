@@ -29,10 +29,10 @@ function updateTable(event) {
     // Get the table to be updated
     const tables = document.getElementsByTagName("table");
     const table = tables[0];
-
+    console.log(table.id);
     fetch(document.URL, {"method": "POST", "body": formData})
     .then(response => response.json())
-    .then(data => buildTable(data, table));
+    .then(data => { if(table.id.match("review")) {buildTable(data, table)} else {buildSearchTable(data, table)}});
 }
 
 function buildTable(data, table) {
@@ -96,6 +96,7 @@ function buildTable(data, table) {
             expandButton.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`);
             const accordionDiv = accordionDivBase.cloneNode(true);
             accordionDiv.appendChild(expandButton);
+            
             const actionsCell = document.createElement("td");
             actionsCell.appendChild(accordionDiv);
             row.appendChild(actionsCell);
@@ -158,7 +159,6 @@ function rowToJSON(row) {
 
 function getQuestionData(event, reviewType) {
     const row = event.srcElement.closest("tr");
-    console.log(row);
     const button = event.srcElement
     const tr = document.getElementById(button.getAttribute("aria-controls"));
     const div = document.getElementById(tr.id.replace("-tr-", "-div-"));
@@ -210,6 +210,93 @@ function storeLink(event) {
     }
     
     fetch("/link", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
+}
+
+function buildSearchTable(data, table) {
+    // Constant buttons
+    const expandButtonBase = document.createElement("button");
+    expandButtonBase.className = "accordion-button collapsed";
+    expandButtonBase.setAttribute("type", "button");
+    expandButtonBase.setAttribute("data-bs-toggle", "collapse");
+    expandButtonBase.setAttribute("aria-expanded", "false");
+
+    const accordionDivBase = document.createElement("div");
+    accordionDivBase.className = "accordion";
+
+    // Set table header row
+    table.innerHTML = '';
+
+    let header = data["columns"];
+    let head = document.createElement("thead");
+    let headerRow = document.createElement("tr");
+    head.appendChild(headerRow)
+
+    // Add column headers
+    for (let i = 0; i < header.length; i++) {
+        const column = document.createElement("th");
+        column.innerHTML = header[i];
+        headerRow.appendChild(column);
+    }
+    let actionsColumn = document.createElement("th");
+    actionsColumn.innerHTML = "Action"; 
+    headerRow.appendChild(actionsColumn);
+    table.appendChild(head);
+
+    let body = document.createElement("tbody");
+    let record_num = 0;
+    for (let key in data) {
+        if (key == "columns") {
+            continue
+        }
+
+        const expandButton = expandButtonBase.cloneNode(true);
+        expandButton.innerHTML = "";
+        expandButton.setAttribute("data-bs-target", `.collapsible-row-${record_num}`);
+        
+        const accordionDiv = accordionDivBase.cloneNode(true);
+
+        const actionsCell = document.createElement("td");
+
+        // Get all records associated with this question_id/uqid
+        const records = data[key];
+
+        // Loop through each record
+        for (let i = 0; i < records.length; i++) {
+            const row = document.createElement("tr");
+
+            // Add cells for each value in a record
+            let row_data = records[i];
+            for (let key in row_data) {
+                const cell = document.createElement("td");
+                cell.innerHTML = row_data[key];
+                cell.setAttribute("name", key);
+                row.appendChild(cell);
+            }
+                
+            const trID = table.id + "-tr-" + i + "-" + record_num;
+
+            if (i > 0) {
+                row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
+                row.id = `collapse-${trID}`;
+                let expandValue = expandButton.getAttribute("aria-controls")
+                if (expandValue) {
+                    expandValue += ` ${row.id}`;
+                }
+                else {
+                    expandValue = row.id;
+                }
+                expandButton.setAttribute("aria-controls", expandValue);
+            }
+            else {
+                accordionDiv.appendChild(expandButton);
+                actionsCell.appendChild(accordionDiv);
+                row.appendChild(actionsCell);
+            }
+            body.appendChild(row);
+        }
+        record_num += 1
+    }
+    table.appendChild(body);
 }
 
 export {
