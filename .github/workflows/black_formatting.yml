@@ -1,0 +1,28 @@
+name: Black Formatter
+run-name: Formatting code on branch ${{ github.ref }}
+on: pull_request
+
+jobs:
+  format-with-black:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Format code
+        id: format
+        run: |
+          pip install -U pip
+          pip install black
+          black PIR_Pipeline
+      - name: Commit formatted code
+        id: push
+        run: |
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git config user.name "${{ github.actor }}"
+          git add .
+          git commit -m "Code formatted with black"
+          git push
+        continue-on-error: true

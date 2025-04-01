@@ -114,8 +114,33 @@ class PIRIngestor:
         )
 
         expected_row_count = numrows_q + response.shape[0]
+        # in some cases the question_number is missing but the question_name is present
+        # fill in the missing question_number values
+        question_table_only_missing_question_numbers = (
+            response["question_name"].tolist()
+            == question[question["question_name"].isin(response["question_name"])][
+                "question_name"
+            ].tolist()
+        )
+        if question_table_only_missing_question_numbers:
+            expected_row_count = question.shape[0]
+            question_corrected = (
+                question[question["question_number"].isna()]
+                .drop(["question_number", "section"], axis=1)
+                .merge(
+                    response, on=["question_name"], how="left", validate="one_to_one"
+                )
+            )
+            question_corrected = question_corrected[question.columns]
 
-        question = pd.concat([question, response])
+            question = pd.concat(
+                [question[question["question_number"].notna()], question_corrected]
+            ).sort_values("question_order")
+
+        # in most cases the response table has a full record that the question table is missing
+        else:
+            expected_row_count = numrows_q + response.shape[0]
+            question = pd.concat([question, response])
 
         assert (
             question.shape[0] == expected_row_count
@@ -178,6 +203,7 @@ class PIRIngestor:
         self._year = int(year.group(1))
         self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
+        assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
 
         self._logger.info("Extracted worksheets.")
 
@@ -227,9 +253,11 @@ class PIRIngestor:
                     )
 
                 df.columns = column_names
+                # Get question names by reshaping long
                 question_names = df.iloc[[0]].melt(
                     var_name="question_number", value_name="question_name"
                 )
+                # Reshape entire dataset long and merge question names
                 df = df.melt(
                     id_vars=[
                         "Region",
@@ -255,9 +283,9 @@ class PIRIngestor:
                 df = df[df["Region"] != "Region"]
                 df = df[df["Grant Number"].notna()]
 
-                assert df[
-                    "question_name"
-                ].all(), "Some questions are missing a question name"
+                assert (
+                    df["question_name"].notna().all()
+                ), "Some questions are missing a question name"
 
             elif reference_condition:
                 name = "question"
@@ -265,7 +293,17 @@ class PIRIngestor:
                 self._metrics[name]["record_count"] = df.shape[0]
 
                 df.columns = df.columns.map(self.make_snake_name)
+
+                # Hash columns to track original question ids for validation
                 unique_columns = ["question_number", "question_name"]
+                question_ids = set(
+                    df[unique_columns].apply(self.hash_columns, axis=1).tolist()
+                )
+                self._metrics[name]["question_ids"] = question_ids
+                self._metrics[name]["nan_question_number"] = df[
+                    df["question_number"].isna()
+                ]
+
                 dupes = df[unique_columns].duplicated().sum()
                 try:
                     assert not dupes, self._logger.error(
@@ -276,7 +314,9 @@ class PIRIngestor:
                     self._metrics["question"]["dupes"] = dupes
                     assert (
                         not df[unique_columns].duplicated().any()
-                    ), f"Some observations are still duplicated:\n {df[df[unique_columns].duplicated()]}"
+                    ), self._logger.error(
+                        f"Some observations are still duplicated:\n {df[df[unique_columns].duplicated()]}"
+                    )
 
                 df["section"] = df["question_number"].map(self.get_section)
 
@@ -288,6 +328,7 @@ class PIRIngestor:
             df.columns = df.columns.map(self.make_snake_name)
             self._data[name] = df
 
+        self.close_excel_files()
         self._logger.info("Loaded data.")
 
         return self
@@ -332,7 +373,7 @@ class PIRIngestor:
             string = re.sub(r"_\d+$", "", string)
 
             if string == "nan":
-                return np.nan
+                string = np.nan
 
             return string
 
@@ -358,10 +399,12 @@ class PIRIngestor:
             missing_questions = set(response["question_number"]) - set(
                 question["question_number"]
             )
+
             assert (
                 missing_questions == set()
             ), f"Some questions are missing: {missing_questions}"
 
+        # If section is ever missing, attempt to merge it on using category and subsection
         if question["section"].isna().any():
             grouping_vars = ["category", "subsection"]
             assert (
@@ -408,14 +451,23 @@ class PIRIngestor:
             validate="many_to_one",
             indicator=True,
         )
+
+        # Check to see if all questions in response have a matching record in question
+        # Can occur because sometimes question name is different in response and question
         try:
             num_records = response.shape[0]
             assert (response["_merge"] == "both").all()
+        # If not, correct this
         except AssertionError:
+            # Extract records matched in both and response only
             both = response[response["_merge"] == "both"].drop(columns="_merge")
             left = response[response["_merge"] == "left_only"].drop(columns="_merge")
+
+            # Drop duplicated questions
             left = left[merge_columns][~left[merge_columns].duplicated()]
 
+            # Get the original records from response and merge to question on
+            # only question_number
             left = (
                 original_response.merge(
                     left,
@@ -433,10 +485,16 @@ class PIRIngestor:
                 )
             )
 
-            assert (left["_merge"] == "both").all()
-            assert set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            assert (
+                left["_merge"] == "both"
+            ).all(), "Some records in response still not found in question"
+            assert (
+                set(both.columns.tolist()) - set(left.columns.tolist()) == set()
+            ), "Different columns in both and left"
             appended = pd.concat([both, left])
-            assert appended.shape[0] == num_records
+            assert appended.shape[0] == num_records, self._logger.error(
+                "Incorrect number of records after dataframe concatenation"
+            )
             response = appended
 
         assert (
@@ -451,7 +509,7 @@ class PIRIngestor:
             ]
             .duplicated()
             .any()
-        ), "Some records are duplicated"
+        ), self._logger.error("Some records are duplicated")
 
         # Combine any columns that appear twice due to merging
         for column in response.columns.tolist():
@@ -585,34 +643,64 @@ class PIRIngestor:
         return value
 
     def validate_data(self) -> Self:
+        """Validate the cleaned PIR data
+
+        Returns:
+            Self: PIRIngestor object
+        """
+
         def check_dupes(metric_dict: dict):
             return metric_dict["record_count"] - metric_dict["dupes"]
 
+        response = self._data["response"]
+        question = self._data["question"]
+        program = self._data["program"]
+        metrics = self._metrics
+
         assert (
-            self._data["program"].shape[0] == self._metrics["program"]["record_count"]
+            program.shape[0] == metrics["program"]["record_count"]
         ), self._logger.error("Program count has changed.")
         try:
             assert (
-                self._data["question"].shape[0]
-                >= self._metrics["question"]["record_count"]
+                question.shape[0] >= metrics["question"]["record_count"]
             ), self._logger.error("Question count is too low")
         except AssertionError:
-            assert self._data["question"].shape[0] >= check_dupes(
-                self._metrics["question"]
+            assert question.shape[0] >= check_dupes(
+                metrics["question"]
             ), self._logger.error("Question count is too low")
             self._logger.info("Question count is accurate without duplicates.")
+
+        try:
+            set_diff = set(question["question_id"].unique()).symmetric_difference(
+                metrics["question"]["question_ids"]
+            )
+            assert set_diff, self._logger.error(
+                f"question_ids differ in raw and processed data: {set_diff}"
+            )
+        except AssertionError:
+            question_diff = question[
+                [qid in set_diff for qid in question["question_id"]]
+            ]
+            assert set(question_diff["question_name"]) == set(
+                metrics["question"]["nan_question_number"]["question_name"]
+            ), self._logger.error(
+                "question_ids differ after accounting for nan question_numbers"
+            )
+            self._logger.info(
+                "question_ids align after accounting for nan question_numbers"
+            )
+
+        # Confirm response record count and ids
         assert (
-            self._data["response"]["uid"].nunique()
-            == self._metrics["program"]["record_count"]
+            response["uid"].nunique() == metrics["program"]["record_count"]
         ), self._logger.error("Incorrect program count in response.")
         try:
             assert (
-                self._data["response"]["question_id"].nunique()
-                >= self._metrics["question"]["record_count"]
+                response["question_id"].nunique() >= metrics["question"]["record_count"]
             ), self._logger.error("Too few questions in response.")
         except AssertionError:
-            assert self._data["response"]["question_id"].nunique() >= check_dupes(
-                self._metrics["question"]
+            assert response["question_id"].nunique() >= check_dupes(
+                metrics["question"]
             ), self._logger.error("Too few questions in response.")
             self._logger.info("Response question count is accurate without duplicates.")
 
@@ -665,6 +753,17 @@ class PIRIngestor:
         )
 
         return self
+
+    def close_excel_files(self):
+        """Close all Excel files"""
+        workbooks = self._workbook
+        if isinstance(workbooks, dict):
+            for book in workbooks.values():
+                book.close()
+        else:
+            workbooks.close()
+
+        self._workbook.close()
 
 
 if __name__ == "__main__":
