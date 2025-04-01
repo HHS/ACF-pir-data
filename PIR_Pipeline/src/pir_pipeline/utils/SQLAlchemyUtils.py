@@ -1,7 +1,7 @@
 from typing import Self
 
 import pandas as pd
-from sqlalchemy import URL, Engine, Table, create_engine, text, update
+from sqlalchemy import URL, Engine, Select, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -118,8 +118,23 @@ class SQLAlchemyUtils(SQLUtils):
 
         return columns
 
-    def get_records(self, query: str) -> pd.DataFrame:
-        return pd.read_sql(query, self._engine)
+    def get_records(
+        self, query: str | Select, records: dict | list[dict] = None
+    ) -> pd.DataFrame:
+        if isinstance(query, str):
+            df = pd.read_sql(query, self._engine)
+        elif isinstance(query, Select):
+            with self._engine.connect() as conn:
+                if records:
+                    result = conn.execute(query, records)
+                else:
+                    result = conn.execute(query)
+                records = result.all()
+
+            records = self.to_dict(records, query.c.keys())
+            df = pd.DataFrame.from_records(records)
+
+        return df
 
     def insert_records(self, records: list[dict], table: str):
         def insert_query(records: list[dict]):
