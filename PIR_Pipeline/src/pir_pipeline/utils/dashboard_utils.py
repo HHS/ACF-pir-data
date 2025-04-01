@@ -27,7 +27,6 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
             select(table.c.uqid)
             .group_by(table.c.uqid)
             .having(func.count(table.c.uqid) < year_query)
-            .subquery()
         )
         query = (
             select(
@@ -62,9 +61,10 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
 
     with db.engine.connect() as conn:
         result = conn.execute(query)
-        data = db.to_dict(result.all(), query.c.keys())
+        columns = query.selected_columns.keys()
+        data = db.to_dict(result.all(), columns)
 
-    columns = [clean_name(col, "title") for col in query.c.keys()]
+    columns = [clean_name(col, "title") for col in columns]
     data.insert(0, columns)
 
     return data

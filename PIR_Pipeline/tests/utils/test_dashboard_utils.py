@@ -1,9 +1,14 @@
+from collections import namedtuple
 from hashlib import md5
 
 import pytest
 from sqlalchemy import text
 
-from pir_pipeline.utils.dashboard_utils import QuestionLinker
+from pir_pipeline.utils.dashboard_utils import (
+    QuestionLinker,
+    get_review_data,
+    get_search_results,
+)
 
 
 @pytest.fixture(scope="class")
@@ -47,6 +52,67 @@ payload = {
 def question_linker(sql_utils):
     question_linker = QuestionLinker(payload, sql_utils)
     return question_linker
+
+
+@pytest.mark.usefixtures("create_database", "insert_question_records")
+class TestGetDataMethods:
+    def test_get_review_data(self, sql_utils):
+        Check = namedtuple("Check", ["review_type", "id_var", "ids"])
+        checks = [
+            Check("unlinked", "question_id", ["83e32d72b46030e1abf5109b8b506fb8"]),
+            Check(
+                "intermittent",
+                "uqid",
+                [
+                    "194ed0fc57877f9ee8eee0fc5927b148",
+                    "0b19c17c60bfce95f963a1ddc0575588",
+                    "00517751cc2f7920185e52926ce7a0c9",
+                    "5ff5919440ca5dcd4c9dbda1eff168d4",
+                    "8cfa414fcd9b593e45bee4dd68080ae8",
+                ],
+            ),
+            Check(
+                "inconsistent",
+                "uqid",
+                [
+                    "194ed0fc57877f9ee8eee0fc5927b148",
+                    "00517751cc2f7920185e52926ce7a0c9",
+                ],
+            ),
+        ]
+        for check in checks:
+            data = get_review_data(check.review_type, sql_utils)
+            ids = [d[check.id_var] for d in data if isinstance(d, dict)]
+            set_diff = set(ids).symmetric_difference(set(check.ids))
+            assert not set_diff, f"IDs do not align: {set_diff}"
+
+    def test_get_matches(self):
+        pass
+
+    def test_get_search_results(self, sql_utils):
+        Check = namedtuple("Check", ["kwargs", "ids"])
+        checks = [
+            Check(
+                {"column": "category", "table": "question", "keyword": "^Staff$"},
+                ["83e32d72b46030e1abf5109b8b506fb8"],
+            ),
+            Check(
+                {
+                    "column": "subsection",
+                    "table": "question",
+                    "keyword": "child development staff - qualifications",
+                },
+                [
+                    "83e32d72b46030e1abf5109b8b506fb8",
+                    "87fe124509e4e9e48b26a65b78c87acd",
+                ],
+            ),
+        ]
+        for check in checks:
+            data = get_search_results(**check.kwargs, db=sql_utils)
+            ids = [key for key in data.keys() if key != "columns"]
+            set_diff = set(ids).symmetric_difference(set(check.ids))
+            assert not set_diff, f"IDs do not align: {set_diff}"
 
 
 @pytest.mark.usefixtures("create_database", "insert_question_records")
@@ -110,4 +176,4 @@ class TestQuestionLinker:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_update_links"])
+    pytest.main([__file__, "-sk", "test_get_search_results"])
