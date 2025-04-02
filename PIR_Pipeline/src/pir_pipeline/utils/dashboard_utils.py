@@ -1,3 +1,5 @@
+"""Dashboard utilities for interfacing with the database"""
+
 __all__ = ["get_review_data", "get_matches"]
 
 from hashlib import md5
@@ -9,7 +11,16 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 from pir_pipeline.utils.utils import clean_name
 
 
-def get_review_data(review_type: str, db: SQLAlchemyUtils):
+def get_review_data(review_type: str, db: SQLAlchemyUtils) -> list:
+    """Return data for unlinked, intermittently, and inconsistenly linked questions
+
+    Args:
+        review_type (str): The type of question being reviewed
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+
+    Returns:
+        list: [column_names, record, ..., record]
+    """
     # Questions missing a uqid
     if review_type == "unlinked":
         table = db._tables["unlinked"]
@@ -71,6 +82,18 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils):
 
 
 def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
+    """Return potential matches for a given question or return question_ids
+    within an inconsistent question
+
+    Args:
+        payload (dict): Dictionary containing the review-type and the record to find
+            matches for.\n
+            {"review-type": review-type, "record": record}
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+
+    Returns:
+        list: [column_names, match, ..., match]
+    """
     review_type = payload["review-type"]
     question_table = db.tables["question"]
 
@@ -131,6 +154,17 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 def get_search_results(
     column: str, table: str, keyword: str, db: SQLAlchemyUtils
 ) -> dict:
+    """Return results for the search page
+
+    Args:
+        column (str): The column to search on
+        table (str): The table to search in
+        keyword (str): The term to search for
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+
+    Returns:
+        dict: Dictionary of search results
+    """
     table = db.tables[table]
     id_column = [col for col in table.primary_key.c.keys() if col.endswith("id")][0]
     column = clean_name(
@@ -206,10 +240,31 @@ def get_search_results(
 
 class QuestionLinker:
     def __init__(self, data: dict, db: SQLAlchemyUtils):
+        """QuestionLinker object to handle linking and unlinking of questions
+
+        Args:
+            data (dict): A series of instructions for linking/unlinking questions.
+                Should be of the form:
+                {
+                    record_id_1: {
+                        "link_type": link or unlink,
+                        "base_question_id": qid_1,
+                        "base_uqid": uqid_1,
+                        "match_question_id": qid_2,
+                        "match_uqid": uqid_2
+                    },
+                    ...
+                    record_id_n: {
+                        ...
+                    }
+                }
+            db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+        """
         self._data = data
         self._db = db
 
     def link(self):
+        """Link two questions"""
         record = self._record
         question = self._db.tables["question"]
         distinct_year_query = (
@@ -256,6 +311,7 @@ class QuestionLinker:
             )
 
     def unlink(self):
+        """Unlink two questions"""
         record = self._record
         question = self._db.tables["question"]
         base_uqid = record.get("base_uqid")
@@ -336,6 +392,10 @@ class QuestionLinker:
         )
 
     def update_links(self):
+        """Update links
+
+        Makes calles to QuestionLinker.link and QuestionLinker.unlink as needed
+        """
         for key, value in self._data.items():
             self._record = value
             link_type = value["link_type"]
