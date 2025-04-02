@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
+    get_matches,
     get_review_data,
     get_search_results,
 )
@@ -86,8 +87,55 @@ class TestGetDataMethods:
             set_diff = set(ids).symmetric_difference(set(check.ids))
             assert not set_diff, f"IDs do not align: {set_diff}"
 
-    def test_get_matches(self):
-        pass
+    def test_get_matches(self, sql_utils):
+        # Fields, num_records in each case. Not ids, cause algorithm might change
+        Check = namedtuple("Check", ["payload", "fields", "num_records"])
+        checks = [
+            Check(
+                {
+                    "review-type": "unlinked",
+                    "record": {
+                        "question_id": "83e32d72b46030e1abf5109b8b506fb8",
+                        "year": 2011,
+                    },
+                },
+                {"question_id", "year"},
+                1,
+            ),
+            Check(
+                {
+                    "review-type": "intermittent",
+                    "record": {
+                        "uqid": "194ed0fc57877f9ee8eee0fc5927b148",
+                        "question_name": "Of the number of education and child development staff that left, the number that left for the following primary reason - Other - Specify Text",
+                        "question_number": "B.18.d-1",
+                        "question_text": "Other (e.g., change in job field, reason not provided)",
+                    },
+                },
+                {"uqid", "question_number", "question_name", "question_text"},
+                1,
+            ),
+            Check(
+                {
+                    "review-type": "inconsistent",
+                    "record": {"uqid": "00517751cc2f7920185e52926ce7a0c9"},
+                },
+                {"question_id", "question_name", "question_number", "question_text"},
+                3,
+            ),
+        ]
+        for check in checks:
+            matches = get_matches(check.payload, sql_utils)
+            matches.pop(0)
+            assert (
+                len(matches) == check.num_records
+            ), f"Incorrect record count. Expected: {check.num_records}; got: {len(matches)}"
+            column_check = [
+                m in check.fields for match in matches for m in match.keys()
+            ]
+            assert all(
+                column_check
+            ), f"Incorrect columns in one or more matches\n: {matches}"
 
     def test_get_search_results(self, sql_utils):
         Check = namedtuple("Check", ["kwargs", "ids"])
@@ -176,4 +224,4 @@ class TestQuestionLinker:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_get_search_results"])
+    pytest.main([__file__, "-sk", "test_get_matches"])

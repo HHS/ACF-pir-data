@@ -131,7 +131,7 @@ class SQLAlchemyUtils(SQLUtils):
                     result = conn.execute(query)
                 records = result.all()
 
-            records = self.to_dict(records, query.c.keys())
+            records = self.to_dict(records, query.selected_columns.keys())
             df = pd.DataFrame.from_records(records)
 
         return df
