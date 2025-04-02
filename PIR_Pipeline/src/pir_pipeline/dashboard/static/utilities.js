@@ -4,7 +4,7 @@ function getColumns(event) {
         "element": dropdown.id,
         "value": dropdown.value
     };
-    fetch(document.URL, {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(data)})
+    fetch("/search", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(data)})
     .then(response => response.json())
     .then(options => buildDropdown(options));
 }
@@ -30,9 +30,15 @@ function updateTable(event) {
     const tables = document.getElementsByTagName("table");
     const table = tables[0];
 
-    fetch(document.URL, {"method": "POST", "body": formData})
+    fetch("/search", {"method": "POST", "body": formData})
     .then(response => response.json())
-    .then(data => { if(table.id.match("review")) {buildTable(data, table)} else {buildSearchTable(data, table)}});
+    .then(data => {
+        if (table.id.match("review")) {
+            buildTable(data, table)
+        } else {
+            buildSearchTable(data, table)
+        }
+    });
 }
 
 function buildTable(data, table) {

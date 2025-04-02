@@ -166,3 +166,13 @@ div.card-body {
 .table-box {
     overflow: scroll;
 }
+
+/* Errors */
+
+/* Adapted from  https://flask.palletsprojects.com/en/stable/tutorial/static/ */
+.flash { 
+    margin: 1em 0; 
+    padding: 1em; 
+    background: var(--info); 
+    border: 1px solid var(--secondary); 
+}
