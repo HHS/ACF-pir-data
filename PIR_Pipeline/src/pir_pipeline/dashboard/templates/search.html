@@ -8,14 +8,6 @@
     <form id="search-form">
         <div class="form-container">
             <div class="form-group">
-                <label for="table-select" class="form-label">Table</label>
-                <select class="form-select" onchange="getColumns(event)" name="table-select" id="table-select">
-                    {% for table in tables %}
-                        <option value="{{ table }}">{{ table.title() }}</option>
-                    {% endfor %}
-                </select>
-            </div class="form-group">
-            <div class="form-group">
                 <label for="column-select" class="form-label">Column</label>
                 <select class="form-select" id="column-select" name="column-select">
                     {% for column in columns %}

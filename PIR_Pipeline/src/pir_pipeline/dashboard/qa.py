@@ -90,24 +90,20 @@ def index():
 def search():
     """Handle rendering/data acquisition for the search page"""
     db = get_db()
+    table = "question"
 
     # Execute a search
     if request.method == "POST":
         # Change the columns displayed in the column dropdown
         if request.headers["Content-Type"] == "application/json":
             response = request.get_json()
-            if response["error"]:
-                flash("Please enter a search term")
-                return redirect(url_for("qa.search"))
+            assert response["error"], "Invalid response"
 
-            table = response["value"]
-            columns = db.get_columns(table)
-            columns = get_searchable_columns(columns)
+            flash("Please enter a search term")
+            return redirect(url_for("qa.search"))
 
-            return json.dumps(columns)
         # Return search results
         else:
-            table = request.form["table-select"]
             column = request.form["column-select"]
             keyword = request.form["keyword-search"]
 
@@ -116,17 +112,11 @@ def search():
             return json.dumps(results)
 
     # Return the default search layout
-    tables = db.get_records("SHOW TABLES").iloc[:, 0].tolist()
-    tables = [
-        table
-        for table in tables
-        if table.find("program") != -1 or table.find("question") != -1
-    ]
-    columns = db.get_columns(tables[0])
+    columns = db.get_columns(table)
     columns = get_searchable_columns(columns)
 
     return render_template(
-        "search.html", tables=tables, columns=columns, section_id="search-form-section"
+        "search.html", columns=columns, section_id="search-form-section"
     )
 
 
