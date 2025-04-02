@@ -141,7 +141,12 @@ class TestGetDataMethods:
         Check = namedtuple("Check", ["kwargs", "ids"])
         checks = [
             Check(
-                {"column": "category", "table": "question", "keyword": "^Staff$"},
+                {
+                    "column": "category",
+                    "table": "question",
+                    "keyword": "^Staff$",
+                    "qtype": "all",
+                },
                 ["83e32d72b46030e1abf5109b8b506fb8"],
             ),
             Check(
@@ -149,6 +154,7 @@ class TestGetDataMethods:
                     "column": "subsection",
                     "table": "question",
                     "keyword": "child development staff - qualifications",
+                    "qtype": "all",
                 },
                 [
                     "83e32d72b46030e1abf5109b8b506fb8",

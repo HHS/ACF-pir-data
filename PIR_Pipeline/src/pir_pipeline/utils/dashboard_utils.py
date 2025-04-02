@@ -152,7 +152,7 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 
 
 def get_search_results(
-    column: str, table: str, keyword: str, db: SQLAlchemyUtils
+    table: str, qtype: str, column: str, keyword: str, db: SQLAlchemyUtils
 ) -> dict:
     """Return results for the search page
 
@@ -165,8 +165,12 @@ def get_search_results(
     Returns:
         dict: Dictionary of search results
     """
+    if qtype != "all":
+        table = qtype
+
     table = db.tables[table]
-    id_column = [col for col in table.primary_key.c.keys() if col.endswith("id")][0]
+
+    id_column = "question_id"
     column = clean_name(
         column
     )  # But why not just have the snake_name as the value for the option?

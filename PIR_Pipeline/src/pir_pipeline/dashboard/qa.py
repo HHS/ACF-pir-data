@@ -105,9 +105,10 @@ def search():
         # Return search results
         else:
             column = request.form["column-select"]
+            qtype = request.form["type-select"]
             keyword = request.form["keyword-search"]
 
-            results = get_search_results(column, table, keyword, db)
+            results = get_search_results(table, qtype, column, keyword, db)
 
             return json.dumps(results)
 
