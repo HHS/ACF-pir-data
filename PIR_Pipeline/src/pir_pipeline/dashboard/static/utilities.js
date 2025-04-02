@@ -7,7 +7,7 @@ function updateTable(event) {
     const tables = document.getElementsByTagName("table");
     const table = tables[0];
 
-    fetch("/search", {"method": "POST", "body": formData})
+    fetch(document.URL, {"method": "POST", "body": formData})
     .then(response => response.json())
     .then(data => {
         if (table.id.match("review")) {
