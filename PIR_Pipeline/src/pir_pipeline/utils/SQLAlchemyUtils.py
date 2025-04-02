@@ -7,6 +7,8 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pir_pipeline.config import db_config
 from pir_pipeline.models.pir_sql_models import (
+    inconsistent,
+    intermittent,
     linked,
     program,
     question,
@@ -50,6 +52,8 @@ class SQLAlchemyUtils(SQLUtils):
             "program": program,
             "linked": linked,
             "unlinked": unlinked,
+            "intermittent": intermittent,
+            "inconsistent": inconsistent,
         }
         self._database = database
 
@@ -211,5 +215,5 @@ class SQLAlchemyUtils(SQLUtils):
 
 if __name__ == "__main__":
     SQLAlchemyUtils(
-        **db_config, database="pir", drivername="postgresql+psycopg"
-    ).get_columns("response")
+        **db_config, database="pir", drivername="mysql+mysqlconnector"
+    ).create_db()

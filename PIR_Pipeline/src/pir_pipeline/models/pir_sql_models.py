@@ -7,6 +7,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    func,
     select,
 )
 
@@ -86,3 +87,26 @@ unlinked = view(
 linked = view(
     "linked", sql_metadata, select(question).where(question.c.uqid.is_not(None))
 )
+
+# Intermittent link view
+year_query = select(func.count(func.distinct(question.c.year))).scalar_subquery()
+uqid_query = (
+    select(question.c.uqid)
+    .group_by(question.c.uqid)
+    .having(func.count(question.c.uqid) < year_query)
+)
+query = select(question).where(question.c.uqid.in_(uqid_query)).distinct()
+
+intermittent = view("intermittent", sql_metadata, query)
+
+# Inconsistent link view
+subquery = select(linked.c.question_id, linked.c.uqid).distinct().subquery()
+right = (
+    select(subquery.c.uqid)
+    .group_by(subquery.c.uqid)
+    .having(func.count(subquery.c.question_id) > 1)
+    .subquery()
+)
+query = select(linked).join(right, linked.c.uqid == right.c.uqid).distinct()
+
+inconsistent = view("inconsistent", sql_metadata, query)
