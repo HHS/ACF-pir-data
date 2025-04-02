@@ -8,6 +8,7 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 def get_db():
+    """Return a SQLAlchemyUtils object"""
     if "db" not in g:
         try:
             subprocess.run(["psql", "--version"])
@@ -25,10 +26,11 @@ def get_db():
 
 # Need to revisit
 def close_db(e=None):
+    """Dispose of SQLAlchemy Engine"""
     db = g.pop("db", None)
 
     if db is not None:
-        db.close_connection()
+        db.engine.dispose()
 
 
 # Need to revisit

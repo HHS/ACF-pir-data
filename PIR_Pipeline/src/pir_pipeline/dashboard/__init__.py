@@ -3,6 +3,7 @@ import os
 from flask import Flask
 
 
+# Adapted from https://flask.palletsprojects.com/en/stable/tutorial/
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(SECRET_KEY="dev")
