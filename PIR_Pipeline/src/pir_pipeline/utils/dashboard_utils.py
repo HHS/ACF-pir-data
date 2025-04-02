@@ -32,43 +32,23 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils) -> list:
         )
     # Questions without a link covering the full time period
     elif review_type == "intermittent":
-        table = db._tables["question"]
-        year_query = select(func.count(func.distinct(table.c.year))).scalar_subquery()
-        uqid_query = (
-            select(table.c.uqid)
-            .group_by(table.c.uqid)
-            .having(func.count(table.c.uqid) < year_query)
-        )
-        query = (
-            select(
-                table.c.uqid,
-                table.c.question_name,
-                table.c.question_number,
-                table.c.question_text,
-            )
-            .where(table.c.uqid.in_(uqid_query))
-            .distinct()
-        )
+        table = db._tables["intermittent"]
+        query = select(
+            table.c.uqid,
+            table.c.question_name,
+            table.c.question_number,
+            table.c.question_text,
+        ).distinct()
+
     # uqids containing variable question_ids
     elif review_type == "inconsistent":
-        table = db._tables["linked"]
-        subquery = select(table.c.question_id, table.c.uqid).distinct().subquery()
-        right = (
-            select(subquery.c.uqid)
-            .group_by(subquery.c.uqid)
-            .having(func.count(subquery.c.question_id) > 1)
-            .subquery()
-        )
-        query = (
-            select(
-                table.c.uqid,
-                table.c.question_name,
-                table.c.question_number,
-                table.c.question_text,
-            )
-            .join(right, table.c.uqid == right.c.uqid)
-            .distinct()
-        )
+        table = db._tables["inconsistent"]
+        query = select(
+            table.c.uqid,
+            table.c.question_name,
+            table.c.question_number,
+            table.c.question_text,
+        ).distinct()
 
     with db.engine.connect() as conn:
         result = conn.execute(query)
