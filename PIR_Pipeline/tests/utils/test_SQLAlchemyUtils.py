@@ -31,9 +31,7 @@ def test_drop_db(sql_utils, request):
     else:
         database = "postgres"
         query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
-    sql = SQLAlchemyUtils(
-        **db_config, database=database, drivername=request.module.drivername
-    )
+    sql = SQLAlchemyUtils(**db_config, database=database)
     with sql.engine.connect() as conn:
         result = conn.execute(query)
         exists = result.first()

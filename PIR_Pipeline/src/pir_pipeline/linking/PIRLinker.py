@@ -399,9 +399,7 @@ class PIRLinker:
 
 
 if __name__ == "__main__":
-    sql_alchemy = SQLAlchemyUtils(
-        **db_config, database="pir", drivername="postgresql+psycopg"
-    )
+    sql_alchemy = SQLAlchemyUtils(**db_config, database="pir")
     records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"
     )

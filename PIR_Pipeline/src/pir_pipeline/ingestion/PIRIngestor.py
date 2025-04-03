@@ -279,7 +279,7 @@ class PIRIngestor:
                     on="question_number",
                     validate="many_to_one",
                 )
-                df["section"] = df["question_number"].map(self.get_section)
+                df["section"] = re.search(r"\b[A-Z]\b", sheet).group(0)
                 df = df[df["Region"] != "Region"]
                 df = df[df["Grant Number"].notna()]
 
@@ -417,7 +417,7 @@ class PIRIngestor:
                 "Category and subsection do not uniquely identify section"
             )
             assert not any(question[grouping_vars].isna().any()), self._logger.error(
-                f"One of {grouping_vars} is sometimes None: {question[grouping_vars].isna().any()}"
+                f"One of {grouping_vars} is sometimes None: {question[grouping_vars][question[grouping_vars].isna().any(axis=1)]}"
             )
             sections = question[grouping_vars + ["section"]].dropna().drop_duplicates()
             question = question.merge(
@@ -788,9 +788,7 @@ if __name__ == "__main__":
             init = time.time()
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
-                SQLAlchemyUtils(
-                    **db_config, database="pir", drivername="postgresql+psycopg"
-                ),
+                SQLAlchemyUtils(**db_config, database="pir"),
             ).ingest()
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")
