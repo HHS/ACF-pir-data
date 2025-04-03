@@ -304,7 +304,7 @@ class PIRLinker:
         assert not unlinked["uqid"].any(), "Some unlinked records have a uqid"
 
         assert not self._linked.duplicated(["question_id"]).any()
-        self._linked = pd.concat([self._linked, linked])
+        self._linked = pd.concat([df for df in [self._linked, linked] if not df.empty])
         assert not self._linked.duplicated(["question_id"]).any()
         self._unlinked = unlinked
 

@@ -1,4 +1,3 @@
-import tempfile
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -14,20 +13,13 @@ def dummy_ingestor():
 
 
 @pytest.fixture
-def temporary_directory():
-    temp_dir = tempfile.TemporaryDirectory()
-    temp_dir_name = temp_dir.name
-    yield temp_dir_name
-
-
-@pytest.fixture
-def data_ingestor(request: bool, temporary_directory):
+def data_ingestor(request: bool, tmp_path):
     mock_data = MockData(2008, valid=request.param)
 
     mock_data.generate_data()
-    mock_data.export(directory=temporary_directory)
+    mock_data.export(directory=tmp_path)
 
-    return PIRIngestor(mock_data.path, MagicMock())
+    yield PIRIngestor(mock_data.path, MagicMock())
 
 
 @pytest.fixture
