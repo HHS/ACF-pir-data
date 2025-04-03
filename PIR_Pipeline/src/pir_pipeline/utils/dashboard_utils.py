@@ -2,6 +2,7 @@
 
 __all__ = ["get_review_data", "get_matches"]
 
+from collections import OrderedDict
 from hashlib import md5
 
 from sqlalchemy import and_, bindparam, distinct, func, select
@@ -155,8 +156,23 @@ def get_search_results(
         column
     )  # But why not just have the snake_name as the value for the option?
 
+    columns = OrderedDict(
+        [
+            (col, None)
+            for col in [
+                "question_id",
+                "year",
+                "question_number",
+                "question_name",
+                "question_text",
+                column,
+            ]
+        ]
+    )
+    columns = tuple(columns.keys())
+
     keyword_query = (
-        select(table)
+        select(table.c[columns])
         .where(table.c[column].regexp_match(bindparam("keyword")))
         .order_by(table.c[id_column], table.c["year"].desc())
     )
@@ -182,7 +198,7 @@ def get_search_results(
 
     # Get data for the most recent year to create a header row
     header_row_query = (
-        select(table, year_range_query.c["year_range"])
+        select(table.c[columns], year_range_query.c["year_range"])
         .join(
             max_year_query,
             and_(
@@ -196,7 +212,7 @@ def get_search_results(
 
     # Put column headers in search results dictionary
     search_dict = {}
-    search_dict["columns"] = [clean_name(col, "title") for col in table.c.keys()]
+    search_dict["columns"] = [clean_name(col, "title") for col in columns]
 
     with db.engine.connect() as conn:
         # Get all search results
@@ -204,7 +220,7 @@ def get_search_results(
 
         # Convert results to dictionary
         for res in result.all():
-            result_dict = db.to_dict([res], table.c.keys())[0]
+            result_dict = db.to_dict([res], columns)[0]
             ident = result_dict[id_column]
 
             # Append instances of the same question_id to an existing list

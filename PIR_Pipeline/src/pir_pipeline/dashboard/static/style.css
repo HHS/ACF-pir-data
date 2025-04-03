@@ -176,3 +176,7 @@ div.card-body {
     background: var(--info); 
     border: 1px solid var(--secondary); 
 }
+
+tr[class*=" collapsible-row-"] {
+    background: grey;
+}
