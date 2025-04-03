@@ -22,9 +22,12 @@ def create_app(test_config=None):
 
     db.init_app(app)
 
-    from pir_pipeline.dashboard import qa
+    from pir_pipeline.dashboard import index, review, search
 
-    app.register_blueprint(qa.bp)
+    app.register_blueprint(index.bp)
     app.add_url_rule("/", endpoint="index")
+
+    app.register_blueprint(search.bp)
+    app.register_blueprint(review.bp)
 
     return app
