@@ -641,10 +641,10 @@ class PIRIngestor:
                 or set(question_diff["question_number"])
                 == metrics["question"]["missing_question_numbers"]
             ), self._logger.error(
-                "question_ids differ after accounting for nan question_numbers"
+                "question_ids differ after accounting for nan/missing question_numbers"
             )
             self._logger.info(
-                "question_ids align after accounting for nan question_numbers"
+                "question_ids align after accounting for nan/missing question_numbers"
             )
 
         # Confirm response record count and ids
@@ -743,8 +743,8 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        # elif year < 2023:
-        #     continue
+        elif year != 2015:
+            continue
 
         try:
             init = time.time()
