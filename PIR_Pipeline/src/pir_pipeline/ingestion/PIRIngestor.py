@@ -11,7 +11,7 @@ import pandas as pd
 
 from pir_pipeline.models import pir_models
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-from pir_pipeline.utils.utils import get_logger
+from pir_pipeline.utils.utils import error_thrower, get_logger
 
 
 class PIRIngestor:
@@ -68,85 +68,6 @@ class PIRIngestor:
         df.sort_values(columns + ["question_order"], inplace=True)
         df = df.groupby(columns).first().reset_index()
         return df
-
-    def missing_question_error(
-        self, response: pd.DataFrame, question: pd.DataFrame, missing_questions: set
-    ) -> pd.DataFrame:
-        """Add missing questions to the question data
-
-        Args:
-            response (pd.DataFrame): Response data frame
-            question (pd.DataFrame): Question data frame
-            missing_questions (set): A set of missing questions
-
-        Returns:
-            pd.DataFrame: Question data frame, updated to contain missing questions
-        """
-
-        REQUIRED_COLS = ["question_number", "question_name", "section"]
-
-        assert isinstance(
-            response, pd.DataFrame
-        ), "Input `response` must be a dataframe."
-        assert isinstance(
-            question, pd.DataFrame
-        ), "Input `question` must be a dataframe."
-        assert isinstance(
-            missing_questions, set
-        ), "Input `missing_questions` must be a set."
-
-        assert (
-            set(REQUIRED_COLS) - set(response.columns.tolist()) == set()
-        ), f"Input `response` must have columns {REQUIRED_COLS}."
-        assert (
-            set(REQUIRED_COLS) - set(question.columns.tolist()) == set()
-        ), f"Input `question` must have columns {REQUIRED_COLS}."
-
-        numrows_q = question.shape[0]
-
-        response = (
-            response[["question_number", "question_name", "section"]][
-                response["question_number"].isin(missing_questions)
-            ]
-            .groupby(["question_number", "question_name"])
-            .first()
-            .reset_index()
-        )
-
-        expected_row_count = numrows_q + response.shape[0]
-        # in some cases the question_number is missing but the question_name is present
-        # fill in the missing question_number values
-        question_table_only_missing_question_numbers = (
-            response["question_name"].tolist()
-            == question[question["question_name"].isin(response["question_name"])][
-                "question_name"
-            ].tolist()
-        )
-        if question_table_only_missing_question_numbers:
-            expected_row_count = question.shape[0]
-            question_corrected = (
-                question[question["question_number"].isna()]
-                .drop(["question_number", "section"], axis=1)
-                .merge(
-                    response, on=["question_name"], how="left", validate="one_to_one"
-                )
-            )
-            question_corrected = question_corrected[question.columns]
-
-            question = pd.concat(
-                [question[question["question_number"].notna()], question_corrected]
-            ).sort_values("question_order")
-
-        # in most cases the response table has a full record that the question table is missing
-        else:
-            expected_row_count = numrows_q + response.shape[0]
-            question = pd.concat([question, response])
-
-        assert (
-            question.shape[0] == expected_row_count
-        ), f"Output of missing_question_error is an incorrect length. Expected {expected_row_count}."
-
-        return question
 
     def get_section(self, question_number: str) -> str:
         """Extract the section from a question number
@@ -305,13 +226,17 @@ class PIRIngestor:
                 ]
 
                 dupes = df[unique_columns].duplicated().sum()
+                self._metrics["question"]["number_duplicates"] = set(
+                    df["question_number"][df["question_number"].duplicated()]
+                )
                 try:
                     assert not dupes, self._logger.error(
                         f"{dupes} duplicated questions"
                     )
                 except AssertionError:
                     df = self.duplicated_question_error(df, unique_columns)
-                    self._metrics["question"]["dupes"] = dupes
+                    self._metrics["question"]["name_and_number_duplicates"] = dupes
+
                     assert (
                         not df[unique_columns].duplicated().any()
                     ), self._logger.error(
@@ -377,6 +302,18 @@ class PIRIngestor:
 
             return string
 
+        # Combine any columns that appear twice due to merging
+        def combine_first_merge(df: pd.DataFrame):
+            df = df.copy()
+            for column in df.columns.tolist():
+                if column.endswith("_x"):
+                    column_y = column.replace("_x", "_y")
+                    base_column = column.replace("_x", "")
+                    df[base_column] = df[column].combine_first(df[column_y])
+                    df.drop(columns=[column, column_y], inplace=True)
+
+            return df
+
         # Response data
         response = self._data["response"]
         response["question_number"] = response["question_number"].map(
@@ -386,63 +323,85 @@ class PIRIngestor:
         # Question data
         question = self._data["question"]
 
-        # Confirm all questions are in question
-        missing_questions = set(response["question_number"]) - set(
-            question["question_number"]
+        # Get unique questions from response
+        response_questions = (
+            response[["question_number", "question_name", "section"]]
+            .groupby(["question_number", "question_name"])
+            .first()
+            .reset_index()
         )
+        assert not response_questions["section"].isna().any(), self._logger.error(
+            "Section is sometimes missing in response"
+        )
+
+        # Merge question and response
+        question = question.merge(
+            response_questions,
+            how="outer",
+            on=["question_number", "question_name"],
+            validate="one_to_one",
+            indicator=True,
+        )
+        question = combine_first_merge(question)
+        self._metrics["question"]["missing_question_numbers"] = set(
+            question["question_number"][question["_merge"] == "right_only"]
+        )
+
+        # Checks
+        duplicate_question_numbers = question["question_number"][
+            question["question_number"].duplicated()
+        ]
         try:
-            assert missing_questions == set()
+            assert not duplicate_question_numbers.any(), self._logger.error(
+                f"Some question numbers duplicated: {duplicate_question_numbers}"
+            )
         except AssertionError:
-            self._metrics["question"]["missing_question_numbers"] = missing_questions
-            question = self.missing_question_error(
-                response, question, missing_questions
+            question_number_duplicates = self._metrics["question"]["number_duplicates"]
+            duplicate_question_numbers = set(duplicate_question_numbers)
+            if not duplicate_question_numbers == question_number_duplicates:
+                dupes_to_drop = duplicate_question_numbers - question_number_duplicates
+                self._logger.info(
+                    f"The following questions were duplicated by merging question and\
+                     response: {dupes_to_drop}.\
+                    \nRecords will be deduplicated by taking the value originally in\
+                     question.\
+                    "
+                )
+                record_count = question.shape[0]
+                question = question[
+                    ~(
+                        question["question_number"].isin(dupes_to_drop)
+                        & (question["_merge"] == "right_only")
+                    )
+                ]
+                assert (
+                    record_count - len(dupes_to_drop) == question.shape[0]
+                ), self._logger.error(
+                    f"Incorrect number of records dropped: {record_count - question.shape[0]}"
+                )
+
+            duplicate_question_numbers = question["question_number"][
+                question["question_number"].duplicated()
+            ]
+            duplicate_question_numbers = (
+                set(duplicate_question_numbers) - question_number_duplicates
             )
-            missing_questions = set(response["question_number"]) - set(
-                question["question_number"]
+            assert not duplicate_question_numbers, self._logger.error(
+                f"Some question numbers still duplicated: {duplicate_question_numbers}"
             )
 
-            assert (
-                missing_questions == set()
-            ), f"Some questions are missing: {missing_questions}"
+            self._logger.info("Duplicated question numbers existed prior to merge.")
 
-        # If section is ever missing, attempt to merge it on using category and subsection
-        if question["section"].isna().any():
-            grouping_vars = ["category", "subsection"]
-            assert (
-                question.groupby(grouping_vars)["section"]
-                .unique()
-                .map(lambda x: len(x) == 1 or (len(x) == 2 and None in x))
-                .all()
-            ), self._logger.error(
-                "Category and subsection do not uniquely identify section"
-            )
-            assert not any(question[grouping_vars].isna().any()), self._logger.error(
-                f"One of {grouping_vars} is sometimes None: {question[grouping_vars][question[grouping_vars].isna().any(axis=1)]}"
-            )
-            sections = question[grouping_vars + ["section"]].dropna().drop_duplicates()
-            question = question.merge(
-                sections,
-                how="left",
-                on=["category", "subsection"],
-                validate="many_to_one",
-                indicator=True,
-            )
-            # Sometimes all questions in a category/subsection combination are missing section
-            # Also means final check is invalid
-            # assert (question["_merge"] == "both").all(), self._logger.error(
-            #     "Some category/section combinations do not align"
-            # )
-            question["section"] = question["section_x"].combine_first(
-                question["section_y"]
-            )
-            question.drop(columns=["section_x", "section_y", "_merge"], inplace=True)
-            # assert not question["section"].isna().any(), self._logger.error(
-            #     "Some section information still missing"
-            # )
+        na_section = question["section"][question["section"].isna()]
+        assert not na_section.any(), self._logger.error(
+            "Some sections are missing in question."
+        )
 
+        # Save question data
+        question.drop(columns=["_merge"], inplace=True)
         self._data["question"] = question
 
-        # Merge
+        # Merge response and question
         original_response = response.copy()
         merge_columns = ["question_number", "question_name"]
         response = response.merge(
@@ -512,18 +471,10 @@ class PIRIngestor:
             .any()
         ), self._logger.error("Some records are duplicated")
 
-        # Combine any columns that appear twice due to merging
-        for column in response.columns.tolist():
-            if column.endswith("_x"):
-                column_y = column.replace("_x", "_y")
-                base_column = column.replace("_x", "")
-                response[base_column] = response[column].combine_first(
-                    response[column_y]
-                )
-                response.drop(columns=[column, column_y], inplace=True)
+        # Save response data
+        self._data["response"] = combine_first_merge(response)
 
-        self._data["response"] = response
-
+        # Log
         self._logger.info("Merged response and question data.")
 
         return self
@@ -651,7 +602,9 @@ class PIRIngestor:
         """
 
         def check_dupes(metric_dict: dict):
-            return metric_dict["record_count"] - metric_dict["dupes"]
+            return (
+                metric_dict["record_count"] - metric_dict["name_and_number_duplicates"]
+            )
 
         response = self._data["response"]
         question = self._data["question"]
@@ -695,18 +648,26 @@ class PIRIngestor:
             )
 
         # Confirm response record count and ids
-        assert (
-            response["uid"].nunique() == metrics["program"]["record_count"]
-        ), self._logger.error("Incorrect program count in response.")
-        try:
-            assert (
-                response["question_id"].nunique() >= metrics["question"]["record_count"]
-            ), self._logger.error("Too few questions in response.")
-        except AssertionError:
-            assert response["question_id"].nunique() >= check_dupes(
-                metrics["question"]
-            ), self._logger.error("Too few questions in response.")
-            self._logger.info("Response question count is accurate without duplicates.")
+        response_uids = set(response["uid"].unique())
+        program_uids = set(program["uid"].unique())
+
+        if not response_uids.issubset(program_uids):
+            uid_diff = response_uids - program_uids
+            error_thrower(
+                self._logger,
+                f"Some uids appear in response that do not appear in program: {uid_diff}",
+                AssertionError,
+            )
+
+        response_qids = set(response["question_id"].unique())
+        question_qids = set(question["question_id"].unique())
+        if not response_qids.issubset(question_qids):
+            qid_diff = response_qids - question_qids
+            error_thrower(
+                self._logger,
+                f"Some question_ids appear in response that do not appear in question: {qid_diff}",
+                AssertionError,
+            )
 
         self._logger.info("Validated data.")
 
@@ -750,7 +711,7 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .validate_data()
-            .insert_data()
+            # .insert_data()
         )
 
         return self
@@ -773,6 +734,7 @@ if __name__ == "__main__":
     from pir_pipeline.config import db_config
     from pir_pipeline.utils.paths import INPUT_DIR
 
+    overall_init_time = time.time()
     files = os.listdir(INPUT_DIR)
     for file in files:
         year = re.search(r"\d{4}", file).group(0)
@@ -781,8 +743,8 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year < 2015:
-            continue
+        # elif year < 2023:
+        #     continue
 
         try:
             init = time.time()
@@ -797,3 +759,8 @@ if __name__ == "__main__":
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")
             raise
+
+    overall_fin_time = time.time()
+    print(
+        f"Time to process all years: {(overall_fin_time-overall_init_time)/60} minutes"
+    )
