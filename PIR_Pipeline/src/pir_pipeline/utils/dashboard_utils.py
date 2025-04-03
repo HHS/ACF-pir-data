@@ -22,34 +22,22 @@ def get_review_data(review_type: str, db: SQLAlchemyUtils) -> list:
     Returns:
         list: [column_names, record, ..., record]
     """
+    qid_columns = ("question_id", "question_name", "question_number", "question_text")
+    uqid_columns = ("uqid", "question_name", "question_number", "question_text")
+
     # Questions missing a uqid
     if review_type == "unlinked":
         table = db._tables["unlinked"]
-        query = select(
-            table.c.question_id,
-            table.c.question_name,
-            table.c.question_number,
-            table.c.question_text,
-        )
+        query = select(table.c[qid_columns])
     # Questions without a link covering the full time period
     elif review_type == "intermittent":
         table = db._tables["intermittent"]
-        query = select(
-            table.c.uqid,
-            table.c.question_name,
-            table.c.question_number,
-            table.c.question_text,
-        ).distinct()
+        query = select(table.c[uqid_columns]).distinct()
 
     # uqids containing variable question_ids
     elif review_type == "inconsistent":
         table = db._tables["inconsistent"]
-        query = select(
-            table.c.uqid,
-            table.c.question_name,
-            table.c.question_number,
-            table.c.question_text,
-        ).distinct()
+        query = select(table.c[uqid_columns]).distinct()
 
     with db.engine.connect() as conn:
         result = conn.execute(query)
@@ -79,14 +67,17 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     question_table = db.tables["question"]
 
     if review_type == "unlinked":
+        # Return the relevant record
         query = select(question_table).where(
             question_table.c.question_id == bindparam("question_id")
         )
-
         records = db.get_records(query, payload["record"])
+
+        # Get matches
         matches = PIRLinker(records, db).fuzzy_link(5)
         matches = matches[payload["record"].keys()]
     elif review_type == "intermittent":
+        # Return the relevant record
         record_query = (
             select(question_table)
             .where(
@@ -98,12 +89,16 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
             .limit(1)
         )
         records = db.get_records(record_query, payload["record"])
+
+        # Get the years covered by the record
         year_query = select(question_table.c.year).where(
             question_table.c.uqid == bindparam("uqid")
         )
         year_coverage = db.get_records(year_query, payload["record"])["year"].tolist()
         year_coverage = ", ".join([str(yr) for yr in year_coverage])
         year_coverage = f"({year_coverage})"
+
+        # Get matches
         matches = (
             PIRLinker(records, db)
             .get_question_data(
@@ -113,6 +108,7 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
         )
         matches = matches[payload["record"].keys()]
     elif review_type == "inconsistent":
+        # Return the relevant records
         match_query = (
             select(
                 question_table.c.question_id,
