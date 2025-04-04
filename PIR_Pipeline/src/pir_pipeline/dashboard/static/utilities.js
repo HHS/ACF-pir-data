@@ -290,5 +290,6 @@ export {
     buildTable,
     updateTable,
     getQuestionData,
-    storeLink
+    storeLink,
+    buildSearchTable
 }

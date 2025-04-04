@@ -1,4 +1,4 @@
-import { storeLink, buildTable } from "./utilities.js"
+import { storeLink, buildSearchTable } from "./utilities.js"
 
 function buildFlashcardPage(e) {
     const element = e.target;
@@ -8,7 +8,6 @@ function buildFlashcardPage(e) {
 
 window.addEventListener("load", async (e) => {
     const current_page = document.URL;
-    console.log("ran");
     if (current_page.search("flashcard") == -1) {
         return
     }
@@ -32,12 +31,12 @@ window.addEventListener("load", async (e) => {
 
     fetch("/review/data", payload)
     .then(response => response.json())
+    // .then(data => console.log(data))
     .then(data => {
         let questionTable = document.getElementById("flashcard-question-table");
-        console.log(data);
-        buildTable(data["question"], questionTable);
+        buildSearchTable(data["question"], questionTable);
         let matchesTable = document.getElementById("flashcard-matches-table");
-        buildTable(data["matches"], matchesTable);
+        buildSearchTable(data["matches"], matchesTable);
     })
 })
 

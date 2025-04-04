@@ -8,6 +8,7 @@ from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
     get_review_data,
+    get_search_results,
 )
 from pir_pipeline.utils.utils import clean_name
 
@@ -54,8 +55,20 @@ def data():
 
         # Get matches for the first record
         matches = get_matches({"review-type": review_type, "record": record}, db)
+        id_column = "question_id" if review_type == "unlinked" else "uqid"
+        output = {
+            "question": get_search_results(
+                review_type, id_column, record[id_column], db
+            ),
+            "matches": {},
+        }
+        matches.pop(0)
+        for match in matches:
+            output["matches"].update(
+                get_search_results("all", id_column, match[id_column], db)
+            )
 
-        output = {"question": current, "matches": matches}
+        print(output)
 
     return json.dumps(output)
 
