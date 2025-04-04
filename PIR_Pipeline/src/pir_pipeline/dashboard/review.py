@@ -28,15 +28,36 @@ def flashcard():
 
     # Get data for review
     data = get_review_data(review_type, db)
-    question = data[0:2]
+    columns = data.pop(0)
+    columns = [clean_name(col, "title") for col in columns]
+    record = data[0]
     session["review_list"] = data
 
     # Get matches for the first record
-    matches = get_matches({"review-type": review_type, "record": question[1]}, db)
+    matches = get_matches({"review-type": review_type, "record": record}, db)
 
     return render_template(
-        "review/flashcard.html", question=json.dumps(question), matches=matches
+        "review/flashcard.html", columns=columns, record=record, matches=matches
     )
+
+
+@bp.route("/data", methods=["POST"])
+def data():
+    db = get_db()
+    response = request.get_json()
+
+    if response["for"] == "flashcard":
+        review_type = response["review-type"]
+        data = get_review_data(review_type, db)
+        current = data[0:2]
+        record = current[1]
+
+        # Get matches for the first record
+        matches = get_matches({"review-type": review_type, "record": record}, db)
+
+        output = {"question": current, "matches": matches}
+
+    return json.dumps(output)
 
 
 @bp.route("/table", methods=["GET", "POST"])

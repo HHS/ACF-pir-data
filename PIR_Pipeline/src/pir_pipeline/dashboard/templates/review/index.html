@@ -9,23 +9,18 @@
         Select which types of questions you would like to review
     </h2>
     <div class="card-container">
-        <div class="card" onclick="location.href='{{ url_for("review.flashcard", review_type="unlinked") }}'">
-            <div class="card-body">
-                Unlinked
-            </div>
+        <div class="card" onclick="buildFlashcardPage(event)">
+            <div class="card-body">Unlinked</div>
         </div>
         <div class="card">
-            <div class="card-body">
-                Intermittent
-            </div>
+            <div class="card-body">Intermittent</div>
         </div>
         <div class="card">
-            <div class="card-body">
-                Inconsistent
-            </div>
+            <div class="card-body">Inconsistent</div>
         </div>
     </div>
 {% endblock %}
 
 {% block scripts %}
+    <script type="module" src="{{ url_for('static', filename='reviewFlashCard.js') }}"></script>
 {% endblock %}

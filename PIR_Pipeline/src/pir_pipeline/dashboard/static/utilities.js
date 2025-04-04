@@ -34,7 +34,10 @@ function buildTable(data, table) {
     linkButtonBase.setAttribute("onclick", "storeLink(event)");
 
     // Other constants
-    const reviewType = document.getElementById("review-type").value
+    let reviewType = document.getElementById("review-type");
+    if (reviewType) {
+        reviewType = reviewType.value;
+    }
 
     // Set table header row
     table.innerHTML = '';
@@ -126,6 +129,7 @@ function buildTable(data, table) {
     }
 
     table.appendChild(body);
+    return table;
 }
 
 function rowToJSON(row) {
