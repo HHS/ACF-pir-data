@@ -143,7 +143,6 @@ class TestGetDataMethods:
             Check(
                 {
                     "column": "category",
-                    "table": "question",
                     "keyword": "^Staff$",
                     "qtype": "all",
                 },
@@ -152,7 +151,6 @@ class TestGetDataMethods:
             Check(
                 {
                     "column": "subsection",
-                    "table": "question",
                     "keyword": "child development staff - qualifications",
                     "qtype": "all",
                 },

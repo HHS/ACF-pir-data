@@ -31,7 +31,7 @@ def search():
             qtype = request.form["type-select"]
             keyword = request.form["keyword-search"]
 
-            results = get_search_results(table, qtype, column, keyword, db)
+            results = get_search_results(qtype, column, keyword, db)
 
             return json.dumps(results)
 

@@ -129,7 +129,7 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 
 
 def get_search_results(
-    table: str, qtype: str, column: str, keyword: str, db: SQLAlchemyUtils
+    qtype: str, column: str, keyword: str, db: SQLAlchemyUtils
 ) -> dict:
     """Return results for the search page
 
@@ -144,6 +144,8 @@ def get_search_results(
     """
     if qtype != "all":
         table = qtype
+    else:
+        table = "question"
 
     table = db.tables[table]
 
@@ -417,4 +419,3 @@ if __name__ == "__main__":
     # }
     db = SQLAlchemyUtils(**db_config, database="pir")
     # linker = QuestionLinker(payload, db).update_links()
-    get_search_results("question_name", "question", "children", db)
