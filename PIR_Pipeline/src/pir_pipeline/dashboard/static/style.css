@@ -165,6 +165,12 @@ div.card-body {
 
 .table-box {
     overflow: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.table-box::-webkit-scrollbar {
+    display:none;
 }
 
 /* Errors */
@@ -179,4 +185,21 @@ div.card-body {
 
 tr[class*=" collapsible-row-"] {
     background: grey;
+}
+
+/* Card styling */
+.card {
+    width: 50%;
+    margin-bottom: 1em;
+}
+
+.card-body {
+    text-align: center;
+    font-size: 32px;
+}
+
+.card-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
 }

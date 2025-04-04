@@ -1,5 +1,5 @@
-import hashlib
 import json
+from hashlib import md5
 
 from flask import Blueprint, render_template, request, session
 
@@ -9,12 +9,38 @@ from pir_pipeline.utils.dashboard_utils import (
     get_matches,
     get_review_data,
 )
+from pir_pipeline.utils.utils import clean_name
 
-bp = Blueprint("review", __name__)
+bp = Blueprint("review", __name__, url_prefix="/review")
 
 
-@bp.route("/review", methods=["GET", "POST"])
-def review():
+@bp.route("/")
+def index():
+    return render_template("review/index.html")
+
+
+@bp.route("/flashcard")
+def flashcard():
+    db = get_db()
+
+    # Parse url string
+    review_type = request.args.get("review_type")
+
+    # Get data for review
+    data = get_review_data(review_type, db)
+    question = data[0:2]
+    session["review_list"] = data
+
+    # Get matches for the first record
+    matches = get_matches({"review-type": review_type, "record": question[1]}, db)
+
+    return render_template(
+        "review/flashcard.html", question=json.dumps(question), matches=matches
+    )
+
+
+@bp.route("/table", methods=["GET", "POST"])
+def table():
     """Handle rendering/data acquisition for the review page"""
     db = get_db()
 
@@ -49,7 +75,7 @@ def link():
     # Add a link/unlink entry to session
     if action == "build":
         link_dict = session.get("link_dict")
-        dict_id = hashlib.md5(str(data).encode("utf-8")).hexdigest()
+        dict_id = md5(str(data).encode("utf-8")).hexdigest()
         if link_dict:
             # May need to handle user selecting the same link twice, may not
             # if dict_id in link_dict:
