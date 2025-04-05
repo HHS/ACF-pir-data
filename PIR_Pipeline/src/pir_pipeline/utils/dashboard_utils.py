@@ -236,6 +236,40 @@ def get_search_results(
     return search_dict
 
 
+def get_review_question(table: str, offset: int, db: SQLAlchemyUtils) -> str:
+    if table == "unlinked":
+        id_column = "question_id"
+        columns = ["question_id", "year"]
+    else:
+        id_column = "uqid"
+        columns = ["uqid"]
+
+    columns += [
+        "question_name",
+        "question_number",
+        "question_text",
+        "question_type",
+        "section",
+    ]  # common columns
+    columns = tuple(columns)
+    table = db.tables[table]
+
+    query = (
+        select(table.c[columns])
+        .order_by(table.c[id_column])
+        .limit(1)
+        .offset(offset)
+        .distinct()
+    )
+    with db.engine.connect() as conn:
+        result = conn.execute(query)
+        next_id = result.one()
+
+    next_id = {key: next_id[i] for i, key in enumerate(query.selected_columns.keys())}
+
+    return (id_column, next_id)
+
+
 class QuestionLinker:
     def __init__(self, data: dict, db: SQLAlchemyUtils):
         """QuestionLinker object to handle linking and unlinking of questions
@@ -408,14 +442,5 @@ class QuestionLinker:
 if __name__ == "__main__":
     from pir_pipeline.config import db_config
 
-    # payload = {
-    #     "60c274e649282ae77a614d07d39cf117": {
-    #         "link_type": "link",
-    #         "base_question_id": "00651687997bac132e7162c24894e8f6",
-    #         "base_uqid": "",
-    #         "match_question_id": "5f0d2515f94334b507e70f1548795664",
-    #         "match_uqid": "39859bcb2164236ad93b499eeeaa1e01",
-    #     },
-    # }
     db = SQLAlchemyUtils(**db_config, database="pir")
-    # linker = QuestionLinker(payload, db).update_links()
+    get_review_question("unlinked", 10, db)

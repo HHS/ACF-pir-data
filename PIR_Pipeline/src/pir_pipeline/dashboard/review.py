@@ -8,11 +8,20 @@ from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
     get_review_data,
+    get_review_question,
     get_search_results,
 )
-from pir_pipeline.utils.utils import clean_name
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 bp = Blueprint("review", __name__, url_prefix="/review")
+
+
+def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
+    output = {}
+    for match in matches:
+        output.update(get_search_results("all", id_column, match[id_column], db))
+
+    return output
 
 
 @bp.route("/")
@@ -20,29 +29,37 @@ def index():
     return render_template("review/index.html")
 
 
-@bp.route("/flashcard")
+@bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
-    db = get_db()
+    if request.method == "POST":
+        db = get_db()
 
-    # Parse url string
-    review_type = request.args.get("review_type")
+        form = request.form
+        action = form["action"]
+        review_type = form["review-type"]
 
-    # Get data for review
-    data = get_review_data(review_type, db)
-    columns = data.pop(0)
-    columns = [clean_name(col, "title") for col in columns]
-    record = data[0]
-    session["review_list"] = data
+        if action == "next":
+            offset = session.get("current_question")
+            id_column, record = get_review_question(review_type, offset, db)
+            matches = get_matches({"review-type": review_type, "record": record}, db)
+            output = {
+                "question": get_search_results(
+                    review_type, id_column, record[id_column], db
+                )
+            }
+            matches.pop(0)
+            output["matches"] = search_matches(matches, id_column, db)
+        elif action == "previous":
+            pass
+        elif action == "confirm":
+            pass
 
-    # Get matches for the first record
-    matches = get_matches({"review-type": review_type, "record": record}, db)
+        return output
 
-    return render_template(
-        "review/flashcard.html", columns=columns, record=record, matches=matches
-    )
+    return render_template("review/flashcard.html")
 
 
-@bp.route("/data", methods=["POST"])
+@bp.route("/init-flashcard", methods=["POST"])
 def data():
     db = get_db()
     response = request.get_json()
@@ -68,7 +85,13 @@ def data():
                 get_search_results("all", id_column, match[id_column], db)
             )
 
-        print(output)
+        current_question = 0
+        max_questions = len(data) - 1
+        output.update(
+            {"current_question": current_question, "max_questions": max_questions}
+        )
+        session["current_question"] = current_question
+        session["max_questions"] = max_questions
 
     return json.dumps(output)
 
