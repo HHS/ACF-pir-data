@@ -1,7 +1,7 @@
 import json
 from hashlib import md5
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, render_template, request, session
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -40,6 +40,13 @@ def flashcard():
 
         if action == "next":
             offset = session.get("current_question")
+
+            # Increment offset or loop to beginning
+            if offset < session.get("max_questions"):
+                offset += 1
+            else:
+                offset = 0
+
             id_column, record = get_review_question(review_type, offset, db)
             matches = get_matches({"review-type": review_type, "record": record}, db)
             output = {
@@ -49,12 +56,13 @@ def flashcard():
             }
             matches.pop(0)
             output["matches"] = search_matches(matches, id_column, db)
+            session["current_question"] = offset
         elif action == "previous":
             pass
         elif action == "confirm":
             pass
 
-        return output
+        return json.dumps(output)
 
     return render_template("review/flashcard.html")
 

@@ -6,7 +6,6 @@ function buildFlashcardPage(e) {
 }
 
 function initializeFlashcards(elem) {
-    const current_page = document.URL;
     const reviewType = elem.getAttribute("value");
     
     const body = {
@@ -28,11 +27,13 @@ function initializeFlashcards(elem) {
         .then(response => response.text())
         .then(html => document.writeln(html))
 
+        document.getElementById("review-type-input").value = reviewType;
         await updateFlashcardTables(data)
     })
 }
 
 function flashcardAction(e) {
+    e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
     formData.append(e.submitter.name, e.submitter.value);
@@ -61,12 +62,10 @@ function updateFlashcardTables(data) {
     matches.id = "flashcard-matches-table";
     matches.className = "table table-hover";
 
-    console.log(question);
     const tables = {
         "question": question.outerHTML,
         "matches": matches.outerHTML
     }
-    console.log(tables);
 
     return Promise.resolve(tables)
 }
