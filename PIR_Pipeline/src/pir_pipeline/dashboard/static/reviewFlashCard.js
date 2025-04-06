@@ -1,35 +1,13 @@
 import { storeLink, buildSearchTable } from "./utilities.js"
 
-// Adapted from https://stackoverflow.com/questions/53777061/run-window-addeventlistenerload-only-once
-const { href } = window.location;
-const alreadyLoaded = JSON.parse(localStorage.loaded || '[]');
-
 function buildFlashcardPage(e) {
     const element = e.target;
-    const reviewType = element.textContent.trim().toLowerCase();
-    window.location.assign(`/review/flashcard?review_type=${reviewType}`);
+    initializeFlashcards(element);
 }
 
-const once = {
-    once: true
-};
-
-if (!alreadyLoaded.includes(href)) {
-    window.addEventListener("load", async (e) => initializeFlashcards(e), once);
-    localStorage.loaded = JSON.stringify(alreadyLoaded);
-    console.log(alreadyLoaded)
-    alreadyLoaded.push(href);
-}
-
-function initializeFlashcards(e) {
+function initializeFlashcards(elem) {
     const current_page = document.URL;
-    if (current_page.search("flashcard") == -1) {
-        return
-    };
-
-    const query = current_page.match("(?<=\\?).+")[0]
-    const searchParams = new URLSearchParams(query);
-    const reviewType = searchParams.get("review_type");
+    const reviewType = elem.getAttribute("value");
     
     const body = {
         "for": "flashcard",
@@ -43,19 +21,21 @@ function initializeFlashcards(e) {
         "body": JSON.stringify(body) 
     };
 
-    fetch("/review/init-flashcard", payload)
+    fetch("/review/data", payload)
     .then(response => response.json())
-    .then(data => updateFlashcardTables(data));
+    .then(async (data) => {
+        await fetch("/review/init-flashcard")
+        .then(response => response.text())
+        .then(html => document.writeln(html))
 
-    const reviewTypeInput = document.getElementById("review-type-input");
-    reviewTypeInput.setAttribute("value", reviewType);
+        await updateFlashcardTables(data)
+    })
 }
 
 function flashcardAction(e) {
     const form = e.target;
     const formData = new FormData(form);
     formData.append(e.submitter.name, e.submitter.value);
-    console.log(formData);
 
     fetch("/review/flashcard", {"method": "POST", "body": formData})
     .then(response => response.json())
@@ -64,9 +44,31 @@ function flashcardAction(e) {
 
 function updateFlashcardTables(data) {
     const questionTable = document.getElementById("flashcard-question-table");
-    buildSearchTable(data["question"], questionTable);
+    if (questionTable) {
+        var question = buildSearchTable(data["question"], questionTable);
+    } else {
+        var question = buildSearchTable(data["question"]);
+    }
+    question.id = "flashcard-question-table";
+    question.className = "table table-hover";
+
     const matchesTable = document.getElementById("flashcard-matches-table");
-    buildSearchTable(data["matches"], matchesTable);
+    if (matchesTable) {
+        var matches = buildSearchTable(data["matches"], matchesTable);
+    } else {
+        var matches = buildSearchTable(data["matches"]);
+    }
+    matches.id = "flashcard-matches-table";
+    matches.className = "table table-hover";
+
+    console.log(question);
+    const tables = {
+        "question": question.outerHTML,
+        "matches": matches.outerHTML
+    }
+    console.log(tables);
+
+    return Promise.resolve(tables)
 }
 
 document.storeLink = storeLink;

@@ -1,7 +1,7 @@
 import json
 from hashlib import md5
 
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, redirect, render_template, request, session, url_for
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -59,7 +59,12 @@ def flashcard():
     return render_template("review/flashcard.html")
 
 
-@bp.route("/init-flashcard", methods=["POST"])
+@bp.route("/init-flashcard", methods=["GET"])
+def init_flashcard():
+    return render_template("review/flashcard.html")
+
+
+@bp.route("/data", methods=["POST"])
 def data():
     db = get_db()
     response = request.get_json()

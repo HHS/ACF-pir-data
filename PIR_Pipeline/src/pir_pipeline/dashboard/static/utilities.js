@@ -199,7 +199,7 @@ function storeLink(event) {
     fetch("/link", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
 }
 
-function buildSearchTable(data, table) {
+function buildSearchTable(data, table = document.createElement("table")) {
     // Constant buttons
     const expandButtonBase = document.createElement("button");
     expandButtonBase.className = "accordion-button collapsed";
@@ -284,6 +284,7 @@ function buildSearchTable(data, table) {
         record_num += 1
     }
     table.appendChild(body);
+    return table
 }
 
 export {
