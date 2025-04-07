@@ -431,6 +431,9 @@ class QuestionLinker:
             [{"uqid": match_uqid, "match_qid": match_qid}],
         )
 
+    def confirm(self):
+        pass
+
     def update_links(self):
         """Update links
 
@@ -443,6 +446,8 @@ class QuestionLinker:
                 self.link()
             elif link_type == "unlink":
                 self.unlink()
+            elif link_type == "confirm":
+                self.confirm()
             else:
                 raise AttributeError("Link type should be either 'link' or 'unlink'")
 

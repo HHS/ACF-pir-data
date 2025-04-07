@@ -1,5 +1,7 @@
 from sqlalchemy import (
+    Boolean,
     Column,
+    Date,
     Float,
     ForeignKeyConstraint,
     Integer,
@@ -46,6 +48,7 @@ program = Table(
     Column("program_zip2", String(255)),
     Column("region", Integer),
 )
+
 question = Table(
     "question",
     sql_metadata,
@@ -61,6 +64,7 @@ question = Table(
     Column("section", String(255)),
     Column("subsection", String(255)),
 )
+
 response = Table(
     "response",
     sql_metadata,
@@ -81,9 +85,24 @@ response = Table(
         ondelete="CASCADE",
     ),
 )
+
+uqid_changelog = Table(
+    "uqid_changelog",
+    sql_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("question_id", String(255), index=True),
+    Column("original_uqid", String(255), index=True),
+    Column("new_uqid", String(255)),
+    Column("timestamp", Date),
+    Column("complete_series_flag", Boolean),
+)
+
+# Unlinked view
 unlinked = view(
     "unlinked", sql_metadata, select(question).where(question.c.uqid.is_(None))
 )
+
+# Linked view
 linked = view(
     "linked", sql_metadata, select(question).where(question.c.uqid.is_not(None))
 )
