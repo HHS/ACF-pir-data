@@ -46,6 +46,13 @@ payload = {
         "match_question_id": "87fe124509e4e9e48b26a65b78c87acd",
         "match_uqid": "8cfa414fcd9b593e45bee4dd68080ae8",
     },
+    "5": {
+        "link_type": "confirm",
+        "base_question_id": None,
+        "base_uqid": "5512c4f54e3ace4484e59cdc48976761",
+        "match_question_id": None,
+        "match_uqid": None,
+    },
 }
 
 
@@ -70,6 +77,7 @@ class TestGetDataMethods:
                     "00517751cc2f7920185e52926ce7a0c9",
                     "5ff5919440ca5dcd4c9dbda1eff168d4",
                     "8cfa414fcd9b593e45bee4dd68080ae8",
+                    "5512c4f54e3ace4484e59cdc48976761",
                 ],
             ),
             Check(
@@ -354,6 +362,21 @@ class TestQuestionLinker:
 
             assert record[1] == match_qid, f"Incorrect question_id: {record[1]}"
             assert record[3] == match_uqid, f"Incorrect question_id: {record[3]}"
+
+        # In case 5 record should appear as confirmed in the changelog
+        with sql_utils.engine.connect() as conn:
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["5"])
+
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == base_uqid
+                )
+            )
+            record = result.one()
+
+            assert record[5] == 1, f"Flag is False: {record[5]}"
+            assert record[1] is None, f"Record has a question_id: {record[2]}"
+            assert record[3] is None, f"Record has a new_uqid: {record[4]}"
 
 
 if __name__ == "__main__":

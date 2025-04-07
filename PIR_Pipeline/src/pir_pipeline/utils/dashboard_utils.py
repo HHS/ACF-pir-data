@@ -304,19 +304,23 @@ class QuestionLinker:
         self._db = db
         self._changes = namedtuple("Changes", ["base", "match"])
 
+    def get_ids(self):
+        base_uqid = self._record.get("base_uqid")
+        base_qid = self._record.get("base_question_id")
+        match_uqid = self._record.get("match_uqid")
+        match_qid = self._record.get("match_question_id")
+
+        return base_qid, base_uqid, match_qid, match_uqid
+
     def link(self):
         """Link two questions"""
-        record = self._record
         question = self._db.tables["question"]
         distinct_year_query = (
             select(question.c["year"])
             .where(question.c["uqid"] == bindparam("uqid"))
             .distinct()
         )
-        base_uqid = record.get("base_uqid")
-        base_qid = record.get("base_question_id")
-        match_uqid = record.get("match_uqid")
-        match_qid = record.get("match_question_id")
+        base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
 
         changes = self._changes(
             {
@@ -370,11 +374,8 @@ class QuestionLinker:
 
     def unlink(self):
         """Unlink two questions"""
-        record = self._record
         question = self._db.tables["question"]
-        base_uqid = record.get("base_uqid")
-        base_qid = record.get("base_question_id")
-        match_qid = record.get("match_question_id")
+        base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
 
         changes = self._changes(
             {"question_id": base_qid, "original_uqid": base_uqid},
@@ -467,7 +468,14 @@ class QuestionLinker:
         self._db.insert_records(changes, "uqid_changelog")
 
     def confirm(self):
-        pass
+        base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
+        changes = {
+            "question_id": base_qid,
+            "original_uqid": base_uqid,
+            "new_uqid": match_uqid,
+            "complete_series_flag": True,
+        }
+        self._db.insert_records(changes, "uqid_changelog")
 
     def update_links(self):
         """Update links

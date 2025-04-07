@@ -291,4 +291,17 @@ def question_linker_records():
             "section": "B",
             "subsection": "Child Development Staff - Qualifications",
         },
+        {
+            "question_id": "0008a5809edbdca1d1141ea1f2eb8dfa",
+            "year": 2021,
+            "uqid": "5512c4f54e3ace4484e59cdc48976761",
+            "category": "Program Information",
+            "question_name": "Total Double Session Classes Operated",
+            "question_number": "A.9.a",
+            "question_order": 16.3,
+            "question_text": "Of these, the number of double session classes",
+            "question_type": "Number",
+            "section": "A",
+            "subsection": None,
+        },
     ]
