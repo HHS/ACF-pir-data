@@ -39,6 +39,10 @@ body {
     padding: 0em 5em;
 }
 
+.navbar-title {
+    color: var(--light);
+}
+
 /* Table customization */
 .table {
     background-color: #fff;

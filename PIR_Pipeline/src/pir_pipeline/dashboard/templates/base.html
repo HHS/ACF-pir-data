@@ -17,6 +17,11 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
+            <div class="container-fluid">
+                <header class="navbar-title">
+                    {% block header %}{% endblock %}
+                </header>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -31,11 +36,6 @@
                 </ul>
             </div>
         </nav>
-        <section class="header">
-            <header>
-                {% block header %}{% endblock %}
-            </header>
-        </section>
         <section class="content" id="{{ section_id }}">
             {% for message in get_flashed_messages() %}
                 <div class="flash">{{ message }}</div>
