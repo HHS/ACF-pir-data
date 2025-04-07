@@ -1,7 +1,7 @@
 from sqlalchemy import (
     Boolean,
     Column,
-    Date,
+    DateTime,
     Float,
     ForeignKeyConstraint,
     Integer,
@@ -93,8 +93,8 @@ uqid_changelog = Table(
     Column("question_id", String(255), index=True),
     Column("original_uqid", String(255), index=True),
     Column("new_uqid", String(255)),
-    Column("timestamp", Date),
-    Column("complete_series_flag", Boolean),
+    Column("timestamp", DateTime(timezone=True), default=func.now()),
+    Column("complete_series_flag", Boolean, default=False),
 )
 
 # Unlinked view
