@@ -129,7 +129,11 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 
 
 def get_search_results(
-    qtype: str, column: str, keyword: str, db: SQLAlchemyUtils
+    qtype: str,
+    column: str,
+    keyword: str,
+    db: SQLAlchemyUtils,
+    id_column: str = "question_id",
 ) -> dict:
     """Return results for the search page
 
@@ -149,24 +153,13 @@ def get_search_results(
 
     table = db.tables[table]
 
-    id_column = "question_id"
     column = clean_name(
         column
     )  # But why not just have the snake_name as the value for the option?
+    columns = [id_column, "year", "question_number", "question_name", "question_text"]
+    columns = columns + [column] if column not in columns else columns
 
-    columns = OrderedDict(
-        [
-            (col, None)
-            for col in [
-                "question_id",
-                "year",
-                "question_number",
-                "question_name",
-                "question_text",
-                column,
-            ]
-        ]
-    )
+    columns = OrderedDict([(col, None) for col in columns])
     columns = tuple(columns.keys())
 
     keyword_query = (

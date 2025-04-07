@@ -2,6 +2,7 @@ import json
 from hashlib import md5
 
 from flask import Blueprint, render_template, request, session
+from sqlalchemy import func, select
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -19,7 +20,9 @@ bp = Blueprint("review", __name__, url_prefix="/review")
 def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     output = {}
     for match in matches:
-        output.update(get_search_results("all", id_column, match[id_column], db))
+        output.update(
+            get_search_results("all", id_column, match[id_column], db, id_column)
+        )
 
     return output
 
@@ -30,7 +33,9 @@ def get_flashcard_question(
     id_column, record = get_review_question(review_type, offset, db)
     matches = get_matches({"review-type": review_type, "record": record}, db)
     output = {
-        "question": get_search_results(review_type, id_column, record[id_column], db)
+        "question": get_search_results(
+            review_type, id_column, record[id_column], db, id_column
+        )
     }
     matches.pop(0)
     output["matches"] = search_matches(matches, id_column, db)
@@ -69,7 +74,7 @@ def flashcard():
                 offset -= 1
             else:
                 offset = session.get("max_questions")
-            print(offset)
+
             output = get_flashcard_question(review_type, offset, db, session)
         elif action == "confirm":
             pass
@@ -91,32 +96,18 @@ def data():
 
     if response["for"] == "flashcard":
         review_type = response["review-type"]
-        data = get_review_data(review_type, db)
-        current = data[0:2]
-        record = current[1]
-
-        # Get matches for the first record
-        matches = get_matches({"review-type": review_type, "record": record}, db)
+        offset = 0
+        output = get_flashcard_question(review_type, offset, db, session)
         id_column = "question_id" if review_type == "unlinked" else "uqid"
-        output = {
-            "question": get_search_results(
-                review_type, id_column, record[id_column], db
-            ),
-            "matches": {},
-        }
-        matches.pop(0)
-        for match in matches:
-            output["matches"].update(
-                get_search_results("all", id_column, match[id_column], db)
-            )
 
-        current_question = 0
-        # Minus 2 because zero-indexed and data contains a columns list
-        max_questions = len(data) - 2
-        output.update(
-            {"current_question": current_question, "max_questions": max_questions}
-        )
-        session["current_question"] = current_question
+        # Get max questions
+        query = select(func.count(func.distinct(db.tables[review_type].c[id_column])))
+        with db.engine.connect() as conn:
+            result = conn.execute(query)
+            max_questions = result.scalar() - 1
+
+        output.update({"current_question": offset, "max_questions": max_questions})
+        session["current_question"] = offset
         session["max_questions"] = max_questions
 
     return json.dumps(output)
