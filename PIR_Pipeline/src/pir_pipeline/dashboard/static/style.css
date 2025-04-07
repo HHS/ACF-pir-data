@@ -43,6 +43,10 @@ body {
     color: var(--light);
 }
 
+nav {
+    margin-bottom: 1em;
+}
+
 /* Table customization */
 .table {
     background-color: #fff;
