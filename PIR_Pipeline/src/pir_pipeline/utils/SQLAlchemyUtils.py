@@ -15,6 +15,7 @@ from pir_pipeline.models.pir_sql_models import (
     response,
     sql_metadata,
     unlinked,
+    uqid_changelog,
 )
 from pir_pipeline.utils.SQLUtils import SQLUtils
 from pir_pipeline.utils.utils import get_searchable_columns
@@ -54,6 +55,7 @@ class SQLAlchemyUtils(SQLUtils):
             "unlinked": unlinked,
             "intermittent": intermittent,
             "inconsistent": inconsistent,
+            "uqid_changelog": uqid_changelog,
         }
         self._database = database
 
