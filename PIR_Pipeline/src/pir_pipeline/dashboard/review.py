@@ -167,7 +167,7 @@ def link():
     elif action == "check":
         return session["link_dict"] or {}
     # Execute all linking actions
-    elif action == "confirm":
+    elif action == "finalize":
         db = get_db()
         link_dict = session["link_dict"]
         QuestionLinker(link_dict, db).update_links()

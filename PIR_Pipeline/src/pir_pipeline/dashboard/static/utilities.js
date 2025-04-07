@@ -162,7 +162,7 @@ function getQuestionData(event, reviewType) {
         "record": record
     }
     
-    fetch("/match", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
+    fetch("/review/match", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
     .then(response => response.json())
     .then(data => fillMatchDiv(div, data));
 }
@@ -196,7 +196,7 @@ function storeLink(event) {
         "data": linkDetails
     }
     
-    fetch("/link", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
+    fetch("/review/link", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
 }
 
 function buildSearchTable(data, table = document.createElement("table")) {
@@ -293,5 +293,6 @@ export {
     updateTable,
     getQuestionData,
     storeLink,
-    buildSearchTable
+    buildSearchTable,
+    rowToJSON
 }

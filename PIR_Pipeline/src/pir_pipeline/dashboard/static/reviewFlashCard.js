@@ -1,4 +1,4 @@
-import { storeLink, buildSearchTable } from "./utilities.js"
+import { storeLink, buildSearchTable, rowToJSON } from "./utilities.js"
 
 function buildFlashcardPage(e) {
     const element = e.target;
@@ -36,7 +36,34 @@ function flashcardAction(e) {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
-    formData.append(e.submitter.name, e.submitter.value);
+    const name = e.submitter.name;
+    let value = e.submitter.value;
+    if (value == "confirm") {
+        const questionTable = document.getElementById("flashcard-question-table");
+        let baseRecord = rowToJSON(questionTable.getElementsByTagName("tr")[1]);
+        const linkDetails = {
+            "link_type": value,
+            "base_question_id": baseRecord.question_id,
+            "base_uqid": baseRecord.uqid,
+            "match_question_id": null,
+            "match_uqid": null
+        }
+
+        const payload = {
+            "action": "build",
+            "data": linkDetails
+        }
+
+        fetch("/review/link", {
+            "method": "POST", 
+            "headers": {
+                "Content-type": "application/json"
+            }, 
+            "body": JSON.stringify(payload)
+        })
+        value = "next";
+    } 
+    formData.append(name, value);
 
     fetch("/review/flashcard", {"method": "POST", "body": formData})
     .then(response => response.json())
