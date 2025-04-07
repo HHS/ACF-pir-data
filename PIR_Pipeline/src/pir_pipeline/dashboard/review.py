@@ -38,7 +38,10 @@ def get_flashcard_question(
         )
     }
     matches.pop(0)
-    output["matches"] = search_matches(matches, id_column, db)
+    if review_type == "inconsistent":
+        output["matches"] = search_matches(matches, "question_id", db)
+    else:
+        output["matches"] = search_matches(matches, id_column, db)
     session["current_question"] = offset
     return output
 
@@ -109,6 +112,7 @@ def data():
         output.update({"current_question": offset, "max_questions": max_questions})
         session["current_question"] = offset
         session["max_questions"] = max_questions
+        print(max_questions)
 
     return json.dumps(output)
 

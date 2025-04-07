@@ -247,13 +247,28 @@ def get_review_question(table: str, offset: int, db: SQLAlchemyUtils) -> str:
     columns = tuple(columns)
     table = db.tables[table]
 
-    query = (
-        select(table.c[columns])
-        .order_by(table.c[id_column])
-        .limit(1)
-        .offset(offset)
-        .distinct()
-    )
+    if table.name == "inconsistent":
+        subquery = select(
+            table.c[columns],
+            func.row_number().over(partition_by=id_column).label("row_num"),
+        ).subquery()
+        query = (
+            select(subquery.c[columns])
+            .where(subquery.c["row_num"] == 1)
+            .order_by(subquery.c[id_column])
+            .limit(1)
+            .offset(offset)
+            .distinct()
+        )
+    else:
+        query = (
+            select(table.c[columns])
+            .order_by(table.c[id_column])
+            .limit(1)
+            .offset(offset)
+            .distinct()
+        )
+
     with db.engine.connect() as conn:
         result = conn.execute(query)
         next_id = result.one()
