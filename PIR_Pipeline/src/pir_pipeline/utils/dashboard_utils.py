@@ -2,7 +2,7 @@
 
 __all__ = ["get_review_data", "get_matches"]
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from hashlib import md5
 
 from sqlalchemy import and_, bindparam, distinct, func, select
@@ -302,6 +302,7 @@ class QuestionLinker:
         """
         self._data = data
         self._db = db
+        self._changes = namedtuple("Changes", ["base", "match"])
 
     def link(self):
         """Link two questions"""
@@ -317,6 +318,19 @@ class QuestionLinker:
         match_uqid = record.get("match_uqid")
         match_qid = record.get("match_question_id")
 
+        changes = self._changes(
+            {
+                "question_id": base_qid,
+                "original_uqid": base_uqid,
+                "new_uqid": match_uqid,
+            },
+            {
+                "question_id": match_qid,
+                "original_uqid": match_uqid,
+                "new_uqid": match_uqid,
+            },
+        )
+
         # Matching two questions with existing uqids (intermittent)
         if base_uqid and match_uqid:
             with self._db.engine.connect() as conn:
@@ -329,6 +343,8 @@ class QuestionLinker:
 
             if len(match_year_range) < len(base_year_range):
                 base_uqid, match_uqid = match_uqid, base_uqid
+                changes.base["new_uqid"] = match_uqid
+                changes.match["new_uqid"] = match_uqid
 
             self._db.update_records(
                 question,
@@ -350,6 +366,8 @@ class QuestionLinker:
                 [{"base_qid": base_qid, "match_uqid": match_uqid}],
             )
 
+        self._db.insert_records(changes, "uqid_changelog")
+
     def unlink(self):
         """Unlink two questions"""
         record = self._record
@@ -357,6 +375,14 @@ class QuestionLinker:
         base_uqid = record.get("base_uqid")
         base_qid = record.get("base_question_id")
         match_qid = record.get("match_question_id")
+
+        changes = self._changes(
+            {"question_id": base_qid, "original_uqid": base_uqid},
+            {
+                "question_id": match_qid,
+                "original_uqid": base_uqid,
+            },
+        )
 
         assert (
             base_qid and match_qid
@@ -374,11 +400,13 @@ class QuestionLinker:
                 question.c["question_id"] != bindparam("match_qid"),
             )
         )
+
         with self._db.engine.connect() as conn:
             result = conn.execute(
                 qid_in_uqid_statement, {"base_uqid": base_uqid, "match_qid": match_qid}
             )
             remaining_qids = result.scalars().all()
+
         # If only one remaining qid, ensure there is more than one occurrence otherwise
         # uqid should be removed entirely
         if len(remaining_qids) == 1:
@@ -393,6 +421,7 @@ class QuestionLinker:
                     question.c["uqid"] == bindparam("base_uqid"),
                     [{"uqid": None, "base_uqid": base_uqid}],
                 )
+                changes.base["new_uqid"] = None
 
         # Handle match_qid
         with self._db.engine.connect() as conn:
@@ -409,6 +438,8 @@ class QuestionLinker:
         else:
             raise Exception("No matching question_id!")
 
+        changes.match["new_uqid"] = match_uqid
+
         # If the newly generated match_uqid is the same as the base_uqid, update the base_uqid
         # Maybe something more sophisticated here to simulate what would happen in the
         # real process?
@@ -423,6 +454,8 @@ class QuestionLinker:
                 [{"uqid": new_uqid, "base_uqid": base_uqid}],
             )
 
+            changes.base["new_uqid"] = new_uqid
+
         # Update the matched uqid
         self._db.update_records(
             question,
@@ -430,6 +463,8 @@ class QuestionLinker:
             question.c["question_id"] == bindparam("match_qid"),
             [{"uqid": match_uqid, "match_qid": match_qid}],
         )
+
+        self._db.insert_records(changes, "uqid_changelog")
 
     def confirm(self):
         pass

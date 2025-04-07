@@ -2,7 +2,7 @@ from collections import namedtuple
 from hashlib import md5
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import null, select
 
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
@@ -42,7 +42,7 @@ payload = {
     "4": {
         "link_type": "link",
         "base_question_id": "83e32d72b46030e1abf5109b8b506fb8",
-        "base_uqid": "",
+        "base_uqid": None,
         "match_question_id": "87fe124509e4e9e48b26a65b78c87acd",
         "match_uqid": "8cfa414fcd9b593e45bee4dd68080ae8",
     },
@@ -170,62 +170,191 @@ class TestGetDataMethods:
 @pytest.mark.usefixtures("create_database", "insert_question_records")
 class TestQuestionLinker:
     def test_update_links(self, question_linker, sql_utils):
+        def get_ids(payload: dict):
+            return (
+                payload["base_question_id"],
+                payload["base_uqid"],
+                payload["match_question_id"],
+                payload["match_uqid"],
+            )
+
         question_linker.update_links()
+        question_table = sql_utils.tables["question"]
+        uqid_changelog = sql_utils.tables["uqid_changelog"]
+        query_template = select(question_table.c["uqid"])
 
         # In case 1, both uqids should be totally removed from the database
         with sql_utils.engine.connect() as conn:
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["1"])
             result = conn.execute(
-                text(
-                    f"SELECT * FROM question WHERE uqid = '{payload["1"]["base_uqid"]}'"
-                )
+                select(question_table).where(question_table.c["uqid"] == base_uqid)
             )
             record = result.all()
             assert not record, f"Base UQID still exists: {record}"
             result = conn.execute(
-                text(
-                    f"SELECT * FROM question WHERE uqid = '{payload["1"]["match_uqid"]}'"
-                )
+                select(question_table).where(question_table.c["uqid"] == match_uqid)
             )
             assert not result.all(), "Match UQID still exists"
             result = conn.execute(
-                text(
-                    f"SELECT question_id, uqid FROM question WHERE question_id = '{payload["1"]["base_question_id"]}'"
+                select(question_table.c[("question_id", "uqid")]).where(
+                    question_table.c["question_id"] == base_qid
                 )
             )
             record = result.one_or_none()
             assert not record[1], "Base question_id has a uqid"
             result = conn.execute(
-                text(
-                    f"SELECT question_id, uqid FROM question WHERE question_id = '{payload["1"]["match_question_id"]}'"
+                select(question_table.c[("question_id", "uqid")]).where(
+                    question_table.c["question_id"] == match_qid
                 )
             )
             record = result.one_or_none()
             assert not record[1], "Base question_id has a uqid"
+
+            # Rows are logged in changelog
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == base_uqid
+                )
+            )
+            record = result.all()
+            assert record[0][1] == base_qid, f"Incorrect question_id: {record[1]}"
+            assert record[0][3] is None, f"Incorrect uqid: {record[3]}"
+
+            assert record[1][1] == match_qid, f"Incorrect question_id: {record[1]}"
+            assert record[1][3] is None, f"Incorrect question_id: {record[3]}"
 
         # In case 2, uqid for match_qid should remain the same, uqid for base_qid should change
         with sql_utils.engine.connect() as conn:
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["2"])
             result = conn.execute(
-                text(
-                    f"SELECT DISTINCT uqid FROM question WHERE question_id = '{payload["2"]["match_question_id"]}'"
-                )
+                select(question_table.c["uqid"])
+                .where(question_table.c["question_id"] == match_qid)
+                .distinct()
             )
-            record = result.one_or_none()
-            assert (
-                record[0] == payload["2"]["match_uqid"]
-            ), f"Incorrect match_uqid: {record[0]}"
+            record = result.scalar_one()
+            assert record == match_uqid, f"Incorrect match_uqid: {record}"
 
             result = conn.execute(
-                text(
-                    f"SELECT DISTINCT uqid FROM question WHERE question_id = '{payload["2"]["base_question_id"]}'"
-                )
+                select(question_table.c["uqid"])
+                .where(question_table.c["question_id"] == base_qid)
+                .distinct()
             )
-            record = result.one_or_none()
+            record = result.scalar_one()
 
-            expected_uqid = payload["2"]["base_question_id"]
+            expected_uqid = base_qid
             expected_uqid = (expected_uqid + expected_uqid).encode()
             expected_uqid = md5(expected_uqid).hexdigest()
-            assert record[0] == expected_uqid, f"Incorrect base_uqid: {record[0]}"
+            assert record == expected_uqid, f"Incorrect base_uqid: {record}"
+
+            # Rows are logged in changelog
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == base_uqid
+                )
+            )
+            record = result.all()
+            assert record[0][1] == base_qid, f"Incorrect question_id: {record[1]}"
+            assert record[0][3] == expected_uqid, f"Incorrect uqid: {record[3]}"
+
+            assert record[1][1] == match_qid, f"Incorrect question_id: {record[1]}"
+            assert record[1][3] == match_uqid, f"Incorrect question_id: {record[3]}"
+
+        # In case 3, base uqid should be kept the other should be removed
+        with sql_utils.engine.connect() as conn:
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["3"])
+            # Base question has base uqid
+            result = conn.execute(
+                query_template.where(
+                    question_table.c["question_id"] == base_qid
+                ).distinct()
+            )
+
+            record = result.scalar()
+
+            expected_uqid = base_uqid
+            assert record == expected_uqid, f"Incorrect base_uqid: {record}"
+
+            # Match question has match uqid
+            result = conn.execute(
+                query_template.where(
+                    question_table.c["question_id"] == match_qid
+                ).distinct()
+            )
+            record = result.scalar()
+
+            assert record == expected_uqid, f"Incorrect match_uqid: {record}"
+
+            # Match uqid no longer exists
+            result = conn.execute(
+                query_template.where(question_table.c["uqid"] == match_uqid).distinct()
+            )
+            record = result.one_or_none()
+            assert record is None, f"UQID still exists: {record}"
+
+            # Rows are logged in changelog
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == base_uqid
+                )
+            )
+            record = result.one()
+            assert record[1] == base_qid, f"Incorrect question_id: {record[1]}"
+            assert record[3] == base_uqid, f"Incorrect uqid: {record[3]}"
+
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == match_uqid
+                )
+            )
+            record = result.one()
+
+            assert record[1] == match_qid, f"Incorrect question_id: {record[1]}"
+            assert record[3] == base_uqid, f"Incorrect question_id: {record[3]}"
+
+        # In case 4 match keeps uqid, base gets match uqid
+        with sql_utils.engine.connect() as conn:
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["4"])
+
+            # Base question has match uqid
+            result = conn.execute(
+                query_template.where(
+                    question_table.c["question_id"] == base_qid
+                ).distinct()
+            )
+            record = result.scalar()
+
+            assert record == match_uqid, f"Incorrect uqid: {record}"
+
+            # Match question has match uqid
+            result = conn.execute(
+                query_template.where(
+                    question_table.c["question_id"] == base_qid
+                ).distinct()
+            )
+            record = result.scalar()
+
+            assert record == match_uqid, f"Incorrect uqid: {record}"
+
+            # Rows are in the changelog
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == null()
+                )
+            )
+            record = result.one()
+            assert record[1] == base_qid, f"Incorrect question_id: {record[1]}"
+            assert record[3] == match_uqid, f"Incorrect uqid: {record[3]}"
+
+            result = conn.execute(
+                select(uqid_changelog).where(
+                    uqid_changelog.c["original_uqid"] == match_uqid
+                )
+            )
+            record = result.one()
+
+            assert record[1] == match_qid, f"Incorrect question_id: {record[1]}"
+            assert record[3] == match_uqid, f"Incorrect question_id: {record[3]}"
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_get_matches"])
+    pytest.main([__file__, "-sk", "test_update_links"])
