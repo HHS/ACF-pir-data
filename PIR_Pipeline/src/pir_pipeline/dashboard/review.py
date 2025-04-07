@@ -24,6 +24,20 @@ def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     return output
 
 
+def get_flashcard_question(
+    review_type: str, offset: int, db: SQLAlchemyUtils, session: dict
+):
+    id_column, record = get_review_question(review_type, offset, db)
+    matches = get_matches({"review-type": review_type, "record": record}, db)
+    output = {
+        "question": get_search_results(review_type, id_column, record[id_column], db)
+    }
+    matches.pop(0)
+    output["matches"] = search_matches(matches, id_column, db)
+    session["current_question"] = offset
+    return output
+
+
 @bp.route("/")
 def index():
     return render_template("review/index.html")
@@ -47,18 +61,16 @@ def flashcard():
             else:
                 offset = 0
 
-            id_column, record = get_review_question(review_type, offset, db)
-            matches = get_matches({"review-type": review_type, "record": record}, db)
-            output = {
-                "question": get_search_results(
-                    review_type, id_column, record[id_column], db
-                )
-            }
-            matches.pop(0)
-            output["matches"] = search_matches(matches, id_column, db)
-            session["current_question"] = offset
+            output = get_flashcard_question(review_type, offset, db, session)
         elif action == "previous":
-            pass
+            offset = session.get("current_question")
+
+            if offset > 0:
+                offset -= 1
+            else:
+                offset = session.get("max_questions")
+            print(offset)
+            output = get_flashcard_question(review_type, offset, db, session)
         elif action == "confirm":
             pass
 
@@ -99,7 +111,8 @@ def data():
             )
 
         current_question = 0
-        max_questions = len(data) - 1
+        # Minus 2 because zero-indexed and data contains a columns list
+        max_questions = len(data) - 2
         output.update(
             {"current_question": current_question, "max_questions": max_questions}
         )
