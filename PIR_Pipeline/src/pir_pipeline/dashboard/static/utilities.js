@@ -238,7 +238,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
         const expandButton = expandButtonBase.cloneNode(true);
         expandButton.innerHTML = "";
-        expandButton.setAttribute("data-bs-target", `.collapsible-row-${record_num}`);
+        
         
         const accordionDiv = accordionDivBase.cloneNode(true);
 
@@ -260,7 +260,8 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 row.appendChild(cell);
             }
                 
-            const trID = table.id + "-tr-" + i + "-" + record_num;
+            const trID = table.id + "-tr-" + record_num + "-" + i;
+            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
 
             if (i > 0) {
                 row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
