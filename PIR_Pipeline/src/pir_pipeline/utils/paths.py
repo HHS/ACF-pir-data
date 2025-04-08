@@ -1,4 +1,4 @@
-"""Paths to TANF files"""
+"""Paths to PIR files"""
 
 import os
 
