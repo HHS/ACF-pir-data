@@ -59,16 +59,26 @@ def index():
 def finalize():
     if request.method == "POST":
         form = request.form
-        finalize_id = form["finalize-id"]
-        link_dict = session["link_dict"]
+        action = form["action"]
 
-        link_dict.pop(finalize_id)
-        if not link_dict.keys():
-            del session["link_dict"]
+        if action == "remove":
+            finalize_id = form["finalize-id"]
+            link_dict = session["link_dict"]
 
-        session["link_dict"] = link_dict
+            link_dict.pop(finalize_id)
+            if not link_dict.keys():
+                del session["link_dict"]
 
-        return render_template("review/finalize.html")
+            session["link_dict"] = link_dict
+
+            return render_template("review/finalize.html")
+        elif action == "commit":
+            db = get_db()
+            link_dict = session["link_dict"]
+            QuestionLinker(link_dict, db).update_links()
+            session.pop("link_dict")
+
+            return render_template("review/index.html")
 
     return render_template("review/finalize.html")
 
