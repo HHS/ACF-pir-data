@@ -1,7 +1,7 @@
 import json
 from hashlib import md5
 
-from flask import Blueprint, render_template, request, session
+from flask import Blueprint, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
 
 from pir_pipeline.dashboard.db import get_db
@@ -46,9 +46,24 @@ def get_flashcard_question(
     return output
 
 
-@bp.route("/")
+@bp.route("/", methods=["GET", "POST"])
 def index():
+    if request.method == "POST":
+        return redirect(url_for("review.finalize"))
+
     return render_template("review/index.html")
+
+
+@bp.route("/finalize", methods=["GET", "POST"])
+def finalize():
+    if request.method == "POST":
+        form = request.form
+        finalize_id = form["finalize-id"]
+
+        session["link_dict"].pop(finalize_id)
+        return render_template("review/finalize.html")
+
+    return render_template("review/finalize.html")
 
 
 @bp.route("/flashcard", methods=["GET", "POST"])
@@ -112,7 +127,6 @@ def data():
         output.update({"current_question": offset, "max_questions": max_questions})
         session["current_question"] = offset
         session["max_questions"] = max_questions
-        print(max_questions)
 
     return json.dumps(output)
 

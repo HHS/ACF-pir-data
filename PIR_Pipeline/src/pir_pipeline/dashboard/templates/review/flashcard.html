@@ -5,6 +5,21 @@
 {% endblock %}
 
 {% block content %}
+    <div class="form-parent">
+        <div class="form-container left">
+            <form id="flashcard-buttons" onsubmit="flashcardAction(event)">
+                    <input type="hidden" id="review-type-input" name="review-type" value="">
+                    <button class="btn btn-primary" type="submit" name="action" value="previous">Previous</button>
+                    <button class="btn btn-primary" type="submit" name="action" value="confirm">Mark Complete</button>
+                    <button class="btn btn-primary" type="submit" name="action" value="next">Next</button>
+            </form>
+        </div>
+        <div class="form-container right">
+            <form id="finished-button" method="post">
+                    <button class="btn btn-primary" type="submit" name="action" value="finish">Finish</button>
+            </form>
+        </div>
+    </div>
     <div class="table-box">
         <table id="flashcard-question-table" class="table table-hover">
         </table>
@@ -13,14 +28,6 @@
         <table id="flashcard-matches-table" class="table table-hover">
         </table>
     </div>
-    <form id="flashcard-buttons" onsubmit="flashcardAction(event)">
-        <div class="form-container">
-            <input type="hidden" id="review-type-input" name="review-type" value="">
-            <button class="btn btn-primary" type="submit" name="action" value="previous">Previous</button>
-            <button class="btn btn-primary" type="submit" name="action" value="confirm">Mark Complete</button>
-            <button class="btn btn-primary" type="submit" name="action" value="next">Next</button>
-        </div>
-    </form>
 {% endblock %}
 
 {% block scripts %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block header %}
+    <h1 class="page-title">{% block title %}Finalize{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="table-box">
+        <table id="review-results-table" class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Link Type</th>
+                    <th>Base Question ID</th>
+                    <th>Base UQID</th>
+                    <th>Match Question ID</th>
+                    <th>Match UQID</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, value in session["link_dict"].items() %}
+                    <tr>
+                        <td name="link_type">{{ value.get("link_type") }}</td>
+                        <td name="base_question_id">{{ value.get("base_question_id") }}</td>
+                        <td name="base_uqid">{{ value.get("base_uqid") }}</td>
+                        <td name="match_question_id">{{ value.get("match_question_id") }}</td>
+                        <td name="match_uqid">{{ value.get("match_uqid") }}</td>
+                        <td name="action">
+                            <form method="post">
+                                <input type="hidden" id="finalize-id-input" name="finalize-id" value="{{ key }}">
+                                <button type="submit" class="btn btn-primary" name="action" value="remove">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}    
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="{{ url_for('static', filename='reviewTable.js') }}"></script>
+{% endblock %}

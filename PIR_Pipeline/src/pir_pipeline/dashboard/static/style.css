@@ -95,9 +95,31 @@ table#search-results-table thead tr th {
 
 /* From https://stackoverflow.com/questions/57978278/form-input-displayed-above-text-field-using-flexbox */
 
+form#flashcard-buttons {
+    display: flex;
+}
+
+form#flashcard-buttons > button {
+    margin-right: .5em;
+}
+
+form#finished-button {
+    display: flex;
+}
+
+.form-parent {
+    display: flex;
+    margin-bottom: 1em;
+}
+
 .form-container {
     display: flex;
-    justify-content: space-between;
+    width: 50%;
+}
+
+.form-container.right {
+    justify-content: end;
+    justify-self: end;
 }
 
 .form-group {
