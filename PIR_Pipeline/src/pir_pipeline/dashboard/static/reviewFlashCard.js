@@ -1,4 +1,4 @@
-import { buildSearchTable, rowToJSON } from "./utilities.js"
+import { rowToJSON } from "./utilities.js"
 
 function buildFlashcardPage(e) {
     const element = e.target;
@@ -73,18 +73,18 @@ async function flashcardAction(e) {
 function updateFlashcardTables(data) {
     const questionTable = document.getElementById("flashcard-question-table");
     if (questionTable) {
-        var question = buildSearchTable(data["question"], questionTable);
+        var question = buildReviewTable(data["question"], questionTable);
     } else {
-        var question = buildSearchTable(data["question"]);
+        var question = buildReviewTable(data["question"]);
     }
     question.id = "flashcard-question-table";
     question.className = "table table-hover";
 
     const matchesTable = document.getElementById("flashcard-matches-table");
     if (matchesTable) {
-        var matches = buildSearchTable(data["matches"], matchesTable);
+        var matches = buildReviewTable(data["matches"], matchesTable);
     } else {
-        var matches = buildSearchTable(data["matches"]);
+        var matches = buildReviewTable(data["matches"]);
     }
     matches.id = "flashcard-matches-table";
     matches.className = "table table-hover";
@@ -124,6 +124,112 @@ function storeLink(event) {
         },
         "body": JSON.stringify(payload)
     })
+}
+
+function buildReviewTable(data, table = document.createElement("table")) {
+    // Constant buttons
+    const expandButtonBase = document.createElement("button");
+    expandButtonBase.className = "accordion-button collapsed";
+    expandButtonBase.setAttribute("type", "button");
+    expandButtonBase.setAttribute("data-bs-toggle", "collapse");
+    expandButtonBase.setAttribute("aria-expanded", "false");
+
+    const accordionDivBase = document.createElement("div");
+    accordionDivBase.className = "accordion";
+
+    const linkButtonBase = document.createElement("button");
+    linkButtonBase.className = "btn btn-primary";
+    linkButtonBase.setAttribute("onclick", "storeLink(event)");
+
+    const reviewType = document.getElementById("review-type-input");
+
+    // Set table header row
+    table.innerHTML = '';
+
+    let header = data["columns"];
+    let head = document.createElement("thead");
+    let headerRow = document.createElement("tr");
+    head.appendChild(headerRow)
+
+    // Add column headers
+    for (let i = 0; i < header.length; i++) {
+        const column = document.createElement("th");
+        column.innerHTML = header[i];
+        headerRow.appendChild(column);
+    }
+    let actionsColumn = document.createElement("th");
+    actionsColumn.innerHTML = "Action"; 
+    headerRow.appendChild(actionsColumn);
+    table.appendChild(head);
+
+    let body = document.createElement("tbody");
+    let record_num = 0;
+    for (let key in data) {
+        if (key == "columns") {
+            continue
+        }
+
+        const expandButton = expandButtonBase.cloneNode(true);
+        expandButton.innerHTML = "";
+        
+        
+        const accordionDiv = accordionDivBase.cloneNode(true);
+
+        // Get all records associated with this question_id/uqid
+        const records = data[key];
+
+        // Loop through each record
+        for (let i = 0; i < records.length; i++) {
+            const row = document.createElement("tr");
+
+            // Add cells for each value in a record
+            let row_data = records[i];
+            for (let key in row_data) {
+                const cell = document.createElement("td");
+                cell.innerHTML = row_data[key];
+                cell.setAttribute("name", key);
+                row.appendChild(cell);
+            }
+                
+            const actionsCell = document.createElement("td");
+            const trID = table.id + "-tr-" + record_num + "-" + i;
+            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
+
+            if (i > 0) {
+                row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
+                row.id = `collapse-${trID}`;
+                let expandValue = expandButton.getAttribute("aria-controls")
+                if (expandValue) {
+                    expandValue += ` ${row.id}`;
+                }
+                else {
+                    expandValue = row.id;
+                }
+                expandButton.setAttribute("aria-controls", expandValue);
+            }
+            else {
+                accordionDiv.appendChild(expandButton);
+                actionsCell.appendChild(accordionDiv);
+                const linkButton = linkButtonBase.cloneNode(true); 
+                if (reviewType && (reviewType.value == "unlinked" || reviewType.value == "intermittent")) {
+                    linkButton.value = "link";
+                    linkButton.innerHTML = "Link";
+                } else {
+                    linkButton.value = "unlink";
+                    linkButton.innerHTML = "Unlink";
+                }
+                if (table.id != "flashcard-question-table") {
+                    actionsCell.appendChild(linkButton);
+                }
+            }
+
+            row.appendChild(actionsCell);
+            body.appendChild(row);
+        }
+        record_num += 1
+    }
+    table.appendChild(body);
+    return table
 }
 
 document.storeLink = storeLink;
