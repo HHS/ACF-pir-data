@@ -1,4 +1,4 @@
-import { storeLink, buildSearchTable, rowToJSON } from "./utilities.js"
+import { buildSearchTable, rowToJSON } from "./utilities.js"
 
 function buildFlashcardPage(e) {
     const element = e.target;
@@ -7,29 +7,29 @@ function buildFlashcardPage(e) {
 
 function initializeFlashcards(elem) {
     const reviewType = elem.getAttribute("value");
-    
+
     const body = {
         "for": "flashcard",
         "review-type": reviewType
     };
-    const payload = { 
-        "method": "POST", 
-        "headers": { 
+    const payload = {
+        "method": "POST",
+        "headers": {
             "Content-type": "application/json"
-        }, 
-        "body": JSON.stringify(body) 
+        },
+        "body": JSON.stringify(body)
     };
 
     fetch("/review/data", payload)
-    .then(response => response.json())
-    .then(async (data) => {
-        await fetch("/review/init-flashcard")
-        .then(response => response.text())
-        .then(html => document.writeln(html))
+        .then(response => response.json())
+        .then(async (data) => {
+            await fetch("/review/init-flashcard")
+                .then(response => response.text())
+                .then(html => document.writeln(html))
 
-        document.getElementById("review-type-input").value = reviewType;
-        await updateFlashcardTables(data)
-    })
+            document.getElementById("review-type-input").value = reviewType;
+            await updateFlashcardTables(data)
+        })
 }
 
 function flashcardAction(e) {
@@ -55,19 +55,19 @@ function flashcardAction(e) {
         }
 
         fetch("/review/link", {
-            "method": "POST", 
+            "method": "POST",
             "headers": {
                 "Content-type": "application/json"
-            }, 
+            },
             "body": JSON.stringify(payload)
         })
         value = "next";
-    } 
+    }
     formData.append(name, value);
 
-    fetch("/review/flashcard", {"method": "POST", "body": formData})
-    .then(response => response.json())
-    .then(data => updateFlashcardTables(data))
+    fetch("/review/flashcard", { "method": "POST", "body": formData })
+        .then(response => response.json())
+        .then(data => updateFlashcardTables(data))
 }
 
 function updateFlashcardTables(data) {
@@ -95,6 +95,35 @@ function updateFlashcardTables(data) {
     }
 
     return Promise.resolve(tables)
+}
+
+function storeLink(event) {
+    const button = event.target;
+    const matchRow = button.closest("tr");
+    const baseRow = document.getElementById("flashcard-question-table").getElementsByTagName("tr")[1];
+    const baseRecord = rowToJSON(baseRow);
+    const matchRecord = rowToJSON(matchRow)
+
+    const linkDetails = {
+        "link_type": button.value,
+        "base_question_id": baseRecord.question_id,
+        "base_uqid": baseRecord.uqid,
+        "match_question_id": matchRecord.question_id,
+        "match_uqid": matchRecord.uqid
+    }
+
+    const payload = {
+        "action": "build",
+        "data": linkDetails
+    }
+
+    fetch("/review/link", {
+        "method": "POST",
+        "headers": {
+            "Content-type": "application/json"
+        },
+        "body": JSON.stringify(payload)
+    })
 }
 
 document.storeLink = storeLink;
