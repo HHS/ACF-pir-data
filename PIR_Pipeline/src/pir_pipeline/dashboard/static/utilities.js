@@ -210,12 +210,6 @@ function buildSearchTable(data, table = document.createElement("table")) {
     const accordionDivBase = document.createElement("div");
     accordionDivBase.className = "accordion";
 
-    const linkButtonBase = document.createElement("button");
-    linkButtonBase.className = "btn btn-primary";
-    linkButtonBase.setAttribute("onclick", "storeLink(event)");
-
-    const reviewType = document.getElementById("review-type-input");
-
     // Set table header row
     table.innerHTML = '';
 
@@ -248,6 +242,8 @@ function buildSearchTable(data, table = document.createElement("table")) {
         
         const accordionDiv = accordionDivBase.cloneNode(true);
 
+        const actionsCell = document.createElement("td");
+
         // Get all records associated with this question_id/uqid
         const records = data[key];
 
@@ -264,7 +260,6 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 row.appendChild(cell);
             }
                 
-            const actionsCell = document.createElement("td");
             const trID = table.id + "-tr-" + record_num + "-" + i;
             expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
 
@@ -283,20 +278,8 @@ function buildSearchTable(data, table = document.createElement("table")) {
             else {
                 accordionDiv.appendChild(expandButton);
                 actionsCell.appendChild(accordionDiv);
-                const linkButton = linkButtonBase.cloneNode(true); 
-                if (reviewType && (reviewType.value == "unlinked" || reviewType.value == "intermittent")) {
-                    linkButton.value = "link";
-                    linkButton.innerHTML = "Link";
-                } else {
-                    linkButton.value = "unlink";
-                    linkButton.innerHTML = "Unlink";
-                }
-                if (table.id != "flashcard-question-table") {
-                    actionsCell.appendChild(linkButton);
-                }
+                row.appendChild(actionsCell);
             }
-
-            row.appendChild(actionsCell);
             body.appendChild(row);
         }
         record_num += 1

@@ -5,6 +5,14 @@ import re
 
 
 def get_searchable_columns(columns: list[str]) -> list[str]:
+    """Return non-identifying columns formatted for external audiences
+
+    Args:
+        columns (list[str]): A list of column names
+
+    Returns:
+        list[str]: Formatted column names
+    """
     keep_columns = []
     for column in columns:
         if not column.endswith("id") and column not in ["year"]:

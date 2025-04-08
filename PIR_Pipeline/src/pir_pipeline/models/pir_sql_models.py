@@ -1,3 +1,5 @@
+"""SQLAlchemy models for creating and interacting with the PIR database"""
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -9,6 +11,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    and_,
     func,
     select,
 )
@@ -97,10 +100,17 @@ uqid_changelog = Table(
     Column("complete_series_flag", Boolean, default=False),
 )
 
-# Unlinked view
-unlinked = view(
-    "unlinked", sql_metadata, select(question).where(question.c.uqid.is_(None))
+# Confirmed records should be excluded
+confirmed_subquery = (
+    select(uqid_changelog.c["original_uqid"])
+    .group_by(uqid_changelog.c["original_uqid"])
+    .having(func.max(uqid_changelog.c["complete_series_flag"]) == 1)
+    .scalar_subquery()
 )
+
+# Unlinked view
+query = select(question).where(question.c.uqid.is_(None))
+unlinked = view("unlinked", sql_metadata, query)
 
 # Linked view
 linked = view(
@@ -114,7 +124,15 @@ uqid_query = (
     .group_by(question.c.uqid)
     .having(func.count(question.c.uqid) < year_query)
 )
-query = select(question).where(question.c.uqid.in_(uqid_query)).distinct()
+query = (
+    select(question)
+    .where(
+        and_(
+            question.c.uqid.in_(uqid_query), question.c.uqid.not_in(confirmed_subquery)
+        )
+    )
+    .distinct()
+)
 
 intermittent = view("intermittent", sql_metadata, query)
 
@@ -126,6 +144,11 @@ right = (
     .having(func.count(subquery.c.question_id) > 1)
     .subquery()
 )
-query = select(linked).join(right, linked.c.uqid == right.c.uqid).distinct()
+query = (
+    select(linked)
+    .join(right, linked.c.uqid == right.c.uqid)
+    .distinct()
+    .where(question.c.uqid.not_in(confirmed_subquery))
+)
 
 inconsistent = view("inconsistent", sql_metadata, query)

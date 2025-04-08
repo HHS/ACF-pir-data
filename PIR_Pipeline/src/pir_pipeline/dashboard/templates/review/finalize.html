@@ -5,6 +5,13 @@
 {% endblock %}
 
 {% block content %}
+    <div class="form-parent">
+        <div class="form-container left">
+            <form id="commit-button" method="post">
+                <button class="btn btn-primary" type="submit" name="action" value="commit">Commit All Changes to the Database</button>
+            </form>
+        </div>
+    </div>
     <div class="table-box">
         <table id="review-results-table" class="table table-hover">
             <thead>

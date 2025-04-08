@@ -247,7 +247,7 @@ def get_review_question(table: str, offset: int, db: SQLAlchemyUtils) -> str:
     columns = tuple(columns)
     table = db.tables[table]
 
-    if table.name == "inconsistent":
+    if table.name in ["inconsistent", "intermittent"]:
         subquery = select(
             table.c[columns],
             func.row_number().over(partition_by=id_column).label("row_num"),
