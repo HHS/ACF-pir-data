@@ -225,11 +225,11 @@ class TestQuestionLinker:
                 )
             )
             record = result.all()
-            assert record[0][1] == base_qid, f"Incorrect question_id: {record[1]}"
-            assert record[0][3] is None, f"Incorrect uqid: {record[3]}"
+            assert record[0][2] == base_qid, f"Incorrect question_id: {record[0][2]}"
+            assert record[0][4] is None, f"Incorrect uqid: {record[0][4]}"
 
-            assert record[1][1] == match_qid, f"Incorrect question_id: {record[1]}"
-            assert record[1][3] is None, f"Incorrect question_id: {record[3]}"
+            assert record[1][2] == match_qid, f"Incorrect question_id: {record[1][1]}"
+            assert record[1][4] is None, f"Incorrect question_id: {record[1][4]}"
 
         # In case 2, uqid for match_qid should remain the same, uqid for base_qid should change
         with sql_utils.engine.connect() as conn:
@@ -261,11 +261,11 @@ class TestQuestionLinker:
                 )
             )
             record = result.all()
-            assert record[0][1] == base_qid, f"Incorrect question_id: {record[1]}"
-            assert record[0][3] == expected_uqid, f"Incorrect uqid: {record[3]}"
+            assert record[0][2] == base_qid, f"Incorrect question_id: {record[0][2]}"
+            assert record[0][4] == expected_uqid, f"Incorrect uqid: {record[0][4]}"
 
-            assert record[1][1] == match_qid, f"Incorrect question_id: {record[1]}"
-            assert record[1][3] == match_uqid, f"Incorrect question_id: {record[3]}"
+            assert record[1][2] == match_qid, f"Incorrect question_id: {record[1][2]}"
+            assert record[1][4] == match_uqid, f"Incorrect question_id: {record[1][4]}"
 
         # In case 3, base uqid should be kept the other should be removed
         with sql_utils.engine.connect() as conn:
@@ -306,8 +306,8 @@ class TestQuestionLinker:
                 )
             )
             record = result.one()
-            assert record[1] == base_qid, f"Incorrect question_id: {record[1]}"
-            assert record[3] == base_uqid, f"Incorrect uqid: {record[3]}"
+            assert record[2] == base_qid, f"Incorrect question_id: {record[2]}"
+            assert record[4] == base_uqid, f"Incorrect uqid: {record[4]}"
 
             result = conn.execute(
                 select(uqid_changelog).where(
@@ -316,8 +316,8 @@ class TestQuestionLinker:
             )
             record = result.one()
 
-            assert record[1] == match_qid, f"Incorrect question_id: {record[1]}"
-            assert record[3] == base_uqid, f"Incorrect question_id: {record[3]}"
+            assert record[2] == match_qid, f"Incorrect question_id: {record[2]}"
+            assert record[4] == base_uqid, f"Incorrect question_id: {record[4]}"
 
         # In case 4 match keeps uqid, base gets match uqid
         with sql_utils.engine.connect() as conn:
@@ -350,8 +350,8 @@ class TestQuestionLinker:
                 )
             )
             record = result.one()
-            assert record[1] == base_qid, f"Incorrect question_id: {record[1]}"
-            assert record[3] == match_uqid, f"Incorrect uqid: {record[3]}"
+            assert record[2] == base_qid, f"Incorrect question_id: {record[2]}"
+            assert record[4] == match_uqid, f"Incorrect uqid: {record[4]}"
 
             result = conn.execute(
                 select(uqid_changelog).where(
@@ -360,8 +360,8 @@ class TestQuestionLinker:
             )
             record = result.one()
 
-            assert record[1] == match_qid, f"Incorrect question_id: {record[1]}"
-            assert record[3] == match_uqid, f"Incorrect question_id: {record[3]}"
+            assert record[2] == match_qid, f"Incorrect question_id: {record[2]}"
+            assert record[4] == match_uqid, f"Incorrect question_id: {record[4]}"
 
         # In case 5 record should appear as confirmed in the changelog
         with sql_utils.engine.connect() as conn:
@@ -375,8 +375,8 @@ class TestQuestionLinker:
             record = result.one()
 
             assert record[5] == 1, f"Flag is False: {record[5]}"
-            assert record[1] is None, f"Record has a question_id: {record[2]}"
-            assert record[3] is None, f"Record has a new_uqid: {record[4]}"
+            assert record[2] is None, f"Record has a question_id: {record[2]}"
+            assert record[4] is None, f"Record has a new_uqid: {record[4]}"
 
 
 if __name__ == "__main__":
