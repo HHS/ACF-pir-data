@@ -1,4 +1,4 @@
-"""Class for ingesting and linking PIR data"""
+"""Class for ingesting PIR data"""
 
 import hashlib
 import os
@@ -393,6 +393,7 @@ class PIRIngestor:
         try:
             assert missing_questions == set()
         except AssertionError:
+            self._metrics["question"]["missing_question_numbers"] = missing_questions
             question = self.missing_question_error(
                 response, question, missing_questions
             )
@@ -674,15 +675,18 @@ class PIRIngestor:
             set_diff = set(question["question_id"].unique()).symmetric_difference(
                 metrics["question"]["question_ids"]
             )
-            assert set_diff, self._logger.error(
+            assert not set_diff, self._logger.error(
                 f"question_ids differ in raw and processed data: {set_diff}"
             )
         except AssertionError:
             question_diff = question[
                 [qid in set_diff for qid in question["question_id"]]
             ]
-            assert set(question_diff["question_name"]) == set(
-                metrics["question"]["nan_question_number"]["question_name"]
+            assert (
+                set(question_diff["question_name"])
+                == set(metrics["question"]["nan_question_number"]["question_name"])
+                or set(question_diff["question_number"])
+                == metrics["question"]["missing_question_numbers"]
             ), self._logger.error(
                 "question_ids differ after accounting for nan question_numbers"
             )
@@ -777,7 +781,7 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2008:
+        elif year < 2015:
             continue
 
         try:
