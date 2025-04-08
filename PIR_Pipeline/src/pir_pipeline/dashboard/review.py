@@ -1,4 +1,5 @@
 import json
+from collections import OrderedDict
 from hashlib import md5
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
@@ -59,8 +60,14 @@ def finalize():
     if request.method == "POST":
         form = request.form
         finalize_id = form["finalize-id"]
+        link_dict = session["link_dict"]
 
-        session["link_dict"].pop(finalize_id)
+        link_dict.pop(finalize_id)
+        if not link_dict.keys():
+            del session["link_dict"]
+
+        session["link_dict"] = link_dict
+
         return render_template("review/finalize.html")
 
     return render_template("review/finalize.html")
@@ -174,12 +181,9 @@ def link():
             #     flash()
             link_dict[dict_id] = data
         else:
-            link_dict = {dict_id: data}
+            link_dict = OrderedDict({dict_id: data})
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
-    # Return all links/unlinks made in this session
-    elif action == "check":
-        return session["link_dict"] or {}
     # Execute all linking actions
     elif action == "finalize":
         db = get_db()
@@ -187,9 +191,5 @@ def link():
         QuestionLinker(link_dict, db).update_links()
         message = "Links Updated!"
         del session["link_dict"]
-    # Remove the linking action from the link_dict
-    elif action == "remove":
-        session["link_dict"].pop(data)
-        message = f"Question {data} removed from list of links."
 
     return {"message": message}

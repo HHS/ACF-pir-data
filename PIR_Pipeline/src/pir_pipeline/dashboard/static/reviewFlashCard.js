@@ -32,7 +32,7 @@ function initializeFlashcards(elem) {
         })
 }
 
-function flashcardAction(e) {
+async function flashcardAction(e) {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
@@ -54,7 +54,7 @@ function flashcardAction(e) {
             "data": linkDetails
         }
 
-        fetch("/review/link", {
+        await fetch("/review/link", {
             "method": "POST",
             "headers": {
                 "Content-type": "application/json"
@@ -65,7 +65,7 @@ function flashcardAction(e) {
     }
     formData.append(name, value);
 
-    fetch("/review/flashcard", { "method": "POST", "body": formData })
+    await fetch("/review/flashcard", { "method": "POST", "body": formData })
         .then(response => response.json())
         .then(data => updateFlashcardTables(data))
 }
