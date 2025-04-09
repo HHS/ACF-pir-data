@@ -711,7 +711,7 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .validate_data()
-            # .insert_data()
+            .insert_data()
         )
 
         return self
