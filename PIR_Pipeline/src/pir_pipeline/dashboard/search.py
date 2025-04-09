@@ -23,7 +23,7 @@ def search():
             assert response["error"], "Invalid response"
 
             flash("Please enter a search term")
-            return redirect(url_for("qa.search"))
+            return redirect(url_for("search.search"))
 
         # Return search results
         else:

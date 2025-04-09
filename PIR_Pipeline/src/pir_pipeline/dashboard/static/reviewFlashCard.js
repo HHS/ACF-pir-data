@@ -235,3 +235,7 @@ function buildReviewTable(data, table = document.createElement("table")) {
 document.storeLink = storeLink;
 document.buildFlashcardPage = buildFlashcardPage;
 document.flashcardAction = flashcardAction;
+
+export {
+    buildFlashcardPage
+}
