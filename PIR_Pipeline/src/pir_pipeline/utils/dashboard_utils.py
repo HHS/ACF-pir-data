@@ -492,7 +492,9 @@ class QuestionLinker:
             elif link_type == "confirm":
                 self.confirm()
             else:
-                raise AttributeError("Link type should be either 'link' or 'unlink'")
+                raise AttributeError(
+                    "Link type should be either 'link', 'unlink', 'confirm'"
+                )
 
 
 if __name__ == "__main__":
