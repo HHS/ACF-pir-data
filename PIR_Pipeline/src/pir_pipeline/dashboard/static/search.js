@@ -1,5 +1,5 @@
 import { updateTable } from "./utilities.js";
-import { buildFlashcardPage } from "./reviewFlashCard.js";
+import { buildFlashcardPage } from "./review.js";
 
 const searchForm = document.getElementById("search-form")
 searchForm.addEventListener("submit", async (e) => {
