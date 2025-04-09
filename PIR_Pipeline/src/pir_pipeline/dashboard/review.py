@@ -12,20 +12,11 @@ from pir_pipeline.utils.dashboard_utils import (
     get_review_data,
     get_review_question,
     get_search_results,
+    search_matches,
 )
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 bp = Blueprint("review", __name__, url_prefix="/review")
-
-
-def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
-    output = {}
-    for match in matches:
-        output.update(
-            get_search_results("all", id_column, match[id_column], db, id_column)
-        )
-
-    return output
 
 
 def get_flashcard_question(
@@ -119,11 +110,6 @@ def flashcard():
 
         return json.dumps(output)
 
-    return render_template("review/flashcard.html")
-
-
-@bp.route("/init-flashcard", methods=["GET"])
-def init_flashcard():
     return render_template("review/flashcard.html")
 
 

@@ -23,7 +23,7 @@ function initializeFlashcards(elem) {
     fetch("/review/data", payload)
         .then(response => response.json())
         .then(async (data) => {
-            await fetch("/review/init-flashcard")
+            await fetch("/review/flashcard")
                 .then(response => response.text())
                 .then(html => document.writeln(html))
 
@@ -237,5 +237,6 @@ document.buildFlashcardPage = buildFlashcardPage;
 document.flashcardAction = flashcardAction;
 
 export {
-    buildFlashcardPage
+    updateFlashcardTables,
+    flashcardAction
 }
