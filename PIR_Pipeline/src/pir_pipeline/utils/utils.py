@@ -6,6 +6,11 @@ import logging
 import re
 
 
+def error_thrower(logger: logging.Logger, message: str, error_type: Exception):
+    logger.error(message)
+    raise error_type(message)
+
+
 def get_searchable_columns(columns: list[str]) -> list[str]:
     """Return non-identifying columns formatted for external audiences
 
@@ -38,4 +43,5 @@ def get_logger(name: str) -> logging.Logger:
         level=logging.DEBUG,
         datefmt="%Y-%m-%d %I:%M:%S",
     )
+    return logging.getLogger(name)
     return logging.getLogger(name)

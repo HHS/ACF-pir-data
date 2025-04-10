@@ -1,5 +1,6 @@
 """Utilities for interacting with SQL via SQLAlchemy"""
 
+from subprocess import run as srun
 from typing import Self
 
 import pandas as pd
@@ -21,15 +22,13 @@ from pir_pipeline.utils.utils import get_searchable_columns
 
 
 class SQLAlchemyUtils(SQLUtils):
-    def __init__(
-        self,
-        user: str,
-        password: str,
-        host: str,
-        port: int,
-        database: str,
-        drivername: str = "mysql+mysqlconnector",
-    ):
+    def __init__(self, user: str, password: str, host: str, port: int, database: str):
+        try:
+            srun(["psql", "--version"])
+            drivername = "postgresql+psycopg"
+        except Exception:
+            drivername = "mysql+mysqlconnector"
+
         self._engine: Engine
         self.gen_engine(
             username=user,
@@ -39,6 +38,7 @@ class SQLAlchemyUtils(SQLUtils):
             database=database,
             drivername=drivername,
         )
+
         if self._engine.name == "mysql":
             from sqlalchemy.dialects.mysql import insert
         elif self._engine.name == "postgresql":
