@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 from typing import Any, Self
 
+import boto3
 import numpy as np
 import pandas as pd
 
@@ -167,7 +168,7 @@ class PIRIngestor:
         return None
 
     def hash_columns(self, row: str | pd.Series) -> str:
-        """Return the md5 hash of a series of columns
+        """Return the sha1 hash of a series of columns
 
         Args:
             row (pd.Series): A series of columns to hash
@@ -188,7 +189,7 @@ class PIRIngestor:
 
         byte_string = string.encode()
 
-        return hashlib.md5(byte_string).hexdigest()
+        return hashlib.sha1(byte_string).hexdigest()
 
     def extract_sheets(self) -> Self:
         """Load the workbook, and extract sheets and year.
@@ -201,7 +202,11 @@ class PIRIngestor:
             "Workbook does not contain the year in the file name."
         )
         self._year = int(year.group(1))
-        self._workbook = pd.ExcelFile(self._workbook)
+        
+        # Read the data
+        s3 = boto3.resource('s3')
+        object = s3.Object('pir-data', self._workbook)
+        self._workbook = pd.ExcelFile(object.get()["Body"].read())
         self._sheets = self._workbook.sheet_names
         assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
 
@@ -771,23 +776,21 @@ if __name__ == "__main__":
     import time
 
     from pir_pipeline.config import db_config
-    from pir_pipeline.utils.paths import INPUT_DIR
+    
+    s3 = boto3.resource('s3')
+    files = [obj.key for obj in s3.Bucket('pir-data').objects.filter(Prefix='input')]
 
-    files = os.listdir(INPUT_DIR)
     for file in files:
         year = re.search(r"\d{4}", file).group(0)
         year = int(year)
-        if year < 2008:
+
+        if year != 2008:
             continue
-        elif year == 2008 and file.endswith(".xlsx"):
-            continue
-        # elif year != 2008:
-        #     continue
 
         try:
             init = time.time()
             PIRIngestor(
-                os.path.join(INPUT_DIR, file),
+                file,
                 SQLAlchemyUtils(
                     **db_config, database="pir", drivername="postgresql+psycopg"
                 ),
