@@ -35,7 +35,7 @@ Resources:
       Runtime: python3.12
       Architectures:
         - x86_64
-      Timeout: 300
+      Timeout: 60
       MemorySize: 1024
       Environment:
         Variables:
@@ -43,6 +43,10 @@ Resources:
             Ref: ExistingRDSSecretArn
           RDS_ENDPOINT: 
             Ref: ExistingRDSEndpoint
+          DB_HOST:
+          DB_PORT:
+          DB_USER:
+          DB_PASSWORD:
       Policies:
         - Version: '2012-10-17'
         - S3ReadPolicy:
