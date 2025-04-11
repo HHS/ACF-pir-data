@@ -2,7 +2,7 @@
 name = "pir_pipeline"
 version = "1.0.0"
 authors = [
-    { name = "Arch Systems Inc."}
+    { name = "ACF Tech"}
 ]
 description = "Program Information Report ingestion and linking infrastructure."
 readme = "README.md"
