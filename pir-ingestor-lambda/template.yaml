@@ -1,41 +1,66 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  pir-ingestor-lambda
+  Lambda function for ingesting Program Information Report (PIR) data
 
-  Sample SAM Template for pir-ingestor-lambda
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-Globals:
-  Function:
-    Timeout: 3
+# Adapted from Claude 3.7
+Parameters:
+  ExistingS3BucketName:
+    Type: String
+    Description: Name of the existing S3 bucket to monitor for file creation events
+  
+  ExistingRDSSecretArn:
+    Type: String
+    Description: ARN of the AWS Secrets Manager secret containing RDS credentials
+  
+  ExistingRDSEndpoint:
+    Type: String
+    Description: Endpoint of the existing RDS database
+  
+  ExistingVpcId:
+    Type: String
+    Description: ID of the VPC where the RDS database is located
+  
+  ExistingSubnetIds:
+    Type: CommaDelimitedList
+    Description: List of subnet IDs where the Lambda function will be deployed
 
 Resources:
-  HelloWorldFunction:
+  PIRIngestor:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: hello_world/
+      Description: Reads and processes an Excel file and inserts the resultant data into the database.
+      CodeUri: pir_ingestor/
       Handler: app.lambda_handler
       Runtime: python3.12
       Architectures:
         - x86_64
+      Timeout: 300
+      MemorySize: 1024
+      Environment:
+        Variables:
+          RDS_SECRET_ARN:
+            Ref: ExistingRDSSecretArn
+          RDS_ENDPOINT: 
+            Ref: ExistingRDSEndpoint
+      Policies:
+        - Version: '2012-10-17'
+        - S3ReadPolicy:
+            BucketName:
+              Ref: ExistingS3BucketName
+        - SecretsManagerReadPolicy:
+            SecretArn:
+              Ref: ExistingRDSSecretArn
+        - VPCAccessPolicy: {}
       Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        S3Event:
+          Type: S3
           Properties:
-            Path: /hello
-            Method: get
+            Bucket:
+              Ref: S3Bucket
+            Events: "s3:ObjectCreated:*"
 
-Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
