@@ -2,6 +2,7 @@ __all__ = ["get_searchable_columns", "clean_name", "get_logger"]
 
 import logging
 import re
+import sys
 
 
 def get_searchable_columns(columns: list[str]) -> list[str]:
@@ -52,5 +53,6 @@ def get_logger(name: str):
         format="%(asctime)s|%(name)s|%(levelname)s|%(message)s",
         level=logging.DEBUG,
         datefmt="%Y-%m-%d %I:%M:%S",
+        stream=sys.stdout
     )
     return logging.getLogger(name)
