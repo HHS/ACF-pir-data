@@ -49,10 +49,12 @@ def clean_name(name: str, how: str = "snake") -> str:
 
 
 def get_logger(name: str):
-    logging.basicConfig(
-        format="%(asctime)s|%(name)s|%(levelname)s|%(message)s",
-        level=logging.DEBUG,
-        datefmt="%Y-%m-%d %I:%M:%S",
-        stream=sys.stdout
-    )
-    return logging.getLogger(name)
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(fmt="%(asctime)s|%(name)s|%(levelname)s|%(message)s", datefmt="%Y-%m-%d %I:%M:%S")
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
+    return logger
