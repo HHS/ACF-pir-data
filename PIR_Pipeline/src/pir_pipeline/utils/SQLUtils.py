@@ -15,7 +15,7 @@ class SQLUtils(ABC):
             host (str): Database host
             port (int): Database port
         """
-        self._db_config = {
+        self._DB_CONFIG = {
             "user": user,
             "password": password,
             "host": host,
@@ -23,7 +23,7 @@ class SQLUtils(ABC):
         }
 
     @property
-    def db_config(self):
+    def DB_CONFIG(self):
         """Database configuration attribute"""
         ...
 

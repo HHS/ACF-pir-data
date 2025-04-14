@@ -496,7 +496,7 @@ class QuestionLinker:
 
 
 if __name__ == "__main__":
-    from pir_pipeline.config import db_config
+    from pir_pipeline.config import DB_CONFIG
 
-    db = SQLAlchemyUtils(**db_config, database="pir")
+    db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
     get_review_question("unlinked", 10, db)

@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import bindparam, select, text
 
-from pir_pipeline.config import db_config
+from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
@@ -32,7 +32,7 @@ def test_drop_db(sql_utils, request):
         database = "postgres"
         query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
     sql = SQLAlchemyUtils(
-        **db_config, database=database, drivername=request.module.drivername
+        **DB_CONFIG, database=database, drivername=request.module.drivername
     )
     with sql.engine.connect() as conn:
         result = conn.execute(query)
@@ -45,8 +45,8 @@ def test_drop_db(sql_utils, request):
 @pytest.mark.usefixtures("create_database")
 class TestSQLAlchemyUtilsNoData:
     def test_gen_engine(self, request):
-        config = db_config.copy()
-        config.update({"username": db_config["user"]})
+        config = DB_CONFIG.copy()
+        config.update({"username": DB_CONFIG["user"]})
         config.pop("user")
         query = select(text("'Connection Made'"))
         with SQLAlchemyUtils.__new__(SQLAlchemyUtils).gen_engine(

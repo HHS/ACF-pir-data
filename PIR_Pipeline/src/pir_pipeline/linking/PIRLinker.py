@@ -8,7 +8,7 @@ import pandas as pd
 from fuzzywuzzy import fuzz
 from sqlalchemy import bindparam
 
-from pir_pipeline.config import db_config
+from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 from pir_pipeline.utils.utils import get_logger
 
@@ -418,7 +418,7 @@ class PIRLinker:
 
 if __name__ == "__main__":
     sql_alchemy = SQLAlchemyUtils(
-        **db_config, database="pir", drivername="postgresql+psycopg"
+        **DB_CONFIG, database="pir", drivername="postgresql+psycopg"
     )
     records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"

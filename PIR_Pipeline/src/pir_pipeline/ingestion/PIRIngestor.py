@@ -770,7 +770,7 @@ class PIRIngestor:
 if __name__ == "__main__":
     import time
 
-    from pir_pipeline.config import db_config
+    from pir_pipeline.config import DB_CONFIG
     from pir_pipeline.utils.paths import INPUT_DIR
 
     files = os.listdir(INPUT_DIR)
@@ -789,7 +789,7 @@ if __name__ == "__main__":
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
                 SQLAlchemyUtils(
-                    **db_config, database="pir", drivername="postgresql+psycopg"
+                    **DB_CONFIG, database="pir", drivername="postgresql+psycopg"
                 ),
             ).ingest()
             fin = time.time()
