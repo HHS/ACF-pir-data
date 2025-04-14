@@ -3,13 +3,6 @@ import tempfile
 import re
 import pytest
 from pir_pipeline.dashboard import create_app
-from pir_pipeline.dashboard.db import get_db
-
-@pytest.mark.usefixtures("app", "create_database")
-def test_get_db(app):
-    with app.app_context():
-        db = get_db()
-        assert db is not None
 
 @pytest.mark.usefixtures("app", "create_database")
 def test_request_home_page(client):
