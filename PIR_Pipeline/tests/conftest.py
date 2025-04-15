@@ -7,7 +7,7 @@ from pir_pipeline.utils.MockData import MockData
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def insert_question_records(sql_utils, question_linker_records):
     sql_utils.insert_records(question_linker_records, "question")
     
@@ -96,7 +96,7 @@ def db_columns(program_columns, question_columns, response_columns):
 
     return db_columns
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def question_linker_records():
     return [
         { # 2023-2024 link

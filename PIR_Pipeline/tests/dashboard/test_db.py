@@ -3,7 +3,7 @@ from flask import g
 from pir_pipeline.dashboard import create_app
 from pir_pipeline.dashboard.db import init_app, get_db, close_db
 
-@pytest.mark.usefixtures("app", "create_database")
+@pytest.mark.usefixtures("create_database", "app")
 def test_get_db(app):
     with app.app_context():
         db = get_db()
