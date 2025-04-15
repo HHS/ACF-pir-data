@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 from hashlib import md5
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
 
 from pir_pipeline.dashboard.db import get_db
@@ -12,20 +12,11 @@ from pir_pipeline.utils.dashboard_utils import (
     get_review_data,
     get_review_question,
     get_search_results,
+    search_matches,
 )
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 bp = Blueprint("review", __name__, url_prefix="/review")
-
-
-def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
-    output = {}
-    for match in matches:
-        output.update(
-            get_search_results("all", id_column, match[id_column], db, id_column)
-        )
-
-    return output
 
 
 def get_flashcard_question(
@@ -57,13 +48,17 @@ def index():
 
 @bp.route("/finalize", methods=["GET", "POST"])
 def finalize():
+    if not session.get("link_dict"):
+        flash("No linking actions performed.")
+        return render_template("review/index.html")
+
     if request.method == "POST":
         form = request.form
         action = form["action"]
+        link_dict = session.get("link_dict")
 
         if action == "remove":
             finalize_id = form["finalize-id"]
-            link_dict = session["link_dict"]
 
             link_dict.pop(finalize_id)
             if not link_dict.keys():
@@ -74,7 +69,6 @@ def finalize():
             return render_template("review/finalize.html")
         elif action == "commit":
             db = get_db()
-            link_dict = session["link_dict"]
             QuestionLinker(link_dict, db).update_links()
             session.pop("link_dict")
 
@@ -116,11 +110,6 @@ def flashcard():
 
         return json.dumps(output)
 
-    return render_template("review/flashcard.html")
-
-
-@bp.route("/init-flashcard", methods=["GET"])
-def init_flashcard():
     return render_template("review/flashcard.html")
 
 

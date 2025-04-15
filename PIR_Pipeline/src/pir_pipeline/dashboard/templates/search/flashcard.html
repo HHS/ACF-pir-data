@@ -9,9 +9,7 @@
         <div class="form-container left">
             <form id="flashcard-buttons" onsubmit="flashcardAction(event)">
                     <input type="hidden" id="review-type-input" name="review-type" value="">
-                    <button class="btn btn-primary" type="submit" name="action" value="previous">Previous</button>
                     <button class="btn btn-primary" type="submit" name="action" value="confirm">Mark Complete</button>
-                    <button class="btn btn-primary" type="submit" name="action" value="next">Next</button>
             </form>
         </div>
         <div class="form-container right">
@@ -31,5 +29,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script type="module" src="{{ url_for('static', filename='review.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='search.js') }}"></script>
 {% endblock %}

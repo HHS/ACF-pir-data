@@ -6,7 +6,7 @@
 
 {% block content %}
     <h2>
-        Select which types of questions you would like to review
+        Select a question type.
     </h2>
     <div class="card-container">
         <div class="card" onclick="buildFlashcardPage(event)">
@@ -22,5 +22,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script type="module" src="{{ url_for('static', filename='reviewFlashCard.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='review.js') }}"></script>
 {% endblock %}

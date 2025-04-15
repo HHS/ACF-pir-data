@@ -5,7 +5,7 @@ __all__ = ["get_review_data", "get_matches"]
 from collections import OrderedDict, namedtuple
 from hashlib import md5
 
-from sqlalchemy import and_, bindparam, distinct, func, select
+from sqlalchemy import Subquery, TableClause, and_, bindparam, distinct, func, select
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -229,7 +229,24 @@ def get_search_results(
     return search_dict
 
 
-def get_review_question(table: str, offset: int, db: SQLAlchemyUtils) -> str:
+def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> str:
+    def get_where_condition(table: TableClause | Subquery, offset: int | str):
+        if isinstance(offset, str):
+            if isinstance(table, TableClause):
+                where_condition = table.c[id_column] == offset
+            else:
+                where_condition = and_(
+                    table.c["row_num"] == 1, table.c[id_column] == offset
+                )
+            offset = 0
+        else:
+            if isinstance(table, TableClause):
+                where_condition = 1
+            else:
+                where_condition = table.c["row_num"] == 1
+
+        return where_condition, offset
+
     if table == "unlinked":
         id_column = "question_id"
         columns = ["question_id", "year"]
@@ -252,17 +269,21 @@ def get_review_question(table: str, offset: int, db: SQLAlchemyUtils) -> str:
             table.c[columns],
             func.row_number().over(partition_by=id_column).label("row_num"),
         ).subquery()
+
+        where_condition, offset = get_where_condition(subquery, offset)
         query = (
             select(subquery.c[columns])
-            .where(subquery.c["row_num"] == 1)
+            .where(where_condition)
             .order_by(subquery.c[id_column])
             .limit(1)
             .offset(offset)
             .distinct()
         )
     else:
+        where_condition, offset = get_where_condition(table, offset)
         query = (
             select(table.c[columns])
+            .where(where_condition)
             .order_by(table.c[id_column])
             .limit(1)
             .offset(offset)
@@ -276,6 +297,16 @@ def get_review_question(table: str, offset: int, db: SQLAlchemyUtils) -> str:
     next_id = {key: next_id[i] for i, key in enumerate(query.selected_columns.keys())}
 
     return (id_column, next_id)
+
+
+def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
+    output = {}
+    for match in matches:
+        output.update(
+            get_search_results("all", id_column, match[id_column], db, id_column)
+        )
+
+    return output
 
 
 class QuestionLinker:
@@ -492,7 +523,9 @@ class QuestionLinker:
             elif link_type == "confirm":
                 self.confirm()
             else:
-                raise AttributeError("Link type should be either 'link' or 'unlink'")
+                raise AttributeError(
+                    "Link type should be either 'link', 'unlink', 'confirm'"
+                )
 
 
 if __name__ == "__main__":
