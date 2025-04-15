@@ -4,6 +4,7 @@ import hashlib
 import os
 import re
 from datetime import datetime
+from io import BytesIO
 from typing import Any, Self
 
 import boto3
@@ -206,7 +207,7 @@ class PIRIngestor:
         # Read the data
         s3 = boto3.resource('s3')
         object = s3.Object('pir-data', self._workbook)
-        self._workbook = pd.ExcelFile(object.get()["Body"].read())
+        self._workbook = pd.ExcelFile(BytesIO(object.get()["Body"].read()))
         self._sheets = self._workbook.sheet_names
         assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
 
@@ -735,8 +736,11 @@ class PIRIngestor:
             for record in initial_records:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
+                
+            self._logger.info(f"Validated records against pydantic model for: {table}")
 
             self._sql.insert_records(cleaned_records, table)
+            self._logger.info(f"Data inserted for: {table}")
 
         self._logger.info(f"Data inserted for {self._year}")
 
