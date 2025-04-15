@@ -5,6 +5,7 @@ import pytest
 
 @pytest.mark.usefixtures("create_database", "app")
 def test_get_search_page(client):
+    '''Tests to ensure that the search page returns the appropriately titled HTML response.'''
     response = client.get("/search/")
     assert response.status_code == 200, f"Expected 200 response from app, instead got {response.status_code}"
     expected_title = "<title>Search</title>"
@@ -12,6 +13,7 @@ def test_get_search_page(client):
     assert returned_title == expected_title, f"Response from search did not return expected result, {expected_title}. Instead got {returned_title}."
     
 def test_post_search_returns_result(client):
+    '''Tests to ensure that a POST request with a query returns records.'''
     response = client.post("/search/",
                            data = {
                                     "column-select": "Category",
@@ -23,6 +25,9 @@ def test_post_search_returns_result(client):
     assert expected_unlinked_qid in response.text, f"Expected QID for unlinked record ({expected_unlinked_qid}) not found in search response."
     
 def test_review_button_response(client):
+    '''Tests that the response from /search/data returns the expected results. 
+    Sending a POST request to /search/data is meant to return values from the review page for the associated record.
+    In this case, the qid values are found in tests/conftest.py'''
     unlinked_id_to_test = "83e32d72b46030e1abf5109b8b506fb8"
     expected_qid_match_result = "87fe124509e4e9e48b26a65b78c87acd"
     response = client.post("/search/", 

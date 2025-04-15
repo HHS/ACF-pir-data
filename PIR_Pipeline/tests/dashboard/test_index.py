@@ -4,6 +4,7 @@ from pir_pipeline.dashboard import create_app
 
 @pytest.mark.usefixtures("app", "create_database")
 def test_get_home_page(client):
+    '''Tests to ensure that the home page returns a valid HTML response with an appropriate title.'''
     response = client.get("/")
     assert response.status_code == 200, f"Expected 200 response from app, instead got {response.status_code}"
     expected_title = "<title>Home</title>"
