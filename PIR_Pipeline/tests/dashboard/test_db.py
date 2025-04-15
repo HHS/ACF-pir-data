@@ -1,8 +1,5 @@
-import os
-import tempfile
-import re
 import pytest
-from flask import g, Flask
+from flask import g
 from pir_pipeline.dashboard import create_app
 from pir_pipeline.dashboard.db import init_app, get_db, close_db
 
