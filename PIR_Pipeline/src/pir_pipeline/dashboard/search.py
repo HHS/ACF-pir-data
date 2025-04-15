@@ -77,6 +77,7 @@ def flashcard():
 def data():
     db = get_db()
     response = request.get_json()
+    print(type(response))
     output = get_flashcard_question(
         response["review-type"], response["question_id"], db
     )

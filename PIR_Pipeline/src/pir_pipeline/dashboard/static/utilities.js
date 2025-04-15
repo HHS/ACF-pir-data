@@ -212,7 +212,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
     const reviewType = document.getElementById("type-select").value.toLowerCase();
     const reviewButtonBase = document.createElement("button");
-    reviewButtonBase.setAttribute("onclick", "buildFlashcardPage(event)");
+    reviewButtonBase.setAttribute("onclick", "getFlashcardData(event)");
     reviewButtonBase.className = "btn btn-primary";
 
     // Set table header row
