@@ -68,8 +68,11 @@ def search():
     )
 
 
-@bp.route("/flashcard")
+@bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
+    if request.method == "POST":
+        return render_template("review/finalize.html")
+
     return render_template("search/flashcard.html")
 
 
@@ -77,6 +80,7 @@ def flashcard():
 def data():
     db = get_db()
     response = request.get_json()
+    print(type(response))
     output = get_flashcard_question(
         response["review-type"], response["question_id"], db
     )
