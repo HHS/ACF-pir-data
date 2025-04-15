@@ -3,7 +3,7 @@ import os
 from pir_pipeline.dashboard import create_app
 from pir_pipeline.config import DB_CONFIG
 
-@pytest.fixture()
+@pytest.fixture(scope = "module")
 def app(insert_question_records):
     test_db_config = DB_CONFIG.copy()
     test_config = {

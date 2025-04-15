@@ -9,7 +9,6 @@ def test_get_db(app):
         db = get_db()
         assert db is not None
         
-@pytest.mark.usefixtures("app", "create_database")
 def test_close_db(app):
     with app.app_context():
         db = get_db()
@@ -18,7 +17,6 @@ def test_close_db(app):
     assert "db" not in g
     
     
-@pytest.mark.usefixtures("app", "create_database")
 def test_init_app(app):
     init_app(app)
     assert close_db in app.teardown_appcontext_funcs
