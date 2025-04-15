@@ -22,11 +22,8 @@ def test_close_db(app):
     
     
 @pytest.mark.usefixtures("app", "create_database")
-def test_init_app():
-    app = Flask(__name__)
+def test_init_app(app):
     init_app(app)
-    
-    # Check if close_db is registered as a teardown function
     assert close_db in app.teardown_appcontext_funcs
 
 if __name__ == "__main__":
