@@ -241,7 +241,7 @@ def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> s
             offset = 0
         else:
             if isinstance(table, TableClause):
-                where_condition = 1
+                where_condition = 1 == 1
             else:
                 where_condition = table.c["row_num"] == 1
 

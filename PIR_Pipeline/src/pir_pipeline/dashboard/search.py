@@ -68,8 +68,11 @@ def search():
     )
 
 
-@bp.route("/flashcard")
+@bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
+    if request.method == "POST":
+        return render_template("review/finalize.html")
+
     return render_template("search/flashcard.html")
 
 
