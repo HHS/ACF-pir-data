@@ -40,9 +40,6 @@ def get_flashcard_question(
 
 @bp.route("/", methods=["GET", "POST"])
 def index():
-    if request.method == "POST":
-        return redirect(url_for("review.finalize"))
-
     return render_template("review/index.html")
 
 
@@ -84,6 +81,10 @@ def flashcard():
 
         form = request.form
         action = form["action"]
+
+        if action == "finish":
+            return redirect(url_for("review.finalize"))
+
         review_type = form["review-type"]
 
         if action == "next":

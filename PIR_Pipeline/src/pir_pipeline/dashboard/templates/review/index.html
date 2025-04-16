@@ -9,18 +9,18 @@
         Select a question type.
     </h2>
     <div class="card-container">
-        <div class="card" onclick="buildFlashcardPage(event)">
+        <div class="card" onclick="initializeFlashcards(event)">
             <div class="card-body" value="unlinked">Unlinked</div>
         </div>
-        <div class="card" onclick="buildFlashcardPage(event)">
+        <div class="card" onclick="initializeFlashcards(event)">
             <div class="card-body" value="intermittent">Intermittent</div>
         </div>
-        <div class="card" onclick="buildFlashcardPage(event)">
+        <div class="card" onclick="initializeFlashcards(event)">
             <div class="card-body" value="inconsistent">Inconsistent</div>
         </div>
     </div>
 {% endblock %}
 
 {% block scripts %}
-    <script type="module" src="{{ url_for('static', filename='review.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='review/review.js') }}"></script>
 {% endblock %}

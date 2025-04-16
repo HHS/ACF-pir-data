@@ -1,10 +1,13 @@
-import { rowToJSON } from "../utilities.js";
-import { updateFlashcardTables } from "../review.js";
+import { rowToJSON, updateFlashcardTables } from "../utilities.js";
 
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
 async function buildFlashcardPage() {
     const rowRecord = sessionStorage.getItem("flashcardData");
+    const rowRecordJson = JSON.parse(rowRecord);
+
+    const reviewTypeInput = document.getElementById("review-type-input");
+    reviewTypeInput.value = rowRecordJson["review-type"];
     
     await fetch("/search/data", { "method": "POST", "headers": {"Content-type": "application/json"}, "body": rowRecord })
         .then(response => response.json())
