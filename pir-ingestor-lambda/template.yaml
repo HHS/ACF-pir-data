@@ -1,61 +1,26 @@
+# Adapted from Claude 3.7s
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+
 Description: >
   Lambda function for ingesting Program Information Report (PIR) data
 
-# Adapted from Claude 3.7
-Parameters:
-  ExistingS3BucketName:
-    Type: String
-    Description: Name of the existing S3 bucket to monitor for file creation events
-  
-  ExistingRDSSecretArn:
-    Type: String
-    Description: ARN of the AWS Secrets Manager secret containing RDS credentials
-  
-  ExistingRDSEndpoint:
-    Type: String
-    Description: Endpoint of the existing RDS database
-  
-  ExistingVpcId:
-    Type: String
-    Description: ID of the VPC where the RDS database is located
-  
-  ExistingSubnetIds:
-    Type: CommaDelimitedList
-    Description: List of subnet IDs where the Lambda function will be deployed
-
 Resources:
   PIRIngestor:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
-      Description: Reads and processes an Excel file and inserts the resultant data into the database.
       CodeUri: pir_ingestor/
       Handler: app.lambda_handler
       Runtime: python3.12
-      Architectures:
-        - x86_64
       Timeout: 180
-      MemorySize: 1024
+      MemorySize: 2048
       Environment:
         Variables:
-          RDS_SECRET_ARN:
-            Ref: ExistingRDSSecretArn
-          RDS_ENDPOINT: 
-            Ref: ExistingRDSEndpoint
-          DB_HOST:
-          DB_PORT:
-          DB_USER:
-          DB_PASSWORD:
-      Policies:
-        - Version: '2012-10-17'
-        - S3ReadPolicy:
-            BucketName:
-              Ref: ExistingS3BucketName
-        - SecretsManagerReadPolicy:
-            SecretArn:
-              Ref: ExistingRDSSecretArn
-        - VPCAccessPolicy: {}
+          RDS_ENDPOINT: host.docker.internal:5432
+          DB_HOST: host.docker.internal
+          DB_PORT: 5432
+          DB_USER: testuser
+          DB_PASSWORD: testpassword
       Events:
         S3Event:
           Type: S3
@@ -64,7 +29,3 @@ Resources:
               Ref: S3Bucket
             Events: "s3:ObjectCreated:*"
 
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
