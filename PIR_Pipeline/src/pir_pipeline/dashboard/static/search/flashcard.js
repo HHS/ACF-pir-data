@@ -1,5 +1,4 @@
-import { rowToJSON } from "../utilities.js";
-import { updateFlashcardTables } from "../review.js";
+import { rowToJSON, updateFlashcardTables } from "../utilities.js";
 
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 

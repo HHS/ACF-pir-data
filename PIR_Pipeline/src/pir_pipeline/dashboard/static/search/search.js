@@ -1,5 +1,4 @@
 import { updateTable, rowToJSON } from "../utilities.js";
-import { updateFlashcardTables, flashcardAction } from "../review.js";
 
 const searchForm = document.getElementById("search-form")
 searchForm.addEventListener("submit", async (e) => {
@@ -34,5 +33,4 @@ function getFlashcardData(e) {
     window.location.href = "/search/flashcard";
 }
 
-document.flashcardAction = flashcardAction;
 document.getFlashcardData = getFlashcardData;
