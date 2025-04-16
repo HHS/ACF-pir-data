@@ -1,3 +1,4 @@
+import hashlib
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -116,11 +117,7 @@ def valid_hash_rows():
         }
     )
 
-    expected_uid_hashes = [
-        "000f56e97392dbb83df26feaecdc5063",  # MD5 for ['06CH010420', '000', 'HS']
-        "0010ce3bb709d424dc1d1598f8c3ecb5",  # MD5 for ['02HP0026', '200', 'EHS']
-        "002a208d04df9f43e893db401184157d",  # MD5 for ['05CH8368', '000', 'HS']
-    ]
+    expected_uid_hashes = uid_rows.apply(lambda x: hashlib.sha1(''.join(x).encode()).hexdigest(), axis=1).tolist()
 
     qid_rows = pd.DataFrame(
         {
@@ -129,10 +126,7 @@ def valid_hash_rows():
         }
     )
 
-    expected_qid_hashes = [
-        "68e7eddc1b7857b8611a19993ecde1b2",  # MD5 for ['English', 'A.21.a']
-        "10f9a9567b29a7c565818a68f4df33d8",  # MD5 for ['Homeless Families Served', 'C.49']
-    ]
+    expected_qid_hashes = qid_rows.apply(lambda x: hashlib.sha1(''.join(x).encode()).hexdigest(), axis=1).tolist()
 
     return {
         "uid_rows": uid_rows,

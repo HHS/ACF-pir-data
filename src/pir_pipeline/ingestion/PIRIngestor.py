@@ -205,9 +205,12 @@ class PIRIngestor:
         self._year = int(year.group(1))
         
         # Read the data
-        s3 = boto3.resource('s3')
-        object = s3.Object('pir-data', self._workbook)
-        self._workbook = pd.ExcelFile(BytesIO(object.get()["Body"].read()))
+        if os.environ.get("IN_AWS_LAMBDA"):
+            s3 = boto3.resource('s3')
+            object = s3.Object('pir-data', self._workbook)
+            self._workbook = pd.ExcelFile(BytesIO(object.get()["Body"].read()))
+        else:
+            self._workbook = pd.ExcelFile(self._workbook)
         self._sheets = self._workbook.sheet_names
         assert len(self._sheets) > 0, f"Workbook {self._workbook} was empty."
 
