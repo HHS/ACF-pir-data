@@ -24,7 +24,7 @@ numpy==2.2.4
 openpyxl==3.1.5
 packaging==24.2
 pandas==2.2.3
-pir_pipeline @ file:///home/reggie.gilliard%40acf.hhs.local/repos/ohsdata/dist/pir_pipeline-1.0.0-py3-none-any.whl#sha256=a5ae820461f4b9897ea52f2055f86b7e75789a9699459f2c639708aec31f06ae
+pir_pipeline @ file:///home/reggie.gilliard%40acf.hhs.local/repos/ohsdata/dist/pir_pipeline-1.0.0-py3-none-any.whl#sha256=8e8851288242d5ab64792a9e77004ba074a8f4e1d0a39974ae806914502511a2
 pluggy==1.5.0
 psycopg==3.2.6
 psycopg-binary==3.2.6
