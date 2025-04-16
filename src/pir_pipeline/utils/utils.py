@@ -58,3 +58,8 @@ def get_logger(name: str):
     logger.addHandler(stream_handler)
 
     return logger
+
+def close_logger(logger: logging.Logger):
+    for handler in logger.handlers:
+        handler.close()
+        logger.removeHandler(handler)

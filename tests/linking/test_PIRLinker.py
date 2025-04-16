@@ -99,7 +99,7 @@ class TestPIRLinker:
             (pd.Series(["question_id", np.nan, ""], index=index_names), np.nan),
             (
                 pd.Series(["question_id", "linked_id_2", ""], index=index_names),
-                hashlib.md5("question_idlinked_id_2".encode()).hexdigest(),
+                hashlib.sha1("question_idlinked_id_2".encode()).hexdigest(),
             ),
             (
                 pd.Series(["question_id_2", "linked_id_3", ""], index=index_names),
@@ -117,7 +117,7 @@ class TestPIRLinker:
         # Confirm that uqids are set to the correct value
         def check_uqid(row: pd.Series):
             expected_uqid = row["question_id"] + row["question_id"]
-            assert row["uqid"] == hashlib.md5(expected_uqid.encode()).hexdigest()
+            assert row["uqid"] == hashlib.sha1(expected_uqid.encode()).hexdigest()
 
         pir_linker.link().update_unlinked()
         linked = pir_linker._sql.get_records("SELECT * from linked")

@@ -3,7 +3,7 @@
 __all__ = ["get_review_data", "get_matches"]
 
 from collections import OrderedDict, namedtuple
-from hashlib import md5
+from hashlib import sha1
 
 from sqlalchemy import Subquery, TableClause, and_, bindparam, distinct, func, select
 
@@ -164,7 +164,7 @@ def get_search_results(
 
     keyword_query = (
         select(table.c[columns])
-        .where(table.c[column].regexp_match(bindparam("keyword")))
+        .where(table.c[column].regexp_match(bindparam("keyword"), "i"))
         .order_by(table.c[id_column], table.c["year"].desc())
     )
 
@@ -392,7 +392,7 @@ class QuestionLinker:
         elif not base_uqid:
             if not match_uqid:
                 qids_encoded = (base_qid + match_qid).encode("utf-8")
-                match_uqid = md5(qids_encoded).hexdigest()
+                match_uqid = sha1(qids_encoded).hexdigest()
 
             self._db.update_records(
                 question,
@@ -466,7 +466,7 @@ class QuestionLinker:
         # Otherwise, ensure uqid is equal to what should occur if matched with self
         elif qid_count > 1:
             qids_encoded = (match_qid + match_qid).encode("utf-8")
-            match_uqid = md5(qids_encoded).hexdigest()
+            match_uqid = sha1(qids_encoded).hexdigest()
         else:
             raise Exception("No matching question_id!")
 
@@ -477,7 +477,7 @@ class QuestionLinker:
         # real process?
         if match_uqid == base_uqid:
             qids_encoded = (base_qid + base_qid).encode("utf-8")
-            new_uqid = md5(qids_encoded).hexdigest()
+            new_uqid = sha1(qids_encoded).hexdigest()
 
             self._db.update_records(
                 question,

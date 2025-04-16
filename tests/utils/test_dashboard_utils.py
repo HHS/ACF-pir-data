@@ -1,5 +1,5 @@
 from collections import namedtuple
-from hashlib import md5
+from hashlib import sha1
 
 import pytest
 from sqlalchemy import null, select
@@ -20,36 +20,36 @@ def insert_question_records(sql_utils, question_linker_records):
 payload = {
     "1": {
         "link_type": "unlink",
-        "base_question_id": "42d3b624c74d07c3a574a4f26fa3c686",
-        "base_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-        "match_question_id": "0686c2ad4d3041b580a1d4015b9f0c80",
-        "match_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
+        "base_question_id": "443a354c772a24df0c2bba9acf568576a3b7d182",
+        "base_uqid": "6c9f2d2dcd01048e5163e12a1f50cb8e7c926e43",
+        "match_question_id": "d27e8217ba30000a78e5d92ea54f4d9a2e69cb54",
+        "match_uqid": "6c9f2d2dcd01048e5163e12a1f50cb8e7c926e43",
     },
     "2": {
         "link_type": "unlink",
-        "base_question_id": "7bfb25407153bbbb171e5d2280c1194f",
-        "base_uqid": "00517751cc2f7920185e52926ce7a0c9",
-        "match_question_id": "4167b6decdcd59db40b69e0fba43e7f0",
-        "match_uqid": "00517751cc2f7920185e52926ce7a0c9",
+        "base_question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+        "base_uqid": "e358fa167d3a9d5872f563ec5cfa07898a7ee186",
+        "match_question_id": "dd089009542dfd51e45f2f23826dbc7a6f6a912e",
+        "match_uqid": "e358fa167d3a9d5872f563ec5cfa07898a7ee186",
     },
     "3": {
         "link_type": "link",
-        "base_question_id": "6b2522aa7ff248ca4d80ac299104ca2e",
-        "base_uqid": "5ff5919440ca5dcd4c9dbda1eff168d4",
-        "match_question_id": "3dc2c6572e8b64ffd64231c43ccd95d6",
-        "match_uqid": "0b19c17c60bfce95f963a1ddc0575588",
+        "base_question_id": "8e96da390b28ba6f5571ee1f68716cca982ccca0",
+        "base_uqid": "a488b1e05a2b7b462c3fafb5b6c3536704c39959",
+        "match_question_id": "a01842852de3fa9893856eb711efc3e34fdc1037",
+        "match_uqid": "0e9fdf808ccf193218f64d62ab9b0c60f860de6b",
     },
     "4": {
         "link_type": "link",
-        "base_question_id": "83e32d72b46030e1abf5109b8b506fb8",
+        "base_question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
         "base_uqid": None,
-        "match_question_id": "87fe124509e4e9e48b26a65b78c87acd",
-        "match_uqid": "8cfa414fcd9b593e45bee4dd68080ae8",
+        "match_question_id": "66e92dd434dc3cccc5e14e3ad4ce710be8c7fb9d",
+        "match_uqid": "ca2fca6b6b932b8fcbf9c92b66a9605b5a5b7f81",
     },
     "5": {
         "link_type": "confirm",
         "base_question_id": None,
-        "base_uqid": "5512c4f54e3ace4484e59cdc48976761",
+        "base_uqid": "a5d26ad90fec036826376e3be8425e9749c7160c",
         "match_question_id": None,
         "match_uqid": None,
     },
@@ -67,25 +67,25 @@ class TestGetDataMethods:
     def test_get_review_data(self, sql_utils):
         Check = namedtuple("Check", ["review_type", "id_var", "ids"])
         checks = [
-            Check("unlinked", "question_id", ["83e32d72b46030e1abf5109b8b506fb8"]),
+            Check("unlinked", "question_id", ["0e93c25d3a95604f40d3a64e2298093b4faed6f2"]),
             Check(
                 "intermittent",
                 "uqid",
                 [
-                    "194ed0fc57877f9ee8eee0fc5927b148",
-                    "0b19c17c60bfce95f963a1ddc0575588",
-                    "00517751cc2f7920185e52926ce7a0c9",
-                    "5ff5919440ca5dcd4c9dbda1eff168d4",
-                    "8cfa414fcd9b593e45bee4dd68080ae8",
-                    "5512c4f54e3ace4484e59cdc48976761",
+                    "0e9fdf808ccf193218f64d62ab9b0c60f860de6b",
+                    "6c9f2d2dcd01048e5163e12a1f50cb8e7c926e43",
+                    "a488b1e05a2b7b462c3fafb5b6c3536704c39959",
+                    "a5d26ad90fec036826376e3be8425e9749c7160c",
+                    "ca2fca6b6b932b8fcbf9c92b66a9605b5a5b7f81",
+                    "e358fa167d3a9d5872f563ec5cfa07898a7ee186",
                 ],
             ),
             Check(
                 "inconsistent",
                 "uqid",
                 [
-                    "194ed0fc57877f9ee8eee0fc5927b148",
-                    "00517751cc2f7920185e52926ce7a0c9",
+                    "6c9f2d2dcd01048e5163e12a1f50cb8e7c926e43",
+                    "e358fa167d3a9d5872f563ec5cfa07898a7ee186",
                 ],
             ),
         ]
@@ -103,7 +103,7 @@ class TestGetDataMethods:
                 {
                     "review-type": "unlinked",
                     "record": {
-                        "question_id": "83e32d72b46030e1abf5109b8b506fb8",
+                        "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
                         "year": 2011,
                     },
                 },
@@ -114,7 +114,7 @@ class TestGetDataMethods:
                 {
                     "review-type": "intermittent",
                     "record": {
-                        "uqid": "194ed0fc57877f9ee8eee0fc5927b148",
+                        "uqid": "6c9f2d2dcd01048e5163e12a1f50cb8e7c926e43",
                         "question_name": "Of the number of education and child development staff that left, the number that left for the following primary reason - Other - Specify Text",
                         "question_number": "B.18.d-1",
                         "question_text": "Other (e.g., change in job field, reason not provided)",
@@ -126,10 +126,10 @@ class TestGetDataMethods:
             Check(
                 {
                     "review-type": "inconsistent",
-                    "record": {"uqid": "00517751cc2f7920185e52926ce7a0c9"},
+                    "record": {"uqid": "6c9f2d2dcd01048e5163e12a1f50cb8e7c926e43"},
                 },
                 {"question_id", "question_name", "question_number", "question_text"},
-                3,
+                2,
             ),
         ]
         for check in checks:
@@ -154,7 +154,7 @@ class TestGetDataMethods:
                     "keyword": "^Staff$",
                     "qtype": "all",
                 },
-                ["83e32d72b46030e1abf5109b8b506fb8"],
+                ["0e93c25d3a95604f40d3a64e2298093b4faed6f2"],
             ),
             Check(
                 {
@@ -163,8 +163,8 @@ class TestGetDataMethods:
                     "qtype": "all",
                 },
                 [
-                    "83e32d72b46030e1abf5109b8b506fb8",
-                    "87fe124509e4e9e48b26a65b78c87acd",
+                    "66e92dd434dc3cccc5e14e3ad4ce710be8c7fb9d",
+                    "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
                 ],
             ),
         ]
@@ -251,7 +251,7 @@ class TestQuestionLinker:
 
             expected_uqid = base_qid
             expected_uqid = (expected_uqid + expected_uqid).encode()
-            expected_uqid = md5(expected_uqid).hexdigest()
+            expected_uqid = sha1(expected_uqid).hexdigest()
             assert record == expected_uqid, f"Incorrect base_uqid: {record}"
 
             # Rows are logged in changelog

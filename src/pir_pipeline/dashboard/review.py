@@ -1,6 +1,6 @@
 import json
 from collections import OrderedDict
-from hashlib import md5
+from hashlib import sha1
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
@@ -173,7 +173,7 @@ def link():
     # Add a link/unlink entry to session
     if action == "build":
         link_dict = session.get("link_dict")
-        dict_id = md5(str(data).encode("utf-8")).hexdigest()
+        dict_id = sha1(str(data).encode("utf-8")).hexdigest()
         if link_dict:
             # May need to handle user selecting the same link twice, may not
             # if dict_id in link_dict:

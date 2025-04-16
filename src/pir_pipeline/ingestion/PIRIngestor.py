@@ -13,7 +13,7 @@ import pandas as pd
 
 from pir_pipeline.models import pir_models
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-from pir_pipeline.utils.utils import get_logger
+from pir_pipeline.utils.utils import close_logger, get_logger
 
 
 class PIRIngestor:
@@ -764,6 +764,8 @@ class PIRIngestor:
             .validate_data()
             .insert_data()
         )
+        
+        close_logger(self._logger)
 
         return self
 
