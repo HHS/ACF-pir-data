@@ -177,28 +177,6 @@ function fillMatchDiv(div, data) {
     buildTable(data, table);
 }
 
-function storeLink(event) {
-    const button = event.srcElement;
-    const matchRow = button.closest("tr");
-    const matchID = matchRow.closest("table").closest("tr").id;
-    const baseRow = document.querySelector(`button[aria-controls="${matchID}"`).closest("tr");
-    let baseRecord = rowToJSON(baseRow);
-    let matchRecord = rowToJSON(matchRow);
-    const linkDetails = {
-        "link_type": button.value,
-        "base_question_id": baseRecord.question_id,
-        "base_uqid": baseRecord.uqid,
-        "match_question_id": matchRecord.question_id,
-        "match_uqid": matchRecord.uqid
-    }
-    const payload = {
-        "action": "build",
-        "data": linkDetails
-    }
-    
-    fetch("/review/link", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
-}
-
 function buildSearchTable(data, table = document.createElement("table")) {
     // Constant buttons
     const expandButtonBase = document.createElement("button");
@@ -432,12 +410,41 @@ function buildReviewTable(data, table = document.createElement("table")) {
     return table
 }
 
+function storeLink(event) {
+    const button = event.target;
+    const matchRow = button.closest("tr");
+    const baseRow = document.getElementById("flashcard-question-table").getElementsByTagName("tr")[1];
+    const baseRecord = rowToJSON(baseRow);
+    const matchRecord = rowToJSON(matchRow)
+
+    const linkDetails = {
+        "link_type": button.value,
+        "base_question_id": baseRecord.question_id,
+        "base_uqid": baseRecord.uqid,
+        "match_question_id": matchRecord.question_id,
+        "match_uqid": matchRecord.uqid
+    }
+
+    const payload = {
+        "action": "build",
+        "data": linkDetails
+    }
+
+    fetch("/review/link", {
+        "method": "POST",
+        "headers": {
+            "Content-type": "application/json"
+        },
+        "body": JSON.stringify(payload)
+    })
+}
+
 export {
     buildTable,
     updateTable,
     getQuestionData,
-    storeLink,
     buildSearchTable,
     rowToJSON,
-    updateFlashcardTables
+    updateFlashcardTables,
+    storeLink
 }
