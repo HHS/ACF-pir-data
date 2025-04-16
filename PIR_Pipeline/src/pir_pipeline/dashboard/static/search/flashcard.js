@@ -1,4 +1,4 @@
-import { rowToJSON, updateFlashcardTables } from "../utilities.js";
+import { rowToJSON, updateFlashcardTables, storeLink } from "../utilities.js";
 
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
@@ -46,5 +46,6 @@ async function flashcardAction(e) {
 
 }
 
+document.storeLink = storeLink;
 document.updateFlashcardTables = updateFlashcardTables;
 document.flashcardAction = flashcardAction;

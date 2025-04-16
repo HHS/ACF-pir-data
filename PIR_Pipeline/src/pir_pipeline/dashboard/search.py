@@ -71,7 +71,7 @@ def search():
 @bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
     if request.method == "POST":
-        return render_template("review/finalize.html")
+        return redirect(url_for("review.finalize"))
 
     return render_template("search/flashcard.html")
 
