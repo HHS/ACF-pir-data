@@ -21,6 +21,7 @@ Resources:
           DB_PORT: 5432
           DB_USER: testuser
           DB_PASSWORD: testpassword
+          DB_NAME: pir_test
       Events:
         S3Event:
           Type: S3

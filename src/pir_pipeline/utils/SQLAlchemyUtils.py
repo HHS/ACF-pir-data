@@ -1,5 +1,5 @@
 """Utilities for interacting with SQL via SQLAlchemy"""
-
+import os
 from subprocess import run as srun
 from typing import Self
 
@@ -30,7 +30,10 @@ class SQLAlchemyUtils(SQLUtils):
             srun(["psql", "--version"])
             drivername = "postgresql+psycopg"
         except Exception:
-            drivername = "mysql+mysqlconnector"
+            if os.environ.get("IN_AWS_LAMBDA"):
+                drivername = "postgresql+psycopg"
+            else:
+                drivername = "mysql+mysqlconnector"
 
         self._engine: Engine
         self.gen_engine(
