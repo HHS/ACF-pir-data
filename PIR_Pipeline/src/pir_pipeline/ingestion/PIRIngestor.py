@@ -111,6 +111,48 @@ class PIRIngestor:
 
         return hashlib.md5(byte_string).hexdigest()
 
+    def log_invalid_data(self, message: str, data: pd.DataFrame):
+        try:
+            self._invalid_data
+        except AttributeError:
+            self._invalid_data = {}
+
+        self._invalid_data[message] = data
+
+    def write_invalid_data(self, path: str | os.PathLike):
+        with open(path, "w") as f:
+            for message, data in self._invalid_data.items():
+                f.write(f"# {message}")
+                f.write("\n")
+                f.write(data.to_string())
+                f.write("\n")
+                f.write("=" * 20)
+                f.write("\n")
+
+    def stringify(self, value: Any) -> str:
+        """Convert values to string
+
+        In the case of dates, this function applies the Month/Day/Year format.
+
+        Args:
+            value (Any): Value to convert to string
+
+        Returns:
+            str: Original value converted to string
+        """
+        if isinstance(value, str):
+            return value
+        elif isinstance(value, datetime):
+            return value.strftime("%m/%d/%Y")
+        elif isinstance(value, (int, float)):
+            if np.isnan(value):
+                return "nan"
+            if isinstance(value, bool):
+                return value
+            return str(value)
+
+        return value
+
     def extract_sheets(self) -> Self:
         """Load the workbook, and extract sheets and year.
 
@@ -221,19 +263,36 @@ class PIRIngestor:
                     df[unique_columns].apply(self.hash_columns, axis=1).tolist()
                 )
                 self._metrics[name]["question_ids"] = question_ids
-                self._metrics[name]["nan_question_number"] = df[
-                    df["question_number"].isna()
-                ]
+
+                nan_question_numbers = df[df["question_number"].isna()]
+                self._metrics[name]["nan_question_number"] = nan_question_numbers
+
+                if not nan_question_numbers.empty:
+                    self.log_invalid_data(
+                        message="These records are missing a question number",
+                        data=nan_question_numbers,
+                    )
 
                 dupes = df[unique_columns].duplicated().sum()
-                self._metrics["question"]["number_duplicates"] = set(
+                number_duplicates = set(
                     df["question_number"][df["question_number"].duplicated()]
                 )
+                self._metrics["question"]["number_duplicates"] = number_duplicates
+                if number_duplicates:
+                    self.log_invalid_data(
+                        "These questions have duplicated question numbers",
+                        df[df["question_number"].duplicated()],
+                    )
+
                 try:
                     assert not dupes, self._logger.error(
                         f"{dupes} duplicated questions"
                     )
                 except AssertionError:
+                    self.log_invalid_data(
+                        "These questions are completely duplicated",
+                        df[df[unique_columns].duplicated()],
+                    )
                     df = self.duplicated_question_error(df, unique_columns)
                     self._metrics["question"]["name_and_number_duplicates"] = dupes
 
@@ -359,6 +418,15 @@ class PIRIngestor:
             question_number_duplicates = self._metrics["question"]["number_duplicates"]
             duplicate_question_numbers = set(duplicate_question_numbers)
             if not duplicate_question_numbers == question_number_duplicates:
+                self.log_invalid_data(
+                    "These question numbers were duplicated after merging a Section and Reference",
+                    question[
+                        question["question_number"].apply(
+                            lambda x: x in duplicate_question_numbers
+                        )
+                    ],
+                )
+
                 dupes_to_drop = duplicate_question_numbers - question_number_duplicates
                 self._logger.info(
                     f"The following questions were duplicated by merging question and\
@@ -445,12 +513,12 @@ class PIRIngestor:
                 )
             )
 
-            assert (
-                left["_merge"] == "both"
-            ).all(), "Some records in response still not found in question"
+            assert (left["_merge"] == "both").all(), self._logger.error(
+                "Some records in response still not found in question"
+            )
             assert (
                 set(both.columns.tolist()) - set(left.columns.tolist()) == set()
-            ), "Different columns in both and left"
+            ), self._logger.error("Different columns in both and left")
             appended = pd.concat([both, left])
             assert appended.shape[0] == num_records, self._logger.error(
                 "Incorrect number of records after dataframe concatenation"
@@ -539,6 +607,10 @@ class PIRIngestor:
                 f"Some duplicated records:\n{duplicates}"
             )
         except AssertionError:
+            self.log_invalid_data(
+                "The following records are duplicated in Program Details",
+                program[program[uid_columns].duplicated()],
+            )
             # For now, simply remove duplicates if any occur
             program = program[~program[uid_columns].duplicated()]
 
@@ -561,38 +633,16 @@ class PIRIngestor:
             df = data[frame]
             df["year"] = self._year
             missing_variables = set(final_columns) - set(df.columns)
+
             for var in missing_variables:
                 df[var] = None
+
             df = df[final_columns]
             self._data[frame] = df
 
         self._logger.info("Cleaned PIR data to prepare for insertion.")
 
         return self
-
-    def stringify(self, value: Any) -> str:
-        """Convert values to string
-
-        In the case of dates, this function applies the Month/Day/Year format.
-
-        Args:
-            value (Any): Value to convert to string
-
-        Returns:
-            str: Original value converted to string
-        """
-        if isinstance(value, str):
-            return value
-        elif isinstance(value, datetime):
-            return value.strftime("%m/%d/%Y")
-        elif isinstance(value, (int, float)):
-            if np.isnan(value):
-                return "nan"
-            if isinstance(value, bool):
-                return value
-            return str(value)
-
-        return value
 
     def validate_data(self) -> Self:
         """Validate the cleaned PIR data
@@ -711,7 +761,7 @@ class PIRIngestor:
             .merge_response_question()
             .clean_pir_data()
             .validate_data()
-            .insert_data()
+            # .insert_data()
         )
 
         return self
@@ -732,7 +782,7 @@ if __name__ == "__main__":
     import time
 
     from pir_pipeline.config import db_config
-    from pir_pipeline.utils.paths import INPUT_DIR
+    from pir_pipeline.utils.paths import INPUT_DIR, SCRAP_DIR
 
     overall_init_time = time.time()
     files = os.listdir(INPUT_DIR)
@@ -743,7 +793,7 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2015:
+        elif year >= 2015:
             continue
 
         try:
@@ -751,7 +801,9 @@ if __name__ == "__main__":
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
                 SQLAlchemyUtils(**db_config, database="pir"),
-            ).ingest()
+            ).ingest().write_invalid_data(
+                os.path.join(SCRAP_DIR, f"invalid_data_{year}.md")
+            )
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")
         except Exception:
