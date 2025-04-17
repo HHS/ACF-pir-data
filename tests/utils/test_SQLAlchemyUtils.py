@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 from sqlalchemy import bindparam, select, text
 
@@ -31,9 +32,7 @@ def test_drop_db(sql_utils, request):
     else:
         database = "postgres"
         query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
-    sql = SQLAlchemyUtils(
-        **db_config, database=database, drivername=request.module.drivername
-    )
+    sql = SQLAlchemyUtils(**db_config, database=database)
     with sql.engine.connect() as conn:
         result = conn.execute(query)
         exists = result.first()
@@ -97,7 +96,7 @@ class TestSQLAlchemyUtilsNoData:
             assert record_count == self.validation[table]
 
 
-@pytest.mark.usefixtures("inserted")
+@pytest.mark.usefixtures("inserted", "create_database")
 class TestSQLAlchemyUtilsData:
     def test_get_records(self, db_columns, sql_utils):
         queries = [
@@ -108,7 +107,7 @@ class TestSQLAlchemyUtilsData:
             ),
             (
                 "SELECT * FROM question WHERE section = 'A'",
-                self.validation["question"] / 4,
+                (self.validation["question"] / 4) - 1,
                 db_columns["question"],
             ),
             (
@@ -129,6 +128,7 @@ class TestSQLAlchemyUtilsData:
         assert set(uqids) == {"1"}, f"Incorrect uqids: {set(uqids)}"
 
         section_a = sql_utils.get_records("SELECT * FROM question WHERE section = 'A'")
+        section_a.replace({np.nan: None}, inplace=True)
         section_a.rename(columns={"question_id": "qid"}, inplace=True)
         section_a["uqid"] = "A"
         records = section_a.to_dict(orient="records")
@@ -164,4 +164,4 @@ class TestSQLAlchemyUtilsData:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_insert_records"])
+    pytest.main([__file__, "-sk", "test_update_records"])

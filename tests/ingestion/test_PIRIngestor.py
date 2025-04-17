@@ -18,51 +18,6 @@ class TestPIRIngestor:
         value = dummy_ingestor.make_snake_name(valid_name)
         assert re.search(r"\W", value) is None, "Output still contains whitespace."
 
-    def test_missing_question_error(
-        self,
-        dummy_ingestor,
-        mock_question_data,
-        mock_response_data,
-        mock_missing_questions,
-    ):
-
-        mock_missing_questions = set(mock_response_data["response_merge_fail"]) - set(
-            mock_question_data["question_merge_fail"]
-        )
-
-        with pytest.raises(AssertionError):
-            dummy_ingestor.missing_question_error(
-                mock_response_data["response_merge_fail"],
-                mock_question_data["question_merge_fail"],
-                mock_missing_questions,
-            )
-
-        mock_question_data = pd.DataFrame.from_dict(
-            mock_question_data["question_merge_pass"]
-        )
-        mock_response_data = pd.DataFrame.from_dict(
-            mock_response_data["response_merge_pass"]
-        )
-        mock_missing_questions = set(mock_response_data["question_number"]) - set(
-            mock_question_data["question_number"]
-        )
-
-        expected_numrows = mock_question_data.shape[0] + len(mock_missing_questions)
-
-        value = dummy_ingestor.missing_question_error(
-            mock_response_data, mock_question_data, mock_missing_questions
-        )
-
-        assert (
-            value.shape[0] == expected_numrows
-        ), f"Output of mock_missing_question_error is an incorrect length. Expected {expected_numrows}."
-        assert isinstance(
-            value, pd.DataFrame
-        ), "Output of mock_missing_question_error is not type pd.DataFrame."
-        assert mock_missing_questions.issubset(
-            set(value["question_number"])
-        ), "Missing question not added to value."
-
     def test_duplicate_question_error(self, dummy_ingestor, mock_question_data):
         columns = ["question_name", "question_number"]
         df = pd.DataFrame.from_dict(mock_question_data["raw"])

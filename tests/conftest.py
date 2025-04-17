@@ -15,9 +15,7 @@ def sql_utils(request):
     except Exception:
         request.module.drivername = "mysql+mysqlconnector"
 
-    sql = SQLAlchemyUtils(
-        **db_config, database="pir_test", drivername=request.module.drivername
-    )
+    sql = SQLAlchemyUtils(**db_config, database="pir_test")
 
     return sql
 
