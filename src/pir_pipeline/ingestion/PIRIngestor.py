@@ -3,6 +3,7 @@
 import hashlib
 import os
 import re
+import time
 from datetime import datetime
 from io import BytesIO
 from typing import Any, Self
@@ -716,6 +717,7 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor object
         """
+        start_time = time.time()
         (
             self.extract_sheets()
             .load_data()
@@ -725,6 +727,9 @@ class PIRIngestor:
             .validate_data()
             .insert_data()
         )
+        fin_time = time.time()
+        overall_time = fin_time - start_time
+        self._logger.info(f"Processed {self._year} in {overall_time/60} minutes")
         
         close_logger(self._logger)
 
@@ -743,8 +748,6 @@ class PIRIngestor:
 
 
 if __name__ == "__main__":
-    import time
-
     from pir_pipeline.config import db_config
     
     s3 = boto3.resource('s3')
