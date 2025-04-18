@@ -125,6 +125,9 @@ class TestPIRLinker:
         assert unlinked.empty, "Unlinked should be empty"
         linked.apply(check_uqid, axis=1)
 
+    def test_dummy(self):
+        assert True is False
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-s", "-vv", "-k", "test_update_unlinked"])
