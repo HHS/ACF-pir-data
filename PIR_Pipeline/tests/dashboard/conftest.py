@@ -1,9 +1,8 @@
 import pytest
-import os
 from pir_pipeline.dashboard import create_app
 from pir_pipeline.config import DB_CONFIG
 
-@pytest.fixture(scope = "module")
+@pytest.fixture
 def app(insert_question_records):
     test_db_config = DB_CONFIG.copy()
     test_config = {
@@ -15,7 +14,7 @@ def app(insert_question_records):
 
     with app.app_context():
         yield app
-
+        
 @pytest.fixture()
 def client(app):
     return app.test_client()
@@ -23,4 +22,3 @@ def client(app):
 @pytest.fixture()
 def runner(app):
     return app.test_cli_runner()
-

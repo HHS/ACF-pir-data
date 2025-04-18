@@ -1,8 +1,11 @@
 import re
 import pytest
+import selenium
+from flask import url_for
+import urllib.request
 from pir_pipeline.dashboard import create_app
 
-@pytest.mark.usefixtures("app", "create_database")
+@pytest.mark.usefixtures("create_database")
 def test_get_home_page(client):
     '''Tests to ensure that the home page returns a valid HTML response with an appropriate title.'''
     response = client.get("/")
@@ -12,4 +15,4 @@ def test_get_home_page(client):
     assert returned_title == expected_title, f"Response from index did not return expected result, {expected_title}. Instead got {returned_title}."
    
 if __name__ == "__main__":
-    pytest.main([__file__, '-sk', ''])
+    pytest.main([__file__, '-s'])
