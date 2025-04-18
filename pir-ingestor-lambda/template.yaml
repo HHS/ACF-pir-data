@@ -12,7 +12,7 @@ Resources:
       CodeUri: pir_ingestor/
       Handler: app.lambda_handler
       Runtime: python3.12
-      Timeout: 180
+      Timeout: 600
       MemorySize: 2048
       Environment:
         Variables:
