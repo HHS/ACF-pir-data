@@ -14,20 +14,15 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 bp = Blueprint("search", __name__, url_prefix="/search")
 
 
-def get_flashcard_question(review_type: str, offset: int, db: SQLAlchemyUtils):
-    id_column, record = get_review_question(review_type, offset, db)
-    matches = get_matches({"review-type": review_type, "record": record}, db)
-    output = {
-        "question": get_search_results(
-            review_type, id_column, record[id_column], db, id_column
-        )
-    }
+def get_flashcard_question(offset: int, db: SQLAlchemyUtils):
+    id_column, record = get_review_question(offset, db)
+    print(record)
+    matches = get_matches({"record": record}, db)
+    output = {"question": get_search_results(record[id_column], db, id_column)}
 
     matches.pop(0)
-    if review_type == "inconsistent":
-        output["matches"] = search_matches(matches, "question_id", db)
-    else:
-        output["matches"] = search_matches(matches, id_column, db)
+
+    output["matches"] = search_matches(matches, "question_id", db)
 
     return output
 
@@ -70,8 +65,6 @@ def flashcard():
 def data():
     db = get_db()
     response = request.get_json()
-    output = get_flashcard_question(
-        response["review-type"], response["question_id"], db
-    )
+    output = get_flashcard_question(response["question_id"], db)
 
     return output

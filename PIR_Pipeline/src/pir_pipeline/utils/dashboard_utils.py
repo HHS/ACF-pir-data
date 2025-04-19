@@ -72,64 +72,17 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     Returns:
         list: [column_names, match, ..., match]
     """
-    review_type = payload["review-type"]
+
     question_table = db.tables["question"]
 
-    if review_type == "unlinked":
-        # Return the relevant record
-        query = select(question_table).where(
-            question_table.c.question_id == bindparam("question_id")
-        )
-        records = db.get_records(query, payload["record"])
+    query = select(question_table).where(
+        question_table.c.question_id == bindparam("question_id")
+    )
+    records = db.get_records(query, payload["record"])
 
-        # Get matches
-        matches = PIRLinker(records, db).fuzzy_link(5)
-        matches = matches[payload["record"].keys()]
-    elif review_type == "intermittent":
-        # Return the relevant record
-        record_query = (
-            select(question_table)
-            .where(
-                question_table.c.uqid == bindparam("uqid"),
-                question_table.c.question_name == bindparam("question_name"),
-                question_table.c.question_number == bindparam("question_number"),
-                question_table.c.question_text == bindparam("question_text"),
-            )
-            .limit(1)
-        )
-        records = db.get_records(record_query, payload["record"])
-
-        # Get the years covered by the record
-        year_query = select(question_table.c.year).where(
-            question_table.c.uqid == bindparam("uqid")
-        )
-        year_coverage = db.get_records(year_query, payload["record"])["year"].tolist()
-        year_coverage = ", ".join([str(yr) for yr in year_coverage])
-        year_coverage = f"({year_coverage})"
-
-        # Get matches
-        matches = (
-            PIRLinker(records, db)
-            .get_question_data(
-                f"SELECT * FROM linked WHERE year NOT IN {year_coverage}"
-            )
-            .fuzzy_link(5)
-        )
-        matches = matches[payload["record"].keys()]
-    elif review_type == "inconsistent":
-        # Return the relevant records
-        match_query = (
-            select(
-                question_table.c.question_id,
-                question_table.c.question_name,
-                question_table.c.question_number,
-                question_table.c.question_text,
-            )
-            .where(question_table.c.uqid == bindparam("uqid"))
-            .order_by(question_table.c.question_id)
-            .distinct()
-        )
-        matches = db.get_records(match_query, payload["record"])
+    # Get matches
+    matches = PIRLinker(records, db).fuzzy_link(5)
+    matches = matches[payload["record"].keys()]
 
     records = matches.to_dict(orient="records")
     columns = [clean_name(col, "title") for col in matches.columns.tolist()]
@@ -234,8 +187,9 @@ def get_search_results(
     return search_dict
 
 
-def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> str:
+def get_review_question(offset: int | str, db: SQLAlchemyUtils) -> str:
     def get_where_condition(table: TableClause | Subquery, offset: int | str):
+        # When offset is string, then it is an ID. Get that record
         if isinstance(offset, str):
             if isinstance(table, TableClause):
                 where_condition = table.c[id_column] == offset
@@ -244,6 +198,7 @@ def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> s
                     table.c["row_num"] == 1, table.c[id_column] == offset
                 )
             offset = 0
+        # When offset is not string, get the appropriate row
         else:
             if isinstance(table, TableClause):
                 where_condition = 1 == 1
@@ -252,22 +207,22 @@ def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> s
 
         return where_condition, offset
 
-    if table == "unlinked":
-        id_column = "question_id"
-        columns = ["question_id", "year"]
-    else:
-        id_column = "uqid"
-        columns = ["uqid"]
+    table = "question"
 
-    columns += [
+    columns = [
+        "question_id",
+        "year",
+        "uqid",
         "question_name",
         "question_number",
         "question_text",
         "question_type",
         "section",
-    ]  # common columns
+    ]
+
     columns = tuple(columns)
     table = db.tables[table]
+    id_column = "question_id"
 
     if table.name in ["inconsistent", "intermittent"]:
         subquery = select(
@@ -307,9 +262,7 @@ def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> s
 def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     output = {}
     for match in matches:
-        output.update(
-            get_search_results("all", id_column, match[id_column], db, id_column)
-        )
+        output.update(get_search_results(match[id_column], db, id_column))
 
     return output
 
@@ -537,4 +490,18 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_search_results("A\.21", db)
+    get_matches(
+        {
+            "record": {
+                "question_id": "0a850536accf70f9e77df84b9ecdf81b",
+                "year": 2012,
+                "uqid": "a93550d2aa75a03c9a9be8a1754ce143",
+                "question_name": "Children Continuous Accessible Dental Care (at Enrollment)",
+                "question_number": "C.17-1",
+                "question_text": "Number of children with continuous, accessible dental care provided by a dentist - at enrollment",
+                "question_type": "Number",
+                "section": "C",
+            }
+        },
+        db,
+    )

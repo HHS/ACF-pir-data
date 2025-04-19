@@ -22,12 +22,9 @@ searchForm.addEventListener("submit", async (e) => {
 function getFlashcardData(e) {
     e.preventDefault();
     const element = e.target;
-    const reviewType = document.getElementById("type-select").value.toLowerCase();
 
     const row = element.closest('tr');
     const rowRecord = rowToJSON(row);
-
-    rowRecord["review-type"] = reviewType;
 
     sessionStorage.setItem('flashcardData', JSON.stringify(rowRecord));
     window.location.href = "/search/flashcard";
