@@ -16,7 +16,6 @@ bp = Blueprint("search", __name__, url_prefix="/search")
 
 def get_flashcard_question(offset: int, db: SQLAlchemyUtils):
     id_column, record = get_review_question(offset, db)
-    print(record)
     matches = get_matches({"record": record}, db)
     output = {"question": get_search_results(record[id_column], db, id_column)}
 
@@ -67,4 +66,4 @@ def data():
     response = request.get_json()
     output = get_flashcard_question(response["question_id"], db)
 
-    return output
+    return json.dumps(output)
