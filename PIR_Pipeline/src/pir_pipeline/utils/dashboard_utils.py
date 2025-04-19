@@ -5,7 +5,16 @@ __all__ = ["get_review_data", "get_matches"]
 from collections import OrderedDict, namedtuple
 from hashlib import md5
 
-from sqlalchemy import Subquery, TableClause, and_, bindparam, distinct, func, select
+from sqlalchemy import (
+    Subquery,
+    TableClause,
+    and_,
+    bindparam,
+    distinct,
+    func,
+    or_,
+    select,
+)
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -129,8 +138,6 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 
 
 def get_search_results(
-    qtype: str,
-    column: str,
     keyword: str,
     db: SQLAlchemyUtils,
     id_column: str = "question_id",
@@ -146,26 +153,24 @@ def get_search_results(
     Returns:
         dict: Dictionary of search results
     """
-    if qtype != "all":
-        table = qtype
-    else:
-        table = "question"
-
+    table = "question"
     table = db.tables[table]
 
-    column = clean_name(
-        column
-    )  # But why not just have the snake_name as the value for the option?
     columns = [id_column, "year", "question_number", "question_name", "question_text"]
-    columns = columns + [column] if column not in columns else columns
 
     columns = OrderedDict([(col, None) for col in columns])
     columns = tuple(columns.keys())
 
-    keyword_query = (
-        select(table.c[columns])
-        .where(table.c[column].regexp_match(bindparam("keyword")))
-        .order_by(table.c[id_column], table.c["year"].desc())
+    keyword_query = select(table.c[columns])
+
+    # Adapted from
+    # https://stackoverflow.com/questions/34838302/sqlalchemy-adding-or-condition-with-different-filter
+    conditions = []
+    for column in table.c.keys():
+        conditions.append(table.c[column].regexp_match(bindparam("keyword")))
+
+    keyword_query = keyword_query.where(or_(*conditions)).order_by(
+        table.c[id_column], table.c["year"].desc()
     )
 
     # Get the maximum year
@@ -532,4 +537,4 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_review_question("unlinked", 10, db)
+    get_search_results("A\.21", db)

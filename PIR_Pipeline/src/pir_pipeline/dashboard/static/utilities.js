@@ -188,7 +188,6 @@ function buildSearchTable(data, table = document.createElement("table")) {
     const accordionDivBase = document.createElement("div");
     accordionDivBase.className = "accordion";
 
-    const reviewType = document.getElementById("type-select").value.toLowerCase();
     const reviewButtonBase = document.createElement("button");
     reviewButtonBase.setAttribute("onclick", "getFlashcardData(event)");
     reviewButtonBase.className = "btn btn-primary";
@@ -261,12 +260,9 @@ function buildSearchTable(data, table = document.createElement("table")) {
             else {
                 accordionDiv.appendChild(expandButton);
                 actionsCell.appendChild(accordionDiv);
-                if (["unlinked", "intermittent", "inconsistent"].includes(reviewType)) {
-                    const reviewButton = reviewButtonBase.cloneNode(true);
-                    reviewButton.value = reviewType;
-                    reviewButton.innerHTML = "Review";
-                    actionsCell.appendChild(reviewButton);
-                }
+                const reviewButton = reviewButtonBase.cloneNode(true);
+                reviewButton.innerHTML = "Review";
+                actionsCell.appendChild(reviewButton);
                 row.appendChild(actionsCell);
             }
             body.appendChild(row);
