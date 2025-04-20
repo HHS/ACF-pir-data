@@ -64,6 +64,6 @@ def flashcard():
 def data():
     db = get_db()
     response = request.get_json()
-    output = get_flashcard_question(response["question_id"], db)
+    output = get_flashcard_question(response["uqid"], db)
 
     return json.dumps(output)

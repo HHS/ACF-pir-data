@@ -109,7 +109,14 @@ def get_search_results(
     table = "question"
     table = db.tables[table]
 
-    columns = [id_column, "year", "question_number", "question_name", "question_text"]
+    columns = [
+        "question_id",
+        "uqid",
+        "year",
+        "question_number",
+        "question_name",
+        "question_text",
+    ]
 
     columns = OrderedDict([(col, None) for col in columns])
     columns = tuple(columns.keys())
@@ -133,21 +140,9 @@ def get_search_results(
         .subquery()
     )
 
-    # Get the range of years covered
-    year_range_query = (
-        select(
-            table.c[id_column],
-            func.concat(func.min(table.c.year), "-", func.max(table.c.year)).label(
-                "year_range"
-            ),
-        )
-        .group_by(table.c[id_column])
-        .subquery()
-    )
-
     # Get data for the most recent year to create a header row
     header_row_query = (
-        select(table.c[columns], year_range_query.c["year_range"])
+        select(table.c[columns])
         .join(
             max_year_query,
             and_(
@@ -155,7 +150,6 @@ def get_search_results(
                 table.c.year == max_year_query.c.year,
             ),
         )
-        .join(year_range_query, table.c[id_column] == year_range_query.c[id_column])
         .where(table.c[id_column] == bindparam(id_column))
     )
 
@@ -187,7 +181,6 @@ def get_search_results(
                         )
                     }
                 )
-                del header_row["year_range"]
                 search_dict[ident] = [header_row, result_dict]
 
     return search_dict
@@ -228,7 +221,7 @@ def get_review_question(offset: int | str, db: SQLAlchemyUtils) -> str:
 
     columns = tuple(columns)
     table = db.tables[table]
-    id_column = "question_id"
+    id_column = "uqid"
 
     if table.name in ["inconsistent", "intermittent"]:
         subquery = select(
