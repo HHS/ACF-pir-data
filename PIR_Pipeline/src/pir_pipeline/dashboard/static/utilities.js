@@ -258,7 +258,9 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 expandButton.setAttribute("aria-controls", expandValue);
             }
             else {
-                accordionDiv.appendChild(expandButton);
+                if (row_data["year"].match(",|-")) {
+                    accordionDiv.appendChild(expandButton);
+                }
                 actionsCell.appendChild(accordionDiv);
                 const reviewButton = reviewButtonBase.cloneNode(true);
                 reviewButton.innerHTML = "Review";

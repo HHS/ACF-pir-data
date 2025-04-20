@@ -181,7 +181,10 @@ def get_search_results(
                         )
                     }
                 )
-                search_dict[ident] = [header_row, result_dict]
+                if header_row["year"].find("-|,") > -1:
+                    search_dict[ident] = [header_row, result_dict]
+                else:
+                    search_dict[ident] = [header_row]
 
     return search_dict
 
