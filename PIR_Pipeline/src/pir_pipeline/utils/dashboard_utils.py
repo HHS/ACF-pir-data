@@ -180,7 +180,13 @@ def get_search_results(
                 header = conn.execute(header_row_query, {id_column: ident})
                 header_row = header.one()
                 header_row = {key: header_row[i] for i, key in enumerate(header.keys())}
-                header_row.update({"year": header_row["year_range"]})
+                header_row.update(
+                    {
+                        "year": get_year_range(
+                            table, ("question_id", header_row["question_id"]), db
+                        )
+                    }
+                )
                 del header_row["year_range"]
                 search_dict[ident] = [header_row, result_dict]
 
@@ -263,6 +269,34 @@ def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     output = {}
     for match in matches:
         output.update(get_search_results(match[id_column], db, id_column))
+
+    return output
+
+
+def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils):
+    query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
+    with db.engine.connect() as conn:
+        result = conn.execute(query)
+        years = result.scalars().all()
+
+    years = sorted(years)
+    str_years = []
+    prev_year = None
+    contiguous = 1
+    for year in years:
+        if prev_year is None:
+            pass
+        elif prev_year != year - 1:
+            contiguous = 0
+
+        str_years.append(str(year))
+
+    if len(years) == 1:
+        output = str(years[0])
+    elif contiguous:
+        output = f"{min(years)} - {max(years)}"
+    else:
+        output = ", ".join(str_years)
 
     return output
 
@@ -490,18 +524,6 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_matches(
-        {
-            "record": {
-                "question_id": "0a850536accf70f9e77df84b9ecdf81b",
-                "year": 2012,
-                "uqid": "a93550d2aa75a03c9a9be8a1754ce143",
-                "question_name": "Children Continuous Accessible Dental Care (at Enrollment)",
-                "question_number": "C.17-1",
-                "question_text": "Number of children with continuous, accessible dental care provided by a dentist - at enrollment",
-                "question_type": "Number",
-                "section": "C",
-            }
-        },
-        db,
+    get_year_range(
+        db.tables["question"], ("question_id", "0018e57c7cbb010f507961c62d198c6f"), db
     )
