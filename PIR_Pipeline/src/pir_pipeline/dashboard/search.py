@@ -15,7 +15,7 @@ bp = Blueprint("search", __name__, url_prefix="/search")
 
 
 def get_flashcard_question(offset: int, db: SQLAlchemyUtils):
-    id_column, record = get_review_question(offset, db)
+    id_column, record = get_review_question("question", offset, db)
     matches = get_matches({"record": record}, db)
     output = {"question": get_search_results(record[id_column], db, id_column)}
 

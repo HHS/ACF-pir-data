@@ -277,6 +277,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
 function updateFlashcardTables(data) {
     const questionTable = document.getElementById("flashcard-question-table");
+
     if (questionTable) {
         var question = buildReviewTable(data["question"], questionTable);
     } else {
@@ -316,8 +317,6 @@ function buildReviewTable(data, table = document.createElement("table")) {
     const linkButtonBase = document.createElement("button");
     linkButtonBase.className = "btn btn-primary";
     linkButtonBase.setAttribute("onclick", "storeLink(event)");
-
-    const reviewType = document.getElementById("review-type-input");
 
     // Set table header row
     table.innerHTML = '';
@@ -384,19 +383,16 @@ function buildReviewTable(data, table = document.createElement("table")) {
                 expandButton.setAttribute("aria-controls", expandValue);
             }
             else {
-                accordionDiv.appendChild(expandButton);
-                actionsCell.appendChild(accordionDiv);
-                const linkButton = linkButtonBase.cloneNode(true); 
-                if (reviewType && (reviewType.value == "unlinked" || reviewType.value == "intermittent")) {
-                    linkButton.value = "link";
-                    linkButton.innerHTML = "Link";
-                } else {
-                    linkButton.value = "unlink";
-                    linkButton.innerHTML = "Unlink";
+                if (row_data["year"].match("-|,")) {
+                    accordionDiv.appendChild(expandButton);
+                    actionsCell.appendChild(accordionDiv);
                 }
+                const linkButton = linkButtonBase.cloneNode(true); 
+                linkButton.value = "link";
+                linkButton.innerHTML = "Link";
                 if (table.id != "flashcard-question-table") {
                     actionsCell.appendChild(linkButton);
-                }
+                }                
             }
 
             row.appendChild(actionsCell);

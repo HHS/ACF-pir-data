@@ -154,11 +154,21 @@ query = (
 inconsistent = view("inconsistent", sql_metadata, query)
 
 # Confirmed view
-query = select(question).where(question.c.uqid.in_(confirmed_subquery)).distinct()
+query = (
+    select(question)
+    .where(question.c.uqid.in_(confirmed_subquery))
+    .distinct()
+    .order_by(question.c.year, question.c.question_number)
+)
 
 confirmed = view("confirmed", sql_metadata, query)
 
 # Unconfirmed view
-query = select(question).where(question.c.uqid.not_in(confirmed_subquery)).distinct()
+query = (
+    select(question)
+    .where(question.c.uqid.not_in(confirmed_subquery))
+    .distinct()
+    .order_by(question.c.year, question.c.question_number)
+)
 
 unconfirmed = view("unconfirmed", sql_metadata, query)

@@ -189,7 +189,7 @@ def get_search_results(
     return search_dict
 
 
-def get_review_question(offset: int | str, db: SQLAlchemyUtils) -> str:
+def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> str:
     def get_where_condition(table: TableClause | Subquery, offset: int | str):
         # When offset is string, then it is an ID. Get that record
         if isinstance(offset, str):
@@ -208,8 +208,6 @@ def get_review_question(offset: int | str, db: SQLAlchemyUtils) -> str:
                 where_condition = table.c["row_num"] == 1
 
         return where_condition, offset
-
-    table = "question"
 
     columns = [
         "question_id",
@@ -246,7 +244,6 @@ def get_review_question(offset: int | str, db: SQLAlchemyUtils) -> str:
         query = (
             select(table.c[columns])
             .where(where_condition)
-            .order_by(table.c[id_column])
             .limit(1)
             .offset(offset)
             .distinct()
@@ -520,6 +517,3 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_year_range(
-        db.tables["question"], ("question_id", "0018e57c7cbb010f507961c62d198c6f"), db
-    )

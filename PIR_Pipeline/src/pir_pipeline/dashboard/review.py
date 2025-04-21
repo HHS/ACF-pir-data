@@ -22,25 +22,29 @@ bp = Blueprint("review", __name__, url_prefix="/review")
 def get_flashcard_question(
     review_type: str, offset: int, db: SQLAlchemyUtils, session: dict
 ):
-    id_column, record = get_review_question(review_type, offset, db)
+    id_column, record = get_review_question("unconfirmed", offset, db)
+
     matches = get_matches({"review-type": review_type, "record": record}, db)
-    output = {
-        "question": get_search_results(
-            review_type, id_column, record[id_column], db, id_column
-        )
-    }
     matches.pop(0)
+
+    if not record[id_column]:
+        id_column = "question_id"
+
+    output = {"question": get_search_results(record[id_column], db, id_column)}
+
     if review_type == "inconsistent":
         output["matches"] = search_matches(matches, "question_id", db)
     else:
         output["matches"] = search_matches(matches, id_column, db)
+
     session["current_question"] = offset
+
     return output
 
 
 @bp.route("/", methods=["GET", "POST"])
 def index():
-    return render_template("review/index.html")
+    return render_template("review/flashcard.html")
 
 
 @bp.route("/finalize", methods=["GET", "POST"])
