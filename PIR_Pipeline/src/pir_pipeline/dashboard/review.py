@@ -22,7 +22,7 @@ bp = Blueprint("review", __name__, url_prefix="/review")
 def get_flashcard_question(
     review_type: str, offset: int, db: SQLAlchemyUtils, session: dict
 ):
-    id_column, record = get_review_question("unconfirmed", offset, db)
+    id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
 
     matches = get_matches({"review-type": review_type, "record": record}, db)
     matches.pop(0)

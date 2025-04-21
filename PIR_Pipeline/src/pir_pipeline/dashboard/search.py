@@ -14,8 +14,8 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 bp = Blueprint("search", __name__, url_prefix="/search")
 
 
-def get_flashcard_question(offset: int, db: SQLAlchemyUtils):
-    id_column, record = get_review_question("question", offset, db)
+def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtils):
+    id_column, record = get_review_question("question", offset, id_column, db)
     matches = get_matches({"record": record}, db)
     output = {"question": get_search_results(record[id_column], db, id_column)}
 
@@ -64,6 +64,7 @@ def flashcard():
 def data():
     db = get_db()
     response = request.get_json()
-    output = get_flashcard_question(response["uqid"], db)
+    id_column = "uqid" if response["uqid"] else "question_id"
+    output = get_flashcard_question(response[id_column], id_column, db)
 
     return json.dumps(output)
