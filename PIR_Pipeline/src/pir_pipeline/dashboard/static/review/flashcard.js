@@ -1,4 +1,4 @@
-import { updateFlashcardTables, rowToJSON, storeLink } from "../utilities.js";
+import { updateFlashcardTables, rowToJSON, storeLink, buildReviewTable } from "../utilities.js";
 
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
@@ -59,6 +59,22 @@ async function flashcardAction(e) {
         .then(response => response.json())
         .then(data => updateFlashcardTables(data))
 }
+
+const searchForm = document.getElementById("search-form")
+searchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!document.getElementById("keyword-search").value) {
+        return;
+    };
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const table = document.getElementById("flashcard-matches-table");
+
+    fetch("/search", {"method": "POST", "body": formData})
+    .then(response => response.json())
+    .then(data => buildReviewTable(data, table))
+})
 
 document.storeLink = storeLink;
 document.flashcardAction = flashcardAction;

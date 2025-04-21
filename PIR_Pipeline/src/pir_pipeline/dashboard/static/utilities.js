@@ -448,5 +448,6 @@ export {
     buildSearchTable,
     rowToJSON,
     updateFlashcardTables,
-    storeLink
+    storeLink,
+    buildReviewTable
 }
