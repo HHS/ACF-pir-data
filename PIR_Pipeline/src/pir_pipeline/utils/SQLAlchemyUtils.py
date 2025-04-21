@@ -9,6 +9,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.models.pir_sql_models import (
+    confirmed,
     inconsistent,
     intermittent,
     linked,
@@ -16,6 +17,7 @@ from pir_pipeline.models.pir_sql_models import (
     question,
     response,
     sql_metadata,
+    unconfirmed,
     unlinked,
     uqid_changelog,
 )
@@ -58,6 +60,8 @@ class SQLAlchemyUtils(SQLUtils):
             "intermittent": intermittent,
             "inconsistent": inconsistent,
             "uqid_changelog": uqid_changelog,
+            "confirmed": confirmed,
+            "unconfirmed": unconfirmed,
         }
         self._database = database
 
