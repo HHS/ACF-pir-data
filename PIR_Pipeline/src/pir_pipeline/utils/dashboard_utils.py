@@ -189,7 +189,9 @@ def get_search_results(
     return search_dict
 
 
-def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> str:
+def get_review_question(
+    table: str, offset: int | str, id_column: str, db: SQLAlchemyUtils
+) -> str:
     def get_where_condition(table: TableClause | Subquery, offset: int | str):
         # When offset is string, then it is an ID. Get that record
         if isinstance(offset, str):
@@ -222,7 +224,6 @@ def get_review_question(table: str, offset: int | str, db: SQLAlchemyUtils) -> s
 
     columns = tuple(columns)
     table = db.tables[table]
-    id_column = "uqid"
 
     if table.name in ["inconsistent", "intermittent"]:
         subquery = select(
