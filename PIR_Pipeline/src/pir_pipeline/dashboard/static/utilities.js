@@ -370,6 +370,8 @@ function buildReviewTable(data, table = document.createElement("table")) {
             const trID = table.id + "-tr-" + record_num + "-" + i;
             expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
 
+            const linkButton = linkButtonBase.cloneNode(true); 
+
             if (i > 0) {
                 row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
                 row.id = `collapse-${trID}`;
@@ -381,13 +383,19 @@ function buildReviewTable(data, table = document.createElement("table")) {
                     expandValue = row.id;
                 }
                 expandButton.setAttribute("aria-controls", expandValue);
+
+                linkButton.value = "unlink";
+                linkButton.innerHTML = "Unlink";
+                if (table.id == "flashcard-question-table") {
+                    actionsCell.appendChild(linkButton);
+                } 
             }
             else {
                 if (row_data["year"].match("-|,")) {
                     accordionDiv.appendChild(expandButton);
                     actionsCell.appendChild(accordionDiv);
                 }
-                const linkButton = linkButtonBase.cloneNode(true); 
+                
                 linkButton.value = "link";
                 linkButton.innerHTML = "Link";
                 if (table.id != "flashcard-question-table") {
