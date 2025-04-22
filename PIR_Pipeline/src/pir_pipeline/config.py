@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_NAME = 'pir'
+DB_NAME = "pir"
 
 if os.getenv("ON_RUNNER"):
     DB_CONFIG = {
