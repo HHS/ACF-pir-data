@@ -101,7 +101,6 @@ class TestGetDataMethods:
         checks = [
             Check(
                 {
-                    "review-type": "unlinked",
                     "record": {
                         "question_id": "83e32d72b46030e1abf5109b8b506fb8",
                         "year": 2011,
@@ -112,24 +111,24 @@ class TestGetDataMethods:
             ),
             Check(
                 {
-                    "review-type": "intermittent",
                     "record": {
-                        "uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-                        "question_name": "Of the number of education and child development staff that left, the number that left for the following primary reason - Other - Specify Text",
-                        "question_number": "B.18.d-1",
-                        "question_text": "Other (e.g., change in job field, reason not provided)",
+                        "question_id": "6b2522aa7ff248ca4d80ac299104ca2e",
+                        "uqid": "5ff5919440ca5dcd4c9dbda1eff168d4",
+                        "year": 2017,
                     },
                 },
-                {"uqid", "question_number", "question_name", "question_text"},
-                1,
+                {"question_id", "uqid", "year"},
+                3,
             ),
             Check(
                 {
-                    "review-type": "inconsistent",
-                    "record": {"uqid": "00517751cc2f7920185e52926ce7a0c9"},
+                    "record": {
+                        "uqid": "00517751cc2f7920185e52926ce7a0c9",
+                        "question_id": "4167b6decdcd59db40b69e0fba43e7f0",
+                    },
                 },
-                {"question_id", "question_name", "question_number", "question_text"},
-                3,
+                {"uqid", "question_id"},
+                2,
             ),
         ]
         for check in checks:
@@ -150,17 +149,13 @@ class TestGetDataMethods:
         checks = [
             Check(
                 {
-                    "column": "category",
                     "keyword": "^Staff$",
-                    "qtype": "all",
                 },
                 ["83e32d72b46030e1abf5109b8b506fb8"],
             ),
             Check(
                 {
-                    "column": "subsection",
                     "keyword": "child development staff - qualifications",
-                    "qtype": "all",
                 },
                 [
                     "83e32d72b46030e1abf5109b8b506fb8",
@@ -380,4 +375,4 @@ class TestQuestionLinker:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_update_links"])
+    pytest.main([__file__, "-sk", "test_get_matches"])

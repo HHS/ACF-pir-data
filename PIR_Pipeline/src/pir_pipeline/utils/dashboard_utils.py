@@ -75,8 +75,10 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 
     question_table = db.tables["question"]
 
+    id_column = "question_id"
+
     query = select(question_table).where(
-        question_table.c.question_id == bindparam("question_id")
+        question_table.c[id_column] == bindparam(id_column)
     )
     records = db.get_records(query, payload["record"])
 

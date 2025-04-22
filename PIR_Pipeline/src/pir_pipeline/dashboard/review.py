@@ -19,23 +19,17 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 bp = Blueprint("review", __name__, url_prefix="/review")
 
 
-def get_flashcard_question(
-    review_type: str, offset: int, db: SQLAlchemyUtils, session: dict
-):
+def get_flashcard_question(offset: int, db: SQLAlchemyUtils, session: dict):
     id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
 
-    matches = get_matches({"review-type": review_type, "record": record}, db)
+    matches = get_matches({"record": record}, db)
     matches.pop(0)
 
     if not record[id_column]:
         id_column = "question_id"
 
     output = {"question": get_search_results(record[id_column], db, id_column)}
-
-    if review_type == "inconsistent":
-        output["matches"] = search_matches(matches, "question_id", db)
-    else:
-        output["matches"] = search_matches(matches, id_column, db)
+    output["matches"] = search_matches(matches, id_column, db)
 
     session["current_question"] = offset
 
@@ -89,8 +83,6 @@ def flashcard():
         if action == "finish":
             return redirect(url_for("review.finalize"))
 
-        review_type = form["review-type"]
-
         if action == "next":
             offset = session.get("current_question")
 
@@ -100,7 +92,7 @@ def flashcard():
             else:
                 offset = 0
 
-            output = get_flashcard_question(review_type, offset, db, session)
+            output = get_flashcard_question(offset, db, session)
         elif action == "previous":
             offset = session.get("current_question")
 
@@ -109,7 +101,7 @@ def flashcard():
             else:
                 offset = session.get("max_questions")
 
-            output = get_flashcard_question(review_type, offset, db, session)
+            output = get_flashcard_question(offset, db, session)
         elif action == "confirm":
             pass
 
@@ -126,7 +118,7 @@ def data():
     if response["for"] == "flashcard":
         review_type = response["review-type"]
         offset = 0
-        output = get_flashcard_question(review_type, offset, db, session)
+        output = get_flashcard_question(offset, db, session)
         id_column = "question_id" if review_type == "unlinked" else "uqid"
 
         # Get max questions
