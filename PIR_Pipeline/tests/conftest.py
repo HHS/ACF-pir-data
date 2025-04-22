@@ -14,6 +14,11 @@ def insert_question_records(sql_utils, question_linker_records):
 def sql_utils(request):
     sql = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
 
+    if sql.engine.dialect.name == "mysql":
+        request.module.drivername = "mysql+mysqlconnector"
+    else:
+        request.module.drivername = "postgresql+psycopg"
+
     return sql
 
 

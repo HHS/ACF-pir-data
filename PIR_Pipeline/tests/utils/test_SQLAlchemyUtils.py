@@ -6,14 +6,16 @@ from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
-def test_create_db(sql_utils, request):
+def test_create_db(sql_utils):
     sql_utils.create_db()
-    if request.module.drivername == "mysql+mysqlconnector":
+
+    if sql_utils.engine.dialect.name == "mysql":
         query = text(
             "SELECT table_schema FROM information_schema.tables WHERE table_schema = 'pir_test'"
         )
     else:
         query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
+
     with sql_utils.engine.connect() as conn:
         result = conn.execute(query)
         exists = result.first()[0]
@@ -21,10 +23,11 @@ def test_create_db(sql_utils, request):
     assert exists, "pir_test database does not exist"
 
 
-def test_drop_db(sql_utils, request):
+def test_drop_db(sql_utils):
     sql_utils.drop_db()
     sql_utils.engine.dispose()
-    if request.module.drivername == "mysql+mysqlconnector":
+
+    if sql_utils.engine.dialect.name == "mysql":
         database = "mysql"
         query = text(
             "SELECT table_schema FROM information_schema.tables WHERE table_schema = 'pir_test'"
@@ -32,12 +35,15 @@ def test_drop_db(sql_utils, request):
     else:
         database = "postgres"
         query = text("SELECT 1 FROM pg_database WHERE datname = 'pir_test'")
+
     sql = SQLAlchemyUtils(**DB_CONFIG, database=database)
+
     with sql.engine.connect() as conn:
         result = conn.execute(query)
         exists = result.first()
 
     assert not exists, "pir_test database still exists"
+
     sql.engine.dispose()
 
 
@@ -48,6 +54,7 @@ class TestSQLAlchemyUtilsNoData:
         config.update({"username": DB_CONFIG["user"]})
         config.pop("user")
         query = select(text("'Connection Made'"))
+
         with SQLAlchemyUtils.__new__(SQLAlchemyUtils).gen_engine(
             **config, database="pir_test", drivername=request.module.drivername
         )._engine.connect() as conn:
@@ -70,6 +77,7 @@ class TestSQLAlchemyUtilsNoData:
             "question": question_columns,
             "response": response_columns,
         }
+
         for table in ["program", "question", "response"]:
             columns = sql_utils.get_columns(table)
             assert (
@@ -116,6 +124,7 @@ class TestSQLAlchemyUtilsData:
                 db_columns["question"],
             ),
         ]
+
         for query in queries:
             frame = sql_utils.get_records(query[0])
             assert frame.shape[0] == query[1]
@@ -132,13 +141,16 @@ class TestSQLAlchemyUtilsData:
         section_a.rename(columns={"question_id": "qid"}, inplace=True)
         section_a["uqid"] = "A"
         records = section_a.to_dict(orient="records")
+
         sql_utils.update_records(
             table,
             {"uqid": bindparam("uqid")},
             table.c["question_id"] == bindparam("qid"),
             records,
         )
+
         uqids = sql_utils.get_records("question")["uqid"].tolist()
+
         assert set(uqids) == {"1", "A"}, f"Incorrect uqids: {set(uqids)}"
         assert len(
             [uqid for uqid in uqids if uqid == "A"]
@@ -152,16 +164,18 @@ class TestSQLAlchemyUtilsData:
 
         expected_rows = len(records)
         record_dict = sql_utils.to_dict(records, columns)
+
         assert set(record_dict[0].keys()) == {
             "uid",
             "question_id",
             "year",
             "answer",
         }, f"Incorrect columns: {set(record_dict[0].keys())}"
+
         assert (
             len(record_dict) == expected_rows
         ), f"Incorrect number of rows: {len(record_dict)}"
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_update_records"])
+    pytest.main([__file__, "-sk", "test_create_db"])

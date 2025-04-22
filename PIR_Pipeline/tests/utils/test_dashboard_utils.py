@@ -118,7 +118,7 @@ class TestGetDataMethods:
                     },
                 },
                 {"question_id", "uqid", "year"},
-                3,
+                2,
             ),
             Check(
                 {
