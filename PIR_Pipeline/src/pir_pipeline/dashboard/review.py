@@ -18,14 +18,27 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 bp = Blueprint("review", __name__, url_prefix="/review")
 
 
-def get_flashcard_question(offset: int, db: SQLAlchemyUtils, session: dict):
+def get_flashcard_question(
+    offset: int | str, db: SQLAlchemyUtils, session: dict
+) -> dict:
+    """Get data for displaying a flashcard
+
+    Args:
+        offset (int | str): The question to return. Integer when returning questions by
+            position, string when returning a specific question by id.
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for interacting with the database.
+        session (dict): Flask session object.
+
+    Returns:
+        dict: Dictionary containing data for header question and matching questions.
+    """
     id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
 
     if not record[id_column]:
         id_column = "question_id"
 
     output = {"question": get_search_results(record[id_column], db, id_column)}
-    print(record)
+
     matches = get_matches({"record": record}, db)
     if matches:
         matches.pop(0)
@@ -40,6 +53,7 @@ def get_flashcard_question(offset: int, db: SQLAlchemyUtils, session: dict):
 
 @bp.route("/", methods=["GET", "POST"])
 def index():
+    """Render first flashcard"""
     return render_template("review/flashcard.html")
 
 

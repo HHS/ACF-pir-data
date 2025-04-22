@@ -1,11 +1,12 @@
 """Dashboard utilities for interfacing with the database"""
 
-__all__ = ["get_review_data", "get_matches"]
+__all__ = ["get_matches"]
 
 from collections import OrderedDict, namedtuple
 from hashlib import md5
 
 from sqlalchemy import (
+    BinaryExpression,
     Subquery,
     TableClause,
     and_,
@@ -19,44 +20,6 @@ from sqlalchemy import (
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 from pir_pipeline.utils.utils import clean_name
-
-
-def get_review_data(review_type: str, db: SQLAlchemyUtils) -> list:
-    """Return data for unlinked, intermittently, and inconsistenly linked questions
-
-    Args:
-        review_type (str): The type of question being reviewed
-        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
-
-    Returns:
-        list: [column_names, record, ..., record]
-    """
-    qid_columns = ("question_id", "question_name", "question_number", "question_text")
-    uqid_columns = ("uqid", "question_name", "question_number", "question_text")
-
-    # Questions missing a uqid
-    if review_type == "unlinked":
-        table = db._tables["unlinked"]
-        query = select(table.c[qid_columns])
-    # Questions without a link covering the full time period
-    elif review_type == "intermittent":
-        table = db._tables["intermittent"]
-        query = select(table.c[uqid_columns]).distinct()
-
-    # uqids containing variable question_ids
-    elif review_type == "inconsistent":
-        table = db._tables["inconsistent"]
-        query = select(table.c[uqid_columns]).distinct()
-
-    with db.engine.connect() as conn:
-        result = conn.execute(query)
-        columns = query.selected_columns.keys()
-        data = db.to_dict(result.all(), columns)
-
-    columns = [clean_name(col, "title") for col in columns]
-    data.insert(0, columns)
-
-    return data
 
 
 def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
@@ -103,10 +66,9 @@ def get_search_results(
     """Return results for the search page
 
     Args:
-        column (str): The column to search on
-        table (str): The table to search in
         keyword (str): The term to search for
         db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+        id_column (str): Column to use as the primary identifier
 
     Returns:
         dict: Dictionary of search results
@@ -196,8 +158,33 @@ def get_search_results(
 
 def get_review_question(
     table: str, offset: int | str, id_column: str, db: SQLAlchemyUtils
-) -> str:
-    def get_where_condition(table: TableClause | Subquery, offset: int | str):
+) -> tuple:
+    """Get information for the header question on a flashcard page
+
+    Args:
+        table (str): The table to search in.
+        offset (int | str): The question to return. If integer, return the question at that
+            position. If string return the question with corresponding ID.
+        id_column (str): Column serving as the primary identifier.
+        db (SQLAlchemyUtils): SQLAlchemyUtils object
+
+    Returns:
+        tuple: tuple[string, dict] containing the id_column and the record returned
+            from the searching for the offset.
+    """
+
+    def get_where_condition(
+        table: TableClause | Subquery, offset: int | str
+    ) -> BinaryExpression | bool:
+        """Return a where condition
+
+        Args:
+            table (TableClause | Subquery): The table to be searched in
+            offset (int | str): The record to search for
+
+        Returns:
+           BinaryExpression | bool: a sqlalchemy binary expression or True/False
+        """
         # When offset is string, then it is an ID. Get that record
         if isinstance(offset, str):
             if isinstance(table, TableClause):
@@ -230,30 +217,15 @@ def get_review_question(
     columns = tuple(columns)
     table = db.tables[table]
 
-    if table.name in ["inconsistent", "intermittent"]:
-        subquery = select(
-            table.c[columns],
-            func.row_number().over(partition_by=id_column).label("row_num"),
-        ).subquery()
+    where_condition, offset = get_where_condition(table, offset)
 
-        where_condition, offset = get_where_condition(subquery, offset)
-        query = (
-            select(subquery.c[columns])
-            .where(where_condition)
-            .order_by(subquery.c[id_column])
-            .limit(1)
-            .offset(offset)
-            .distinct()
-        )
-    else:
-        where_condition, offset = get_where_condition(table, offset)
-        query = (
-            select(table.c[columns])
-            .where(where_condition)
-            .limit(1)
-            .offset(offset)
-            .distinct()
-        )
+    query = (
+        select(table.c[columns])
+        .where(where_condition)
+        .limit(1)
+        .offset(offset)
+        .distinct()
+    )
 
     with db.engine.connect() as conn:
         result = conn.execute(query)
@@ -265,6 +237,16 @@ def get_review_question(
 
 
 def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
+    """Iterate over matches to return all related rows
+
+    Args:
+        matches (dict): Dictionary of records
+        id_column (str): Colum serving as primary identifier
+        db (SQLAlchemyUtils): SQLAlchemyUtils object
+
+    Returns:
+        dict: Dictionary containing one entry for each id which itself may contain multiple records
+    """
     output = {}
     for match in matches:
         output.update(get_search_results(match[id_column], db, id_column))
@@ -272,7 +254,18 @@ def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     return output
 
 
-def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils):
+def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> str:
+    """Return the range of years covered by the target question
+
+    Args:
+        table (TableClause): Table to search in for the year range
+        _id (tuple[str]): tuple[column_name, value]. Identifies which question to find
+            the year range for.
+        db (SQLAlchemyUtils): SQLAlchemyUtils object
+
+    Returns:
+        str: Year range as a string
+    """
     query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
     with db.engine.connect() as conn:
         result = conn.execute(query)
@@ -327,6 +320,7 @@ class QuestionLinker:
         self._changes = namedtuple("Changes", ["base", "match"])
 
     def get_ids(self):
+        """Return the ids from the present record"""
         base_uqid = self._record.get("base_uqid")
         base_qid = self._record.get("base_question_id")
         match_uqid = self._record.get("match_uqid")
@@ -490,6 +484,7 @@ class QuestionLinker:
         self._db.insert_records(changes, "uqid_changelog")
 
     def confirm(self):
+        """Mark a question as confirmed"""
         base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
         changes = {
             "question_id": base_qid,

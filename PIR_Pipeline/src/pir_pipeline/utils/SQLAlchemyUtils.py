@@ -165,6 +165,16 @@ class SQLAlchemyUtils(SQLUtils):
     def get_records(
         self, query: str | Select, records: dict | list[dict] = None
     ) -> pd.DataFrame:
+        """Return records from the database
+
+        Args:
+            query (str | Select): A query to execute
+            records (dict | list[dict], optional): Records to use for bound parameters. Defaults to None.
+
+        Returns:
+            pd.DataFrame: Records returned by the query
+        """
+
         if isinstance(query, str):
             df = pd.read_sql(query, self._engine)
         elif isinstance(query, Select):

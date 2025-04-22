@@ -15,6 +15,18 @@ bp = Blueprint("search", __name__, url_prefix="/search")
 
 
 def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtils):
+    """Get data for displaying a flashcard
+
+    Args:
+        offset (int | str): The question to return. Integer when returning questions by
+            position, string when returning a specific question by id.
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for interacting with the database.
+        session (dict): Flask session object.
+
+    Returns:
+        dict: Dictionary containing data for header question and matching questions.
+    """
+
     id_column, record = get_review_question("question", offset, id_column, db)
     matches = get_matches({"record": record}, db)
     output = {"question": get_search_results(record[id_column], db, id_column)}
@@ -54,6 +66,7 @@ def search():
 
 @bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
+    """Return flashcard for a search question under review"""
     if request.method == "POST":
         return redirect(url_for("review.finalize"))
 
@@ -62,6 +75,7 @@ def flashcard():
 
 @bp.route("/data", methods=["POST"])
 def data():
+    """Get data for rendering a flashcard"""
     db = get_db()
     response = request.get_json()
     id_column = "uqid" if response["uqid"] else "question_id"

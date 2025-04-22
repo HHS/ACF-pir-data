@@ -52,7 +52,15 @@ def clean_name(name: str, how: str = "snake") -> str:
     return new_name
 
 
-def get_logger(name: str):
+def get_logger(name: str) -> logging.Logger:
+    """Return a logger
+
+    Args:
+        name (str): Name of the logger
+
+    Returns:
+        logging.Logger: Logger
+    """
     logging.basicConfig(
         format="%(asctime)s|%(name)s|%(levelname)s|%(message)s",
         level=logging.DEBUG,

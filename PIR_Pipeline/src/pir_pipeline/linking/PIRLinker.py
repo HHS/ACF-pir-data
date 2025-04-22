@@ -162,7 +162,7 @@ class PIRLinker:
                 include 'unlinked' and 'data'.
 
         Returns:
-            _type_: _description_
+            Self: PIRLinker object
         """
         self._cross: pd.DataFrame
         if which == "unlinked":
