@@ -277,6 +277,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
 function updateFlashcardTables(data) {
     const questionTable = document.getElementById("flashcard-question-table");
+    const tables = {}
 
     if (questionTable) {
         var question = buildReviewTable(data["question"], questionTable);
@@ -285,19 +286,24 @@ function updateFlashcardTables(data) {
     }
     question.id = "flashcard-question-table";
     question.className = "table table-hover";
+    tables["question"] = question.outerHTML;
 
     const matchesTable = document.getElementById("flashcard-matches-table");
-    if (matchesTable) {
+    
+    if (Object.keys(data["matches"]).length === 0) {
+        
+    } else if (matchesTable) {
         var matches = buildReviewTable(data["matches"], matchesTable);
     } else {
         var matches = buildReviewTable(data["matches"]);
     }
-    matches.id = "flashcard-matches-table";
-    matches.className = "table table-hover";
 
-    const tables = {
-        "question": question.outerHTML,
-        "matches": matches.outerHTML
+    try {
+        matches.id = "flashcard-matches-table";
+        matches.className = "table table-hover";
+        tables["matches"] = matches.outerHTML;
+    } catch {
+
     }
 
     return Promise.resolve(tables)

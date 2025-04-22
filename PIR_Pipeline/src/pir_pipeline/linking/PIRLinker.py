@@ -188,6 +188,7 @@ class PIRLinker:
         # Drop cases where year is equal or uqid is equal
         if self._unique_question_id == "question_id" and not df.empty:
             self._cross = df[df["year_x"] != df["year_y"]]
+
             if self._cross["uqid_x"].unique().tolist()[0] is not None:
                 self._cross = self._cross[
                     self._cross["uqid_x"] != self._cross["uqid_y"]
@@ -196,11 +197,17 @@ class PIRLinker:
             self._cross = df[df["uqid_x"] != df["uqid_y"]]
 
         # Remove cases where unique_question_id combination is duplicated
-        self._cross = self._cross[
-            ~self._cross[
-                [f"{self._unique_question_id}_x", f"{self._unique_question_id}_y"]
-            ].duplicated()
-        ]
+        if len(unique_ids) == 1:
+            for ident in ["question_id", "uqid"]:
+                self._cross = self._cross[
+                    ~self._cross[[f"{ident}_x", f"{ident}_y"]].duplicated()
+                ]
+        else:
+            self._cross = self._cross[
+                ~self._cross[
+                    [f"{self._unique_question_id}_x", f"{self._unique_question_id}_y"]
+                ].duplicated()
+            ]
 
         # Check that the cross join has every unique ID that isn't missing a section
         cross_unique_ids = set(self._cross[f"{self._unique_question_id}_x"].unique())

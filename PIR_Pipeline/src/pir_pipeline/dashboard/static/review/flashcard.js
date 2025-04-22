@@ -3,11 +3,15 @@ import { updateFlashcardTables, rowToJSON, storeLink, buildReviewTable } from ".
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
 function buildFlashcardPage() {
-    const body = sessionStorage.getItem("flashcardData");
+    let body = sessionStorage.getItem("flashcardData");
     const bodyJson = JSON.parse(body);
 
-    const reviewTypeInput = document.getElementById("review-type-input");
-    reviewTypeInput.value = bodyJson["review-type"];
+    if (body === null) {
+        body = {
+            "for": "flashcard"
+        };
+        body = JSON.stringify(body);
+    }
     
     const payload = {
         "method": "POST",

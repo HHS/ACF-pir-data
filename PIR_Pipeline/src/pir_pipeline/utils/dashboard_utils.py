@@ -82,6 +82,9 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     )
     records = db.get_records(query, payload["record"])
 
+    if not records[["question_type", "section"]].any().all():
+        return []
+
     # Get matches
     matches = PIRLinker(records, db).fuzzy_link(5)
     matches = matches[payload["record"].keys()]
@@ -520,3 +523,18 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
+    get_matches(
+        {
+            "record": {
+                "question_id": "798c68eddccc058290e91ec452e8dbce",
+                "year": 2012,
+                "uqid": "bd9386d82a8a1654f05ad59a92349330",
+                "question_name": "Visual Impairment Received Services",
+                "question_number": "C.27.g-2",
+                "question_text": "Visual impairment, including blindness - # of children receiving special services",
+                "question_type": "Number",
+                "section": "C",
+            }
+        },
+        db,
+    )
