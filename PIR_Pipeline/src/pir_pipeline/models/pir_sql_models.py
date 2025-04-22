@@ -1,7 +1,6 @@
 """SQLAlchemy models for creating and interacting with the PIR database"""
 
 from sqlalchemy import (
-    Boolean,
     Column,
     DateTime,
     Float,
@@ -97,7 +96,7 @@ uqid_changelog = Table(
     Column("question_id", String(255), index=True),
     Column("original_uqid", String(255), index=True),
     Column("new_uqid", String(255)),
-    Column("complete_series_flag", Boolean, default=False),
+    Column("complete_series_flag", Integer, default=False),
 )
 
 # Confirmed records should be excluded

@@ -1,5 +1,3 @@
-import subprocess
-
 import pytest
 
 from pir_pipeline.config import DB_CONFIG
