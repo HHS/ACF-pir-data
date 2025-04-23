@@ -356,3 +356,46 @@ def question_linker_records():
             "subsection": None,
         },
     ]
+
+
+@pytest.fixture
+def question_linker_payload():
+    payload = {
+        "1": {
+            "link_type": "unlink",
+            "base_question_id": "42d3b624c74d07c3a574a4f26fa3c686",
+            "base_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
+            "match_question_id": "0686c2ad4d3041b580a1d4015b9f0c80",
+            "match_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
+        },
+        "2": {
+            "link_type": "unlink",
+            "base_question_id": "7bfb25407153bbbb171e5d2280c1194f",
+            "base_uqid": "00517751cc2f7920185e52926ce7a0c9",
+            "match_question_id": "4167b6decdcd59db40b69e0fba43e7f0",
+            "match_uqid": "00517751cc2f7920185e52926ce7a0c9",
+        },
+        "3": {
+            "link_type": "link",
+            "base_question_id": "6b2522aa7ff248ca4d80ac299104ca2e",
+            "base_uqid": "5ff5919440ca5dcd4c9dbda1eff168d4",
+            "match_question_id": "3dc2c6572e8b64ffd64231c43ccd95d6",
+            "match_uqid": "0b19c17c60bfce95f963a1ddc0575588",
+        },
+        "4": {
+            "link_type": "link",
+            "base_question_id": "83e32d72b46030e1abf5109b8b506fb8",
+            "base_uqid": None,
+            "match_question_id": "87fe124509e4e9e48b26a65b78c87acd",
+            "match_uqid": "8cfa414fcd9b593e45bee4dd68080ae8",
+        },
+        "5": {
+            "link_type": "confirm",
+            "base_question_id": None,
+            "base_uqid": "5512c4f54e3ace4484e59cdc48976761",
+            "match_question_id": None,
+            "match_uqid": None,
+        },
+    }
+
+    return payload

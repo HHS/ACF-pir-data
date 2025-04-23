@@ -16,48 +16,9 @@ def insert_question_records(sql_utils, question_linker_records):
     sql_utils.insert_records(question_linker_records, "question")
 
 
-payload = {
-    "1": {
-        "link_type": "unlink",
-        "base_question_id": "42d3b624c74d07c3a574a4f26fa3c686",
-        "base_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-        "match_question_id": "0686c2ad4d3041b580a1d4015b9f0c80",
-        "match_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-    },
-    "2": {
-        "link_type": "unlink",
-        "base_question_id": "7bfb25407153bbbb171e5d2280c1194f",
-        "base_uqid": "00517751cc2f7920185e52926ce7a0c9",
-        "match_question_id": "4167b6decdcd59db40b69e0fba43e7f0",
-        "match_uqid": "00517751cc2f7920185e52926ce7a0c9",
-    },
-    "3": {
-        "link_type": "link",
-        "base_question_id": "6b2522aa7ff248ca4d80ac299104ca2e",
-        "base_uqid": "5ff5919440ca5dcd4c9dbda1eff168d4",
-        "match_question_id": "3dc2c6572e8b64ffd64231c43ccd95d6",
-        "match_uqid": "0b19c17c60bfce95f963a1ddc0575588",
-    },
-    "4": {
-        "link_type": "link",
-        "base_question_id": "83e32d72b46030e1abf5109b8b506fb8",
-        "base_uqid": None,
-        "match_question_id": "87fe124509e4e9e48b26a65b78c87acd",
-        "match_uqid": "8cfa414fcd9b593e45bee4dd68080ae8",
-    },
-    "5": {
-        "link_type": "confirm",
-        "base_question_id": None,
-        "base_uqid": "5512c4f54e3ace4484e59cdc48976761",
-        "match_question_id": None,
-        "match_uqid": None,
-    },
-}
-
-
 @pytest.fixture
-def question_linker(sql_utils):
-    question_linker = QuestionLinker(payload, sql_utils)
+def question_linker(sql_utils, question_linker_payload):
+    question_linker = QuestionLinker(question_linker_payload, sql_utils)
     return question_linker
 
 
@@ -142,7 +103,7 @@ class TestGetDataMethods:
 
 @pytest.mark.usefixtures("create_database", "insert_question_records")
 class TestQuestionLinker:
-    def test_update_links(self, question_linker, sql_utils):
+    def test_update_links(self, question_linker, sql_utils, question_linker_payload):
         def get_ids(payload: dict):
             return (
                 payload["base_question_id"],
@@ -158,7 +119,9 @@ class TestQuestionLinker:
 
         # In case 1, both uqids should be totally removed from the database
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["1"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["1"]
+            )
             result = conn.execute(
                 select(question_table).where(question_table.c["uqid"] == base_uqid)
             )
@@ -198,7 +161,9 @@ class TestQuestionLinker:
 
         # In case 2, uqid for match_qid should remain the same, uqid for base_qid should change
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["2"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["2"]
+            )
             result = conn.execute(
                 select(question_table.c["uqid"])
                 .where(question_table.c["question_id"] == match_qid)
@@ -234,7 +199,9 @@ class TestQuestionLinker:
 
         # In case 3, base uqid should be kept the other should be removed
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["3"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["3"]
+            )
             # Base question has base uqid
             result = conn.execute(
                 query_template.where(
@@ -286,7 +253,9 @@ class TestQuestionLinker:
 
         # In case 4 match keeps uqid, base gets match uqid
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["4"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["4"]
+            )
 
             # Base question has match uqid
             result = conn.execute(
@@ -330,7 +299,9 @@ class TestQuestionLinker:
 
         # In case 5 record should appear as confirmed in the changelog
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["5"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["5"]
+            )
 
             result = conn.execute(
                 select(uqid_changelog).where(
