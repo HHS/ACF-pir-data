@@ -232,6 +232,7 @@ def get_review_question(
         .where(where_condition)
         .limit(1)
         .offset(offset)
+        .order_by(table.c.year, table.c.question_number)
         .distinct()
     )
 
