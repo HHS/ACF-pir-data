@@ -6,18 +6,21 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 @pytest.fixture(scope="session")
-def error_message_constructor(message: str, expected=None, got=None):
-    expected_got = []
-    if expected:
-        expected_got.append(f"Expected {expected}")
+def error_message_constructor():
+    def emc(message: str, expected=None, got=None):
+        expected_got = []
+        if expected:
+            expected_got.append(f"Expected {expected}")
 
-    if got:
-        expected_got.append(f"Got {got}")
+        if got:
+            expected_got.append(f"Got {got}")
 
-    if expected_got:
-        message = f"{message}: {'; '.join(expected_got)}"
+        if expected_got:
+            message = f"{message}: {'; '.join(expected_got)}"
 
-    return message
+        return message
+
+    return emc
 
 
 @pytest.fixture(scope="module")
