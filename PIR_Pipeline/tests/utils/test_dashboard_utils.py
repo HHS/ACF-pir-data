@@ -119,23 +119,25 @@ class TestGetDataMethods:
                 {
                     "keyword": "^Staff$",
                 },
-                ["83e32d72b46030e1abf5109b8b506fb8"],
+                {"83e32d72b46030e1abf5109b8b506fb8"},
             ),
             Check(
                 {
                     "keyword": "child development staff - qualifications",
                 },
-                [
+                {
                     "83e32d72b46030e1abf5109b8b506fb8",
                     "87fe124509e4e9e48b26a65b78c87acd",
-                ],
+                },
             ),
         ]
         for check in checks:
             data = get_search_results(**check.kwargs, db=sql_utils)
             ids = [key for key in data.keys() if key != "columns"]
-            set_diff = set(ids).symmetric_difference(set(check.ids))
-            assert not set_diff, f"IDs do not align: {set_diff}"
+            set_diff = set(ids).symmetric_difference(check.ids)
+            assert (
+                not set_diff
+            ), f"IDs do not align: Expected {check.ids}; Got {ids}; Diff {set_diff}"
 
 
 @pytest.mark.usefixtures("create_database", "insert_question_records")

@@ -18,7 +18,8 @@ def test_close_db(app):
         db = get_db()
         assert db is not None
         close_db()
-    assert "db" not in g
+
+        assert "db" not in g
 
 
 def test_init_app(app):

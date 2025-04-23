@@ -10,8 +10,7 @@ def app(insert_question_records):
     test_config = {"TESTING": True, "DB_CONFIG": test_db_config, "DB_NAME": "pir_test"}
     app = create_app(test_config=test_config)
 
-    with app.app_context():
-        yield app
+    yield app
 
 
 @pytest.fixture()
