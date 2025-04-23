@@ -5,6 +5,27 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Lambda function for ingesting Program Information Report (PIR) data
 
+Parameters:
+  DBName:
+    Type: String
+    Description: Database configuration
+
+  DBHost:
+    Type: String
+    Description: Database configuration
+
+  DBPort:
+    Type: Number
+    Description: Database configuration
+
+  DBPassword:
+    Type: String
+    Description: Database configuration
+
+  DBUser:
+    Type: String
+    Description: Database configuration
+
 Resources:
   PIRIngestor:
     Type: AWS::Serverless::Function
@@ -16,12 +37,11 @@ Resources:
       MemorySize: 2048
       Environment:
         Variables:
-          RDS_ENDPOINT: host.docker.internal:5432
-          DB_HOST: host.docker.internal
-          DB_PORT: 5432
-          DB_USER: testuser
-          DB_PASSWORD: testpassword
-          DB_NAME: pir_test
+          DB_USER: !Ref DBUser
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName
       Events:
         S3Event:
           Type: S3
