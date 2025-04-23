@@ -5,6 +5,21 @@ from pir_pipeline.utils.MockData import MockData
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
+@pytest.fixture(scope="session")
+def error_message_constructor(message: str, expected=None, got=None):
+    expected_got = []
+    if expected:
+        expected_got.append(f"Expected {expected}")
+
+    if got:
+        expected_got.append(f"Got {got}")
+
+    if expected_got:
+        message = f"{message}: {'; '.join(expected_got)}"
+
+    return message
+
+
 @pytest.fixture(scope="module")
 def insert_question_records(sql_utils, question_linker_records):
     sql_utils.insert_records(question_linker_records, "question")

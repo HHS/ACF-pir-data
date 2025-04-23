@@ -6,7 +6,7 @@ from flask import session
 from sqlalchemy import func, select
 
 
-@pytest.mark.usefixtures("create_database", "app")
+@pytest.mark.usefixtures("create_database", "app", "error_message_constructor")
 class TestReviewRoutes:
     def test_get_index(self, client):
         response = client.get("/review/")
@@ -45,7 +45,7 @@ class TestReviewRoutes:
             in response.text
         ), "Previous button is missing from page"
 
-    def test_post_flashcard(self, client, sql_utils):
+    def test_post_flashcard(self, client, sql_utils, error_message_constructor):
         with client.session_transaction() as sess:
             sess["current_question"] = 0
             with sql_utils.engine.connect() as conn:
@@ -57,18 +57,21 @@ class TestReviewRoutes:
         response = client.post("/review/flashcard", data={"action": "next"})
         data = json.loads(response.text)
         question = data["question"]
+        expected_name = "Total Family Child Care Providers"
+        actual_name = question[list(question.keys())[1]][0]["question_name"]
 
-        assert (
-            question[list(question.keys())[1]][0]["question_name"]
-            == "Total Family Child Care Providers"
+        assert actual_name == expected_name, error_message_constructor(
+            "Incorrect question_name", expected_name, actual_name
         )
 
         response = client.post("/review/flashcard", data={"action": "previous"})
         data = json.loads(response.text)
         question = data["question"]
+        expected_name = "Other Languages"
+        actual_name = question[list(question.keys())[1]][0]["question_name"]
 
-        assert (
-            question[list(question.keys())[1]][0]["question_name"] == "Other Languages"
+        assert actual_name == expected_name, error_message_constructor(
+            "Incorrect question_name", expected_name, actual_name
         )
 
         response = client.post("/review/flashcard", data={"action": "finish"})
@@ -76,7 +79,7 @@ class TestReviewRoutes:
             response.headers["Location"] == "/review/finalize"
         ), "Did not redirect to finalize"
 
-    def test_post_data(self, client):
+    def test_post_data(self, client, error_message_constructor):
         response = client.post("/review/data", json={"for": "flashcard"})
         assert (
             response.status_code == 200
@@ -84,9 +87,11 @@ class TestReviewRoutes:
 
         data = json.loads(response.text)
         question = data["question"]
+        expected_name = "Other Languages"
+        actual_name = question[list(question.keys())[1]][0]["question_name"]
 
-        assert (
-            question[list(question.keys())[1]][0]["question_name"] == "Other Languages"
+        assert expected_name == actual_name, error_message_constructor(
+            "Incorrect question_name", expected_name, actual_name
         )
 
     def test_post_link(self, client):
