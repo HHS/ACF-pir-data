@@ -34,7 +34,7 @@ def get_flashcard_question(
     """
 
     id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
-
+    print(record)
     if not record[id_column]:
         id_column = "question_id"
 
