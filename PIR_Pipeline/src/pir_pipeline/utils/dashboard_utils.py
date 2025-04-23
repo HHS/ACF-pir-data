@@ -7,6 +7,7 @@ from hashlib import md5
 
 from sqlalchemy import (
     BinaryExpression,
+    String,
     Subquery,
     TableClause,
     and_,
@@ -93,7 +94,14 @@ def get_search_results(
     # https://stackoverflow.com/questions/34838302/sqlalchemy-adding-or-condition-with-different-filter
     conditions = []
     for column in table.c.keys():
-        conditions.append(table.c[column].regexp_match(bindparam("keyword")))
+        if db.engine.dialect.name == "mysql":
+            conditions.append(table.c[column].regexp_match(bindparam("keyword")))
+        else:
+            conditions.append(
+                func.cast(table.c[column], String).regexp_match(
+                    func.cast(bindparam("keyword"), String)
+                )
+            )
 
     keyword_query = keyword_query.where(or_(*conditions)).order_by(
         table.c[id_column], table.c["year"].desc()
