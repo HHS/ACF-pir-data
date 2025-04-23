@@ -99,7 +99,7 @@ def get_search_results(
         else:
             conditions.append(
                 func.cast(table.c[column], String).regexp_match(
-                    func.cast(bindparam("keyword"), String)
+                    func.cast(bindparam("keyword"), String), "i"
                 )
             )
 
