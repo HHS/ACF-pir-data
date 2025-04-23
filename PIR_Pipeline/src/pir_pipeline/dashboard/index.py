@@ -10,6 +10,7 @@ bp = Blueprint("index", __name__)
 @bp.route("/")
 def index():
     """Return the Home page"""
+
     db = get_db()
     linked = db.tables["linked"]
     unlinked = db.tables["unlinked"]

@@ -27,9 +27,8 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     within an inconsistent question
 
     Args:
-        payload (dict): Dictionary containing the review-type and the record to find
-            matches for.\n
-            {"review-type": review-type, "record": record}
+        payload (dict): Dictionary containing the review-type and the record to find \
+        matches for.\n\n\t{"review-type": review-type, "record": record}
         db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
 
     Returns:
@@ -163,14 +162,14 @@ def get_review_question(
 
     Args:
         table (str): The table to search in.
-        offset (int | str): The question to return. If integer, return the question at that
-            position. If string return the question with corresponding ID.
+        offset (int | str): The question to return. If integer, return the question at that \
+        position. If string return the question with corresponding ID.
         id_column (str): Column serving as the primary identifier.
         db (SQLAlchemyUtils): SQLAlchemyUtils object
 
     Returns:
-        tuple: tuple[string, dict] containing the id_column and the record returned
-            from the searching for the offset.
+        tuple: tuple[string, dict] containing the id_column and the record returned \
+        from the searching for the offset.
     """
 
     def get_where_condition(
@@ -185,6 +184,7 @@ def get_review_question(
         Returns:
            BinaryExpression | bool: a sqlalchemy binary expression or True/False
         """
+
         # When offset is string, then it is an ID. Get that record
         if isinstance(offset, str):
             if isinstance(table, TableClause):
@@ -259,13 +259,14 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
 
     Args:
         table (TableClause): Table to search in for the year range
-        _id (tuple[str]): tuple[column_name, value]. Identifies which question to find
-            the year range for.
+        _id (tuple[str]): tuple[column_name, value]. Identifies which question to find \
+        the year range for.
         db (SQLAlchemyUtils): SQLAlchemyUtils object
 
     Returns:
         str: Year range as a string
     """
+
     query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
     with db.engine.connect() as conn:
         result = conn.execute(query)
@@ -315,6 +316,7 @@ class QuestionLinker:
                 }
             db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
         """
+
         self._data = data
         self._db = db
         self._changes = namedtuple("Changes", ["base", "match"])

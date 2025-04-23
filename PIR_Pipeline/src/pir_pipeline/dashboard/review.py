@@ -24,14 +24,15 @@ def get_flashcard_question(
     """Get data for displaying a flashcard
 
     Args:
-        offset (int | str): The question to return. Integer when returning questions by
-            position, string when returning a specific question by id.
+        offset (int | str): The question to return. Integer when returning questions by \
+        position, string when returning a specific question by id.
         db (SQLAlchemyUtils): SQLAlchemyUtils object for interacting with the database.
         session (dict): Flask session object.
 
     Returns:
         dict: Dictionary containing data for header question and matching questions.
     """
+
     id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
 
     if not record[id_column]:

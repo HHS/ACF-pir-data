@@ -21,6 +21,7 @@ class PIRLinker:
             records (list[tuple] | list[dict]): Records to link
             sql (SQLAlchemyUtils): A SQLAlchemyUtils object for interacting with the database
         """
+
         self._logger = get_logger(__name__)
 
         invalid_type = None
@@ -50,14 +51,15 @@ class PIRLinker:
         """Get data from the question table
 
         Args:
-            which (str): which can be used to specify what data is returned from the question table.
-                Options include 'all', 'linked', and 'unlinked' which return data from the
-                full question table, linked view, and unlinked view respectively. A custom
-                query can also be specified using the which argument.
+            which (str): which can be used to specify what data is returned from the question table. \
+            Options include 'all', 'linked', and 'unlinked' which return data from the \
+            full question table, linked view, and unlinked view respectively. A custom \
+            query can also be specified using the which argument.
 
         Returns:
             Self: PIRLinker object
         """
+
         if which == "all":
             self._question = self._sql.get_records("question")
             self._question = self._question.drop(columns=["category", "subsection"])
@@ -74,6 +76,7 @@ class PIRLinker:
 
     def question_data_check(self):
         """Check for question data and get it if not present"""
+
         try:
             self._question
         except AttributeError:
@@ -85,6 +88,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+
         self.question_data_check()
 
         try:
@@ -110,6 +114,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker Object
         """
+
         self.question_data_check()
 
         df = self._data.copy()
@@ -158,12 +163,13 @@ class PIRLinker:
         """Execute many-to-many join on type and section
 
         Args:
-            which (str): Which dataset should be the left-hand side of the join? Options
-                include 'unlinked' and 'data'.
+            which (str): Which dataset should be the left-hand side of the join? Options \
+            include 'unlinked' and 'data'.
 
         Returns:
             Self: PIRLinker object
         """
+
         self._cross: pd.DataFrame
         if which == "unlinked":
             df = self._unlinked.copy()
@@ -334,6 +340,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+
         try:
             self._question_columns
         except AttributeError:
@@ -380,6 +387,7 @@ class PIRLinker:
         Returns:
             str | float: Unique question ID (uqid)
         """
+
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
@@ -404,6 +412,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+
         assert (
             self._data["question_id"].unique().shape[0]
             == self._data[~self._data[["question_id", "uqid"]].duplicated()].shape[0]

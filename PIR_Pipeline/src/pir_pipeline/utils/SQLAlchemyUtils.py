@@ -68,16 +68,19 @@ class SQLAlchemyUtils(SQLUtils):
     @property
     def engine(self):
         """Return the database engine"""
+
         return self._engine
 
     @property
     def tables(self):
         """Return the tables in the database"""
+
         return self._tables
 
     @property
     def database(self):
         """Return the database name"""
+
         return self._database
 
     def make_connection(self):
@@ -92,6 +95,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             Self: Object of class SQLAlchemyUtils
         """
+
         engine_url = URL.create(**kwargs)
         self._engine = create_engine(engine_url)
         return self
@@ -102,6 +106,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             Self: Object of class SQLAlchemyUtils
         """
+
         if not database_exists(self._engine.url):
             create_database(self._engine.url)
             assert database_exists(self._engine.url)
@@ -116,6 +121,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             Self: Object of class SQLAlchemyUtils
         """
+
         if database_exists(self._engine.url):
             drop_database(self._engine.url)
 
@@ -125,6 +131,7 @@ class SQLAlchemyUtils(SQLUtils):
         Args:
             table (str): Table name
         """
+
         valid_tables = list(self._tables.keys())
         assert table in valid_tables, "Invalid table."
 
@@ -138,6 +145,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             list[str]: A list of column names
         """
+
         if not where:
             self.validate_table(table)
             columns = self._tables[table].c.keys()
@@ -204,6 +212,7 @@ class SQLAlchemyUtils(SQLUtils):
             Args:
                 records (list[dict]): A list of records for insertion
             """
+
             with self._engine.begin() as conn:
                 insert_statement = self.insert(self._tables[table])
 
@@ -285,6 +294,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             list[dict]: List of dictionaries.
         """
+
         data = []
         for record in records:
             assert len(record) == len(columns)

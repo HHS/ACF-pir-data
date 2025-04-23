@@ -18,8 +18,8 @@ def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtil
     """Get data for displaying a flashcard
 
     Args:
-        offset (int | str): The question to return. Integer when returning questions by
-            position, string when returning a specific question by id.
+        offset (int | str): The question to return. Integer when returning questions by \
+        position, string when returning a specific question by id.
         db (SQLAlchemyUtils): SQLAlchemyUtils object for interacting with the database.
         session (dict): Flask session object.
 
@@ -67,6 +67,7 @@ def search():
 @bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
     """Return flashcard for a search question under review"""
+
     if request.method == "POST":
         return redirect(url_for("review.finalize"))
 
@@ -76,6 +77,7 @@ def flashcard():
 @bp.route("/data", methods=["POST"])
 def data():
     """Get data for rendering a flashcard"""
+
     db = get_db()
     response = request.get_json()
     id_column = "uqid" if response["uqid"] else "question_id"
