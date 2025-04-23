@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.usefixtures("create_database")
-def test_get_home_page(client):
+def test_get_index(client):
     """Tests to ensure that the home page returns a valid HTML response with an appropriate title."""
     response = client.get("/")
     assert (

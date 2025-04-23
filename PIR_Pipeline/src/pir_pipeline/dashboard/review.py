@@ -65,7 +65,7 @@ def finalize():
     # Flash an error if no linking actions were performed
     if not session.get("link_dict"):
         flash("No linking actions performed.")
-        return render_template("review/index.html")
+        return render_template("review/flashcard.html")
 
     if request.method == "POST":
         form = request.form
@@ -89,7 +89,7 @@ def finalize():
             QuestionLinker(link_dict, db).update_links()
             session.pop("link_dict")
 
-            return render_template("review/index.html")
+            return render_template("review/flashcard.html")
 
     return render_template("review/finalize.html")
 
@@ -124,6 +124,7 @@ def flashcard():
         elif action == "previous":
             offset = session.get("current_question")
 
+            # Decrement offset or loop to the end
             if offset > 0:
                 offset -= 1
             else:
