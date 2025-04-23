@@ -68,7 +68,7 @@ class TestReviewRoutes:
         data = json.loads(response.text)
         question = data["question"]
         expected_name = "Other Languages"
-        actual_name = question[list(question.keys())[0]][0]["question_name"]
+        actual_name = question[list(question.keys())[1]][0]["question_name"]
 
         assert actual_name == expected_name, error_message_constructor(
             "Incorrect question_name", expected_name, actual_name
@@ -101,35 +101,36 @@ class TestReviewRoutes:
                 "A": "B"
             }
 
-    def test_post_finalize(self, client, question_linker_payload, sql_utils):
-        with client.session_transaction() as sess:
-            sess["link_dict"] = question_linker_payload
 
-        # Remove a record
-        with client:
-            response = client.post(
-                "/review/finalize", data={"action": "remove", "finalize-id": "1"}
+def test_post_finalize(client, question_linker_payload, sql_utils):
+    with client.session_transaction() as sess:
+        sess["link_dict"] = question_linker_payload
+
+    # Remove a record
+    with client:
+        response = client.post(
+            "/review/finalize", data={"action": "remove", "finalize-id": "1"}
+        )
+        assert (
+            response.status_code == 200
+        ), f"Got non-200 response code: {response.status_code}"
+
+        assert set(session["link_dict"].keys()) == {"2", "3", "4", "5"}
+
+    # Commit changes
+    response = client.post("/review/finalize", data={"action": "commit"})
+
+    uqid_changelog = sql_utils.tables["uqid_changelog"]
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(
+            select(uqid_changelog).where(
+                uqid_changelog.c["original_uqid"]
+                == question_linker_payload["5"]["base_uqid"]
             )
-            assert (
-                response.status_code == 200
-            ), f"Got non-200 response code: {response.status_code}"
+        )
+        record = result.one()
 
-            assert set(session["link_dict"].keys()) == {"2", "3", "4", "5"}
-
-        # Commit changes
-        response = client.post("/review/finalize", data={"action": "commit"})
-
-        uqid_changelog = sql_utils.tables["uqid_changelog"]
-        with sql_utils.engine.connect() as conn:
-            result = conn.execute(
-                select(uqid_changelog).where(
-                    uqid_changelog.c["original_uqid"]
-                    == question_linker_payload["5"]["base_uqid"]
-                )
-            )
-            record = result.one()
-
-            assert record[5] == 1, f"Flag is False: {record[5]}"
+        assert record[5] == 1, f"Flag is False: {record[5]}"
 
 
 if __name__ == "__main__":
