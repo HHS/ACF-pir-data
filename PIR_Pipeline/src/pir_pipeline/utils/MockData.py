@@ -310,9 +310,9 @@ class MockData:
 
         Args:
             dir (str, optional): String path to a physical directory. Defaults to None.
-            how (str, optional): String indicating how to export the data. Defaults to None.\n
-                Can be one of: "ExcelFile", "DataFrame", "Insertable".\n
-                These options export the data as a pandas ExcelFile, dictionary of pandas DataFrames, or insertion-ready PIRIngestor object respectively.
+            how (str, optional): String indicating how to export the data. Defaults to None.\
+            Can be one of: "ExcelFile", "DataFrame", "Insertable".\
+            These options export the data as a pandas ExcelFile, dictionary of pandas DataFrames, or insertion-ready PIRIngestor object respectively.
 
         Returns:
             Self: Returns an object of class MockData.

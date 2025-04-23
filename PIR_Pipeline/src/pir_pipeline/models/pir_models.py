@@ -1,8 +1,23 @@
-"""Pydantic models for validating PIR data"""
+from typing import Optional, Type
 
-from typing import Optional
+from pydantic import BaseModel, create_model
 
-from pydantic import BaseModel
+
+# Adapted from GPT 4.0
+def make_fields_optional(model: Type[BaseModel]) -> Type[BaseModel]:
+    """Convert all fields in a model to optional"""
+    # Create a dictionary to hold the new field definitions
+    new_fields = {}
+
+    # Iterate over the fields of the original model
+    for field_name, field in model.__annotations__.items():
+        # Set the field type to Optional and default value to None
+        new_fields[field_name] = (Optional[field], None)
+
+    # Create a new model with the modified fields
+    optional_model = create_model(model.__name__ + "Optional", **new_fields)
+
+    return optional_model
 
 
 class ResponseModel(BaseModel):
@@ -45,3 +60,6 @@ class QuestionModel(BaseModel):
     question_type: Optional[str]
     section: Optional[str]
     subsection: Optional[str]
+
+
+QuestionModelOptional = make_fields_optional(QuestionModel)

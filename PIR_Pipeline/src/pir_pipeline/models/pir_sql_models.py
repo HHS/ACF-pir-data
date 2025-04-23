@@ -2,6 +2,7 @@
 
 from sqlalchemy import (
     Column,
+    DateTime,
     Float,
     ForeignKeyConstraint,
     Integer,
@@ -9,6 +10,8 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    and_,
+    func,
     select,
 )
 
@@ -47,6 +50,7 @@ program = Table(
     Column("program_zip2", String(255)),
     Column("region", Integer),
 )
+
 question = Table(
     "question",
     sql_metadata,
@@ -62,6 +66,7 @@ question = Table(
     Column("section", String(255)),
     Column("subsection", String(255)),
 )
+
 response = Table(
     "response",
     sql_metadata,
@@ -82,9 +87,87 @@ response = Table(
         ondelete="CASCADE",
     ),
 )
-unlinked = view(
-    "unlinked", sql_metadata, select(question).where(question.c.uqid.is_(None))
+
+uqid_changelog = Table(
+    "uqid_changelog",
+    sql_metadata,
+    Column("id", Integer, primary_key=True),
+    Column("timestamp", DateTime(timezone=True), default=func.now()),
+    Column("question_id", String(255), index=True),
+    Column("original_uqid", String(255), index=True),
+    Column("new_uqid", String(255)),
+    Column("complete_series_flag", Integer, default=False),
 )
+
+# Confirmed records should be excluded
+confirmed_subquery = (
+    select(uqid_changelog.c["original_uqid"])
+    .group_by(uqid_changelog.c["original_uqid"])
+    .having(func.max(uqid_changelog.c["complete_series_flag"]) == 1)
+    .scalar_subquery()
+)
+
+# Unlinked view
+query = select(question).where(question.c.uqid.is_(None))
+unlinked = view("unlinked", sql_metadata, query)
+
+# Linked view
 linked = view(
     "linked", sql_metadata, select(question).where(question.c.uqid.is_not(None))
 )
+
+# Intermittent link view
+year_query = select(func.count(func.distinct(question.c.year))).scalar_subquery()
+uqid_query = (
+    select(question.c.uqid)
+    .group_by(question.c.uqid)
+    .having(func.count(question.c.uqid) < year_query)
+)
+query = (
+    select(question)
+    .where(
+        and_(
+            question.c.uqid.in_(uqid_query), question.c.uqid.not_in(confirmed_subquery)
+        )
+    )
+    .distinct()
+)
+
+intermittent = view("intermittent", sql_metadata, query)
+
+# Inconsistent link view
+subquery = select(linked.c.question_id, linked.c.uqid).distinct().subquery()
+right = (
+    select(subquery.c.uqid)
+    .group_by(subquery.c.uqid)
+    .having(func.count(subquery.c.question_id) > 1)
+    .subquery()
+)
+query = (
+    select(linked)
+    .join(right, linked.c.uqid == right.c.uqid)
+    .distinct()
+    .where(question.c.uqid.not_in(confirmed_subquery))
+)
+
+inconsistent = view("inconsistent", sql_metadata, query)
+
+# Confirmed view
+query = (
+    select(question)
+    .where(question.c.uqid.in_(confirmed_subquery))
+    .distinct()
+    .order_by(question.c.year, question.c.question_number)
+)
+
+confirmed = view("confirmed", sql_metadata, query)
+
+# Unconfirmed view
+query = (
+    select(question)
+    .where(question.c.uqid.not_in(confirmed_subquery))
+    .distinct()
+    .order_by(question.c.year, question.c.question_number)
+)
+
+unconfirmed = view("unconfirmed", sql_metadata, query)

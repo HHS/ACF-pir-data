@@ -3,8 +3,9 @@ import os
 from flask import Flask
 
 
-def create_app(test_config=None):
-    app = Flask(__name__, instance_relative_config=True)
+# Adapted from https://flask.palletsprojects.com/en/stable/tutorial/
+def create_app(test_config=None, **kwargs):
+    app = Flask(__name__, instance_relative_config=True, **kwargs)
     app.config.from_mapping(SECRET_KEY="dev")
 
     if test_config is None:
@@ -21,9 +22,12 @@ def create_app(test_config=None):
 
     db.init_app(app)
 
-    from pir_pipeline.dashboard import qa
+    from pir_pipeline.dashboard import index, review, search
 
-    app.register_blueprint(qa.bp)
+    app.register_blueprint(index.bp)
     app.add_url_rule("/", endpoint="index")
+
+    app.register_blueprint(search.bp)
+    app.register_blueprint(review.bp)
 
     return app

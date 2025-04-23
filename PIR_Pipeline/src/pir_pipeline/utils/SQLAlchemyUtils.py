@@ -4,18 +4,23 @@ from subprocess import run as srun
 from typing import Self
 
 import pandas as pd
-from sqlalchemy import URL, Engine, Table, create_engine, text, update
+from sqlalchemy import URL, Engine, Select, Table, create_engine, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from pir_pipeline.config import db_config
+from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.models.pir_sql_models import (
+    confirmed,
+    inconsistent,
+    intermittent,
     linked,
     program,
     question,
     response,
     sql_metadata,
+    unconfirmed,
     unlinked,
+    uqid_changelog,
 )
 from pir_pipeline.utils.SQLUtils import SQLUtils
 from pir_pipeline.utils.utils import get_searchable_columns
@@ -52,22 +57,30 @@ class SQLAlchemyUtils(SQLUtils):
             "program": program,
             "linked": linked,
             "unlinked": unlinked,
+            "intermittent": intermittent,
+            "inconsistent": inconsistent,
+            "uqid_changelog": uqid_changelog,
+            "confirmed": confirmed,
+            "unconfirmed": unconfirmed,
         }
         self._database = database
 
     @property
     def engine(self):
         """Return the database engine"""
+
         return self._engine
 
     @property
     def tables(self):
         """Return the tables in the database"""
+
         return self._tables
 
     @property
     def database(self):
         """Return the database name"""
+
         return self._database
 
     def make_connection(self):
@@ -82,6 +95,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             Self: Object of class SQLAlchemyUtils
         """
+
         engine_url = URL.create(**kwargs)
         self._engine = create_engine(engine_url)
         return self
@@ -92,6 +106,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             Self: Object of class SQLAlchemyUtils
         """
+
         if not database_exists(self._engine.url):
             create_database(self._engine.url)
             assert database_exists(self._engine.url)
@@ -106,6 +121,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             Self: Object of class SQLAlchemyUtils
         """
+
         if database_exists(self._engine.url):
             drop_database(self._engine.url)
 
@@ -115,6 +131,7 @@ class SQLAlchemyUtils(SQLUtils):
         Args:
             table (str): Table name
         """
+
         valid_tables = list(self._tables.keys())
         assert table in valid_tables, "Invalid table."
 
@@ -128,6 +145,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             list[str]: A list of column names
         """
+
         if not where:
             self.validate_table(table)
             columns = self._tables[table].c.keys()
@@ -152,16 +170,33 @@ class SQLAlchemyUtils(SQLUtils):
 
         return columns
 
-    def get_records(self, query: str) -> pd.DataFrame:
-        """Return a dataframe from containing the results of a SQL query
+    def get_records(
+        self, query: str | Select, records: dict | list[dict] = None
+    ) -> pd.DataFrame:
+        """Return records from the database
 
         Args:
-            query (str): A string SQL query
+            query (str | Select): A query to execute
+            records (dict | list[dict], optional): Records to use for bound parameters. Defaults to None.
 
         Returns:
-            pd.DataFrame: Results of the SQL query
+            pd.DataFrame: Records returned by the query
         """
-        return pd.read_sql(query, self._engine)
+
+        if isinstance(query, str):
+            df = pd.read_sql(query, self._engine)
+        elif isinstance(query, Select):
+            with self._engine.connect() as conn:
+                if records:
+                    result = conn.execute(query, records)
+                else:
+                    result = conn.execute(query)
+                records = result.all()
+
+            records = self.to_dict(records, query.selected_columns.keys())
+            df = pd.DataFrame.from_records(records)
+
+        return df
 
     def insert_records(self, records: list[dict], table: str):
         """Insert records into the target table
@@ -177,6 +212,7 @@ class SQLAlchemyUtils(SQLUtils):
             Args:
                 records (list[dict]): A list of records for insertion
             """
+
             with self._engine.begin() as conn:
                 insert_statement = self.insert(self._tables[table])
 
@@ -258,6 +294,7 @@ class SQLAlchemyUtils(SQLUtils):
         Returns:
             list[dict]: List of dictionaries.
         """
+
         data = []
         for record in records:
             assert len(record) == len(columns)
@@ -269,5 +306,5 @@ class SQLAlchemyUtils(SQLUtils):
 
 if __name__ == "__main__":
     SQLAlchemyUtils(
-        **db_config, database="pir", drivername="postgresql+psycopg"
-    ).get_columns("response")
+        **DB_CONFIG, database="pir", drivername="mysql+mysqlconnector"
+    ).create_db()

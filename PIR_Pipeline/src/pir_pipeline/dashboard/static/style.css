@@ -39,6 +39,14 @@ body {
     padding: 0em 5em;
 }
 
+.navbar-title {
+    color: var(--light);
+}
+
+nav {
+    margin-bottom: 1em;
+}
+
 /* Table customization */
 .table {
     background-color: #fff;
@@ -53,6 +61,16 @@ body {
 
 .table-hover tbody tr:hover {
     background-color: var(--info);
+}
+
+table#search-results-table {
+    margin-top: 1em;
+}
+
+table#search-results-table tbody tr td,
+table#search-results-table thead tr th {
+    width: 10em;
+    white-space: pre-wrap;
 }
 
 /* Form elements customization */
@@ -77,15 +95,37 @@ body {
 
 /* From https://stackoverflow.com/questions/57978278/form-input-displayed-above-text-field-using-flexbox */
 
+form#flashcard-buttons {
+    display: flex;
+}
+
+form#flashcard-buttons > button {
+    margin-right: .5em;
+}
+
+form#finished-button {
+    display: flex;
+}
+
+.form-parent {
+    display: flex;
+    margin-bottom: 1em;
+}
+
 .form-container {
     display: flex;
-    justify-content: space-between;
+    width: 50%;
+}
+
+.form-container.right {
+    justify-content: end;
+    justify-self: end;
 }
 
 .form-group {
-display: flex;
-flex-direction : column;
-/* margin-right: 40px; */
+    display: flex;
+    flex-direction : column;
+    /* margin-right: 40px; */
 }
 
 /* Custom button styles */
@@ -134,10 +174,6 @@ section#tables {
     justify-content: space-between;
 }
 
-div.card-body {
-    padding: 1em;
-}
-
 /* Additions */
 
 img.logo {
@@ -149,4 +185,51 @@ img.logo {
 
 h1.page-title {
     text-align: center;
+}
+
+/* Divs */
+
+div.card-body {
+    padding: 1em;
+}
+
+.table-box {
+    overflow: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.table-box::-webkit-scrollbar {
+    display:none;
+}
+
+/* Errors */
+
+/* Adapted from  https://flask.palletsprojects.com/en/stable/tutorial/static/ */
+.flash { 
+    margin: 1em 0; 
+    padding: 1em; 
+    background: var(--info); 
+    border: 1px solid var(--secondary); 
+}
+
+tr[class*=" collapsible-row-"] {
+    background: grey;
+}
+
+/* Card styling */
+.card {
+    width: 50%;
+    margin-bottom: 1em;
+}
+
+.card-body {
+    text-align: center;
+    font-size: 32px;
+}
+
+.card-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
 }

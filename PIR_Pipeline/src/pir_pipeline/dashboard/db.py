@@ -3,13 +3,14 @@ from datetime import datetime
 import click
 from flask import current_app, g
 
-from pir_pipeline.utils.MySQLUtils import MySQLUtils
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 
 def get_db():
+    """Return a SQLAlchemyUtils object"""
     if "db" not in g:
-        g.db = MySQLUtils(**current_app.config["DB_CONFIG"]).make_connection(
-            current_app.config["DB_NAME"]
+        g.db = SQLAlchemyUtils(
+            **current_app.config["DB_CONFIG"], database=current_app.config["DB_NAME"]
         )
 
     return g.db
@@ -17,12 +18,14 @@ def get_db():
 
 # Need to revisit
 def close_db(e=None):
+    """Dispose of SQLAlchemy Engine"""
     db = g.pop("db", None)
 
     if db is not None:
-        db.close_connection()
+        db.engine.dispose()
 
 
 # Need to revisit
 def init_app(app):
+    """Add close_db to the operations performed when tearing down"""
     app.teardown_appcontext(close_db)

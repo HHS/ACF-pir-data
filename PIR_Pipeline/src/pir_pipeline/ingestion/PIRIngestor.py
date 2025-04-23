@@ -21,6 +21,7 @@ class PIRIngestor:
         Args:
             workbook (str|os.PathLike): File path to an Excel Workbook
         """
+
         self._data: dict[pd.DataFrame] = {}
         sql.create_db()
         self._sql = sql
@@ -38,6 +39,7 @@ class PIRIngestor:
         Returns:
             str: Snake-cased name
         """
+
         assert isinstance(name, str), self._logger.error(
             "Input `name` must be a string."
         )
@@ -65,6 +67,7 @@ class PIRIngestor:
         Returns:
             pd.DataFrame: A deduplicated data frame
         """
+
         df.sort_values(columns + ["question_order"], inplace=True)
         df = df.groupby(columns).first().reset_index()
         return df
@@ -78,6 +81,7 @@ class PIRIngestor:
         Returns:
             str: The section in which the question appears
         """
+
         if not isinstance(question_number, str):
             return None
 
@@ -117,6 +121,7 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor object
         """
+
         year = re.search(r"(\d{4})\.(csv|xlsx?)$", self._workbook)
         assert year, self._logger.error(
             "Workbook does not contain the year in the file name."
@@ -136,6 +141,7 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor object
         """
+
         for sheet in self._sheets:
             name = self.make_snake_name(sheet)
             section_condition = sheet.find("Section") > -1
@@ -264,6 +270,7 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor Object
         """
+
         df_list = []
         to_delete = []
         for name, df in self._data.items():
@@ -581,6 +588,7 @@ class PIRIngestor:
         Returns:
             str: Original value converted to string
         """
+
         if isinstance(value, str):
             return value
         elif isinstance(value, datetime):
@@ -704,6 +712,7 @@ class PIRIngestor:
         Returns:
             Self: PIRIngestor object
         """
+
         (
             self.extract_sheets()
             .load_data()
@@ -718,6 +727,7 @@ class PIRIngestor:
 
     def close_excel_files(self):
         """Close all Excel files"""
+
         workbooks = self._workbook
         if isinstance(workbooks, dict):
             for book in workbooks.values():
@@ -731,7 +741,7 @@ class PIRIngestor:
 if __name__ == "__main__":
     import time
 
-    from pir_pipeline.config import db_config
+    from pir_pipeline.config import DB_CONFIG
     from pir_pipeline.utils.paths import INPUT_DIR
 
     overall_init_time = time.time()
@@ -743,14 +753,14 @@ if __name__ == "__main__":
             continue
         elif year == 2008 and file.endswith(".xlsx"):
             continue
-        elif year != 2015:
-            continue
+        # elif year != 2008:
+        #     continue
 
         try:
             init = time.time()
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
-                SQLAlchemyUtils(**db_config, database="pir"),
+                SQLAlchemyUtils(**DB_CONFIG, database="pir"),
             ).ingest()
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")

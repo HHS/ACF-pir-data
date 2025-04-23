@@ -14,7 +14,7 @@ def question_records():
             )
         },
         "year": {i: 2008 + (i % 2) for i in range(10)},
-        "uqid": {i: "" for i in range(10)},
+        "uqid": {i: None for i in range(10)},
         "category": {i: "" for i in range(10)},
         "question_name": {i: "" for i in range(10)},
         "question_number": {i: "" for i in range(10)},
