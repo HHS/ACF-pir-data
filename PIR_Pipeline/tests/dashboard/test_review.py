@@ -68,7 +68,7 @@ class TestReviewRoutes:
         data = json.loads(response.text)
         question = data["question"]
         expected_name = "Other Languages"
-        actual_name = question[list(question.keys())[1]][0]["question_name"]
+        actual_name = question[list(question.keys())[0]][0]["question_name"]
 
         assert actual_name == expected_name, error_message_constructor(
             "Incorrect question_name", expected_name, actual_name
