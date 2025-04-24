@@ -42,11 +42,4 @@ Resources:
           DB_PORT: !Ref DBPort
           DB_PASSWORD: !Ref DBPassword
           DB_NAME: !Ref DBName
-      Events:
-        S3Event:
-          Type: S3
-          Properties:
-            Bucket:
-              Ref: S3Bucket
-            Events: "s3:ObjectCreated:*"
 

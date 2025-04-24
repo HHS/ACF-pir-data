@@ -1,14 +1,9 @@
-import json
 import os
-import urllib.parse
 
 import boto3
-import psycopg
 
 from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-
-s3 = boto3.client('s3')
 
 DB_CONFIG = {
     "user": os.getenv("DB_USER"),
@@ -21,16 +16,16 @@ os.environ["IN_AWS_LAMBDA"] = "True"
 
 sql_utils = SQLAlchemyUtils(**DB_CONFIG)
 
+s3 = boto3.client("s3")
+
 
 def lambda_handler(event, context):
-    print(event)
-    exit()
-    bucket = event['Records'][0]['s3']['bucket']['name']
-    key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
     try:
-        response = s3.get_object(Bucket=bucket, Key=key)
+        key = event["Key"]
+        bucket = event["Bucket"]
         PIRIngestor(key, sql_utils).ingest()
-        return response["ContentType"]
+        s3.copy(event, bucket, key.replace("input", "processed"))
+        return {"message": "Success"}
     except Exception as e:
         print(e)
         print('Error getting object {} from bucket {}. Make sure they exist and your bucket is in the same region as this function.'.format(key, bucket))

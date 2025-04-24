@@ -5,6 +5,27 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Lambda function for linking Program Information Report (PIR) data
 
+Parameters:
+  DBName:
+    Type: String
+    Description: Database configuration
+
+  DBHost:
+    Type: String
+    Description: Database configuration
+
+  DBPort:
+    Type: Number
+    Description: Database configuration
+
+  DBPassword:
+    Type: String
+    Description: Database configuration
+
+  DBUser:
+    Type: String
+    Description: Database configuration
+
 Resources:
   PIRLinker:
     Type: AWS::Serverless::Function
@@ -16,9 +37,8 @@ Resources:
       MemorySize: 2048
       Environment:
         Variables:
-          RDS_ENDPOINT:
-          DB_HOST:
-          DB_PORT:
-          DB_USER:
-          DB_PASSWORD:
-          DB_NAME:
+          DB_USER: !Ref DBUser
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName

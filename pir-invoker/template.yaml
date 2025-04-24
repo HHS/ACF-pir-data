@@ -1,0 +1,24 @@
+# Adapted from Claude 3.7s
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Lambda function for ingesting Program Information Report (PIR) data
+
+Resources:
+  PIRInvoker:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pir_invoker/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Timeout: 600
+      MemorySize: 2048
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: S3Bucket
+            Events: "s3:ObjectCreated:*"
+
