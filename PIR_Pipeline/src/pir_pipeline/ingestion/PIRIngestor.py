@@ -730,7 +730,8 @@ class PIRIngestor:
             for record in initial_records:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
-
+            if table == "response":
+                    continue
             self._sql.insert_records(cleaned_records, table)
 
         self._logger.info(f"Data inserted for {self._year}")
@@ -789,7 +790,7 @@ if __name__ == "__main__":
             PIRIngestor(
                 os.path.join(INPUT_DIR, file),
                 SQLAlchemyUtils(
-                    **DB_CONFIG, database="pir", drivername="postgresql+psycopg"
+                    **DB_CONFIG, database="pir", drivername="mysql+mysqlconnector"
                 ),
             ).ingest()
             fin = time.time()
