@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
 async function buildFlashcardPage() {
     const rowRecord = sessionStorage.getItem("flashcardData");
+    sessionStorage.removeItem("flashcardData");
     const rowRecordJson = JSON.parse(rowRecord);
 
     const reviewTypeInput = document.getElementById("review-type-input");

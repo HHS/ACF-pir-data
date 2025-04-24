@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
 function buildFlashcardPage() {
     let body = sessionStorage.getItem("flashcardData");
+    sessionStorage.removeItem("flashcardData");
     const bodyJson = JSON.parse(body);
 
     if (body === null) {
