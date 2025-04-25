@@ -4,22 +4,28 @@ import pytest
 from pir_pipeline.utils.MockData import MockData
 from pir_pipeline.dashboard import create_app
 
+
 @pytest.fixture
 def app():
     app = create_app()
-    app.config.update({
-        "TESTING": True,
-    })
-    
+    app.config.update(
+        {
+            "TESTING": True,
+        }
+    )
+
     yield app
+
 
 @pytest.fixture
 def client(app):
     return app.test_client()
 
+
 @pytest.fixture
 def runner(app):
     return app.test_cli_runner()
+
 
 @pytest.fixture
 def insertable(request, mock_data):

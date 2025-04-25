@@ -258,7 +258,9 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 expandButton.setAttribute("aria-controls", expandValue);
             }
             else {
-                accordionDiv.appendChild(expandButton);
+                if (row_data["year"].match(",|-")) {
+                    accordionDiv.appendChild(expandButton);
+                }
                 actionsCell.appendChild(accordionDiv);
                 const reviewButton = reviewButtonBase.cloneNode(true);
                 reviewButton.innerHTML = "Review";
@@ -275,6 +277,8 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
 function updateFlashcardTables(data) {
     const questionTable = document.getElementById("flashcard-question-table");
+    const tables = {}
+
     if (questionTable) {
         var question = buildReviewTable(data["question"], questionTable);
     } else {
@@ -282,19 +286,24 @@ function updateFlashcardTables(data) {
     }
     question.id = "flashcard-question-table";
     question.className = "table table-hover";
+    tables["question"] = question.outerHTML;
 
     const matchesTable = document.getElementById("flashcard-matches-table");
-    if (matchesTable) {
+    
+    if (Object.keys(data["matches"]).length === 0) {
+        
+    } else if (matchesTable) {
         var matches = buildReviewTable(data["matches"], matchesTable);
     } else {
         var matches = buildReviewTable(data["matches"]);
     }
-    matches.id = "flashcard-matches-table";
-    matches.className = "table table-hover";
 
-    const tables = {
-        "question": question.outerHTML,
-        "matches": matches.outerHTML
+    try {
+        matches.id = "flashcard-matches-table";
+        matches.className = "table table-hover";
+        tables["matches"] = matches.outerHTML;
+    } catch {
+
     }
 
     return Promise.resolve(tables)
@@ -314,8 +323,6 @@ function buildReviewTable(data, table = document.createElement("table")) {
     const linkButtonBase = document.createElement("button");
     linkButtonBase.className = "btn btn-primary";
     linkButtonBase.setAttribute("onclick", "storeLink(event)");
-
-    const reviewType = document.getElementById("review-type-input");
 
     // Set table header row
     table.innerHTML = '';
@@ -369,6 +376,8 @@ function buildReviewTable(data, table = document.createElement("table")) {
             const trID = table.id + "-tr-" + record_num + "-" + i;
             expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
 
+            const linkButton = linkButtonBase.cloneNode(true); 
+
             if (i > 0) {
                 row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
                 row.id = `collapse-${trID}`;
@@ -380,21 +389,24 @@ function buildReviewTable(data, table = document.createElement("table")) {
                     expandValue = row.id;
                 }
                 expandButton.setAttribute("aria-controls", expandValue);
+
+                linkButton.value = "unlink";
+                linkButton.innerHTML = "Unlink";
+                if (table.id == "flashcard-question-table") {
+                    actionsCell.appendChild(linkButton);
+                } 
             }
             else {
-                accordionDiv.appendChild(expandButton);
-                actionsCell.appendChild(accordionDiv);
-                const linkButton = linkButtonBase.cloneNode(true); 
-                if (reviewType && (reviewType.value == "unlinked" || reviewType.value == "intermittent")) {
-                    linkButton.value = "link";
-                    linkButton.innerHTML = "Link";
-                } else {
-                    linkButton.value = "unlink";
-                    linkButton.innerHTML = "Unlink";
+                if (row_data["year"].match("-|,")) {
+                    accordionDiv.appendChild(expandButton);
+                    actionsCell.appendChild(accordionDiv);
                 }
+                
+                linkButton.value = "link";
+                linkButton.innerHTML = "Link";
                 if (table.id != "flashcard-question-table") {
                     actionsCell.appendChild(linkButton);
-                }
+                }                
             }
 
             row.appendChild(actionsCell);
@@ -442,5 +454,6 @@ export {
     buildSearchTable,
     rowToJSON,
     updateFlashcardTables,
-    storeLink
+    storeLink,
+    buildReviewTable
 }

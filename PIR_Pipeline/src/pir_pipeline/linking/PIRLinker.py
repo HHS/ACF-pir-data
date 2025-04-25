@@ -21,6 +21,7 @@ class PIRLinker:
             records (list[tuple] | list[dict]): Records to link
             sql (SQLAlchemyUtils): A SQLAlchemyUtils object for interacting with the database
         """
+
         self._logger = get_logger(__name__)
 
         invalid_type = None
@@ -50,14 +51,15 @@ class PIRLinker:
         """Get data from the question table
 
         Args:
-            which (str): which can be used to specify what data is returned from the question table.
-                Options include 'all', 'linked', and 'unlinked' which return data from the
-                full question table, linked view, and unlinked view respectively. A custom
-                query can also be specified using the which argument.
+            which (str): which can be used to specify what data is returned from the question table. \
+            Options include 'all', 'linked', and 'unlinked' which return data from the \
+            full question table, linked view, and unlinked view respectively. A custom \
+            query can also be specified using the which argument.
 
         Returns:
             Self: PIRLinker object
         """
+
         if which == "all":
             self._question = self._sql.get_records("question")
             self._question = self._question.drop(columns=["category", "subsection"])
@@ -74,6 +76,7 @@ class PIRLinker:
 
     def question_data_check(self):
         """Check for question data and get it if not present"""
+
         try:
             self._question
         except AttributeError:
@@ -85,6 +88,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+
         self.question_data_check()
 
         try:
@@ -110,6 +114,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker Object
         """
+
         self.question_data_check()
 
         df = self._data.copy()
@@ -158,12 +163,13 @@ class PIRLinker:
         """Execute many-to-many join on type and section
 
         Args:
-            which (str): Which dataset should be the left-hand side of the join? Options
-                include 'unlinked' and 'data'.
+            which (str): Which dataset should be the left-hand side of the join? Options \
+            include 'unlinked' and 'data'.
 
         Returns:
-            _type_: _description_
+            Self: PIRLinker object
         """
+
         self._cross: pd.DataFrame
         if which == "unlinked":
             df = self._unlinked.copy()
@@ -186,17 +192,28 @@ class PIRLinker:
         )
 
         # Drop cases where year is equal or uqid is equal
-        if self._unique_question_id == "question_id":
+        if self._unique_question_id == "question_id" and not df.empty:
             self._cross = df[df["year_x"] != df["year_y"]]
+
+            if self._cross["uqid_x"].unique().tolist()[0] is not None:
+                self._cross = self._cross[
+                    self._cross["uqid_x"] != self._cross["uqid_y"]
+                ]
         else:
             self._cross = df[df["uqid_x"] != df["uqid_y"]]
 
         # Remove cases where unique_question_id combination is duplicated
-        self._cross = self._cross[
-            ~self._cross[
-                [f"{self._unique_question_id}_x", f"{self._unique_question_id}_y"]
-            ].duplicated()
-        ]
+        if len(unique_ids) == 1:
+            for ident in ["question_id", "uqid"]:
+                self._cross = self._cross[
+                    ~self._cross[[f"{ident}_x", f"{ident}_y"]].duplicated()
+                ]
+        else:
+            self._cross = self._cross[
+                ~self._cross[
+                    [f"{self._unique_question_id}_x", f"{self._unique_question_id}_y"]
+                ].duplicated()
+            ]
 
         # Check that the cross join has every unique ID that isn't missing a section
         cross_unique_ids = set(self._cross[f"{self._unique_question_id}_x"].unique())
@@ -323,6 +340,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+
         try:
             self._question_columns
         except AttributeError:
@@ -369,6 +387,7 @@ class PIRLinker:
         Returns:
             str | float: Unique question ID (uqid)
         """
+
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
@@ -393,6 +412,7 @@ class PIRLinker:
         Returns:
             Self: PIRLinker object
         """
+
         assert (
             self._data["question_id"].unique().shape[0]
             == self._data[~self._data[["question_id", "uqid"]].duplicated()].shape[0]
@@ -417,9 +437,7 @@ class PIRLinker:
 
 
 if __name__ == "__main__":
-    sql_alchemy = SQLAlchemyUtils(
-        **DB_CONFIG, database="pir", drivername="postgresql+psycopg"
-    )
+    sql_alchemy = SQLAlchemyUtils(**DB_CONFIG, database="pir")
     records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"
     )

@@ -1,4 +1,3 @@
-import subprocess
 from datetime import datetime
 
 import click
@@ -10,15 +9,8 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 def get_db():
     """Return a SQLAlchemyUtils object"""
     if "db" not in g:
-        try:
-            subprocess.run(["psql", "--version"])
-            drivername = "postgresql+psycopg"
-        except Exception:
-            drivername = "mysql+mysqlconnector"
         g.db = SQLAlchemyUtils(
-            **current_app.config["DB_CONFIG"],
-            database=current_app.config["DB_NAME"],
-            drivername=drivername
+            **current_app.config["DB_CONFIG"], database=current_app.config["DB_NAME"]
         )
 
     return g.db
@@ -35,4 +27,5 @@ def close_db(e=None):
 
 # Need to revisit
 def init_app(app):
+    """Add close_db to the operations performed when tearing down"""
     app.teardown_appcontext(close_db)

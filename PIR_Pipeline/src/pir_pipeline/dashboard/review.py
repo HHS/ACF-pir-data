@@ -9,7 +9,6 @@ from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
-    get_review_data,
     get_review_question,
     get_search_results,
     search_matches,
@@ -20,40 +19,60 @@ bp = Blueprint("review", __name__, url_prefix="/review")
 
 
 def get_flashcard_question(
-    review_type: str, offset: int, db: SQLAlchemyUtils, session: dict
-):
-    id_column, record = get_review_question(review_type, offset, db)
-    matches = get_matches({"review-type": review_type, "record": record}, db)
-    output = {
-        "question": get_search_results(
-            review_type, id_column, record[id_column], db, id_column
-        )
-    }
-    matches.pop(0)
-    if review_type == "inconsistent":
-        output["matches"] = search_matches(matches, "question_id", db)
-    else:
+    offset: int | str, db: SQLAlchemyUtils, session: dict
+) -> dict:
+    """Get data for displaying a flashcard
+
+    Args:
+        offset (int | str): The question to return. Integer when returning questions by \
+        position, string when returning a specific question by id.
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for interacting with the database.
+        session (dict): Flask session object.
+
+    Returns:
+        dict: Dictionary containing data for header question and matching questions.
+    """
+
+    id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
+
+    if not record[id_column]:
+        id_column = "question_id"
+
+    output = {"question": get_search_results(record[id_column], db, id_column)}
+
+    matches = get_matches({"record": record}, db)
+    if matches:
+        matches.pop(0)
         output["matches"] = search_matches(matches, id_column, db)
+    else:
+        output["matches"] = {}
+
     session["current_question"] = offset
+
     return output
 
 
 @bp.route("/", methods=["GET", "POST"])
 def index():
-    return render_template("review/index.html")
+    """Render first flashcard"""
+    return render_template("review/flashcard.html")
 
 
 @bp.route("/finalize", methods=["GET", "POST"])
 def finalize():
+    """Render the finalization page, for reviewing changes made using the dashboard"""
+
+    # Flash an error if no linking actions were performed
     if not session.get("link_dict"):
         flash("No linking actions performed.")
-        return render_template("review/index.html")
+        return render_template("review/flashcard.html")
 
     if request.method == "POST":
         form = request.form
         action = form["action"]
         link_dict = session.get("link_dict")
 
+        # Remove a linking action from the dictionary
         if action == "remove":
             finalize_id = form["finalize-id"]
 
@@ -64,29 +83,32 @@ def finalize():
             session["link_dict"] = link_dict
 
             return render_template("review/finalize.html")
+        # Commit all linking actions
         elif action == "commit":
             db = get_db()
             QuestionLinker(link_dict, db).update_links()
             session.pop("link_dict")
 
-            return render_template("review/index.html")
+            return render_template("review/flashcard.html")
 
     return render_template("review/finalize.html")
 
 
 @bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
+    """Handle building flashcard page for reviewing questions chronologically"""
+
     if request.method == "POST":
         db = get_db()
 
         form = request.form
         action = form["action"]
 
+        # Render finalize page if user clicks finish
         if action == "finish":
             return redirect(url_for("review.finalize"))
 
-        review_type = form["review-type"]
-
+        # Move to the next question
         if action == "next":
             offset = session.get("current_question")
 
@@ -96,18 +118,19 @@ def flashcard():
             else:
                 offset = 0
 
-            output = get_flashcard_question(review_type, offset, db, session)
+            output = get_flashcard_question(offset, db, session)
+
+        # Move to the previous question
         elif action == "previous":
             offset = session.get("current_question")
 
+            # Decrement offset or loop to the end
             if offset > 0:
                 offset -= 1
             else:
                 offset = session.get("max_questions")
 
-            output = get_flashcard_question(review_type, offset, db, session)
-        elif action == "confirm":
-            pass
+            output = get_flashcard_question(offset, db, session)
 
         return json.dumps(output)
 
@@ -116,17 +139,17 @@ def flashcard():
 
 @bp.route("/data", methods=["POST"])
 def data():
+    """Return data for rendering pages"""
     db = get_db()
     response = request.get_json()
 
     if response["for"] == "flashcard":
-        review_type = response["review-type"]
         offset = 0
-        output = get_flashcard_question(review_type, offset, db, session)
-        id_column = "question_id" if review_type == "unlinked" else "uqid"
+        output = get_flashcard_question(offset, db, session)
+        id_column = "question_id"
 
         # Get max questions
-        query = select(func.count(func.distinct(db.tables[review_type].c[id_column])))
+        query = select(func.count(func.distinct(db.tables["unconfirmed"].c[id_column])))
         with db.engine.connect() as conn:
             result = conn.execute(query)
             max_questions = result.scalar() - 1
@@ -136,22 +159,6 @@ def data():
         session["max_questions"] = max_questions
 
     return json.dumps(output)
-
-
-@bp.route("/table", methods=["GET", "POST"])
-def table():
-    """Handle rendering/data acquisition for the review page"""
-    db = get_db()
-
-    # Return results for the specified review type
-    if request.method == "POST":
-        review_type = request.form["review-type"]
-        data = get_review_data(review_type, db)
-
-        return json.dumps(data)
-
-    # Return the base review page
-    return render_template("review.html", section_id="review-form-section")
 
 
 @bp.route("/match", methods=["POST"])

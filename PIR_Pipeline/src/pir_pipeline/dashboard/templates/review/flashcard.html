@@ -8,7 +8,6 @@
     <div class="form-parent">
         <div class="form-container left">
             <form id="flashcard-buttons" onsubmit="flashcardAction(event)">
-                    <input type="hidden" id="review-type-input" name="review-type" value="">
                     <button class="btn btn-primary" type="submit" name="action" value="previous">Previous</button>
                     <button class="btn btn-primary" type="submit" name="action" value="confirm">Mark Complete</button>
                     <button class="btn btn-primary" type="submit" name="action" value="next">Next</button>
@@ -24,6 +23,16 @@
         <table id="flashcard-question-table" class="table table-hover">
         </table>
     </div>
+    <form id="search-form">
+        <div class="form-container">
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="Search by Keyword..." id="keyword-search" name="keyword-search">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" id="search-button">Search</button>
+            </div>
+        </div>
+    </form>
     <div class="table-box">
         <table id="flashcard-matches-table" class="table table-hover">
         </table>

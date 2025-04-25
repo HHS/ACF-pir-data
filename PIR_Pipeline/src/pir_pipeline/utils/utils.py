@@ -4,6 +4,22 @@ import logging
 import re
 
 
+def error_thrower(logger: logging.Logger, message: str, error_type: Exception):
+    """_summary_
+
+    Args:
+        logger (logging.Logger): _description_
+        message (str): _description_
+        error_type (Exception): _description_
+
+    Raises:
+        error_type: _description_
+    """
+
+    logger.error(message)
+    raise error_type(message)
+
+
 def get_searchable_columns(columns: list[str]) -> list[str]:
     """Return non-identifying columns formatted for external audiences
 
@@ -13,6 +29,7 @@ def get_searchable_columns(columns: list[str]) -> list[str]:
     Returns:
         list[str]: Formatted column names
     """
+
     keep_columns = []
     for column in columns:
         if not column.endswith("id") and column not in ["year"]:
@@ -27,9 +44,7 @@ def clean_name(name: str, how: str = "snake") -> str:
 
     Args:
         name (str): A name to convert
-        how (str): What method to use to convert.\n
-            "snake": Converts to snake case.\n
-            "title": Converts to title case (can un-snake).
+        how (str): What method to use to convert.\n\n\t"snake": Converts to snake case.\n\n\t"title": Converts to title case (can un-snake).
 
     Returns:
         str: Converted name
@@ -47,7 +62,16 @@ def clean_name(name: str, how: str = "snake") -> str:
     return new_name
 
 
-def get_logger(name: str):
+def get_logger(name: str) -> logging.Logger:
+    """Return a logger
+
+    Args:
+        name (str): Name of the logger
+
+    Returns:
+        logging.Logger: Logger
+    """
+
     logging.basicConfig(
         format="%(asctime)s|%(name)s|%(levelname)s|%(message)s",
         level=logging.DEBUG,

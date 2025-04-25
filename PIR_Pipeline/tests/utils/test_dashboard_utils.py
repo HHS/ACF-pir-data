@@ -7,7 +7,6 @@ from sqlalchemy import null, select
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
-    get_review_data,
     get_search_results,
 )
 
@@ -17,91 +16,20 @@ def insert_question_records(sql_utils, question_linker_records):
     sql_utils.insert_records(question_linker_records, "question")
 
 
-payload = {
-    "1": {
-        "link_type": "unlink",
-        "base_question_id": "42d3b624c74d07c3a574a4f26fa3c686",
-        "base_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-        "match_question_id": "0686c2ad4d3041b580a1d4015b9f0c80",
-        "match_uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-    },
-    "2": {
-        "link_type": "unlink",
-        "base_question_id": "7bfb25407153bbbb171e5d2280c1194f",
-        "base_uqid": "00517751cc2f7920185e52926ce7a0c9",
-        "match_question_id": "4167b6decdcd59db40b69e0fba43e7f0",
-        "match_uqid": "00517751cc2f7920185e52926ce7a0c9",
-    },
-    "3": {
-        "link_type": "link",
-        "base_question_id": "6b2522aa7ff248ca4d80ac299104ca2e",
-        "base_uqid": "5ff5919440ca5dcd4c9dbda1eff168d4",
-        "match_question_id": "3dc2c6572e8b64ffd64231c43ccd95d6",
-        "match_uqid": "0b19c17c60bfce95f963a1ddc0575588",
-    },
-    "4": {
-        "link_type": "link",
-        "base_question_id": "83e32d72b46030e1abf5109b8b506fb8",
-        "base_uqid": None,
-        "match_question_id": "87fe124509e4e9e48b26a65b78c87acd",
-        "match_uqid": "8cfa414fcd9b593e45bee4dd68080ae8",
-    },
-    "5": {
-        "link_type": "confirm",
-        "base_question_id": None,
-        "base_uqid": "5512c4f54e3ace4484e59cdc48976761",
-        "match_question_id": None,
-        "match_uqid": None,
-    },
-}
-
-
 @pytest.fixture
-def question_linker(sql_utils):
-    question_linker = QuestionLinker(payload, sql_utils)
+def question_linker(sql_utils, question_linker_payload):
+    question_linker = QuestionLinker(question_linker_payload, sql_utils)
     return question_linker
 
 
 @pytest.mark.usefixtures("create_database", "insert_question_records")
 class TestGetDataMethods:
-    def test_get_review_data(self, sql_utils):
-        Check = namedtuple("Check", ["review_type", "id_var", "ids"])
-        checks = [
-            Check("unlinked", "question_id", ["83e32d72b46030e1abf5109b8b506fb8"]),
-            Check(
-                "intermittent",
-                "uqid",
-                [
-                    "194ed0fc57877f9ee8eee0fc5927b148",
-                    "0b19c17c60bfce95f963a1ddc0575588",
-                    "00517751cc2f7920185e52926ce7a0c9",
-                    "5ff5919440ca5dcd4c9dbda1eff168d4",
-                    "8cfa414fcd9b593e45bee4dd68080ae8",
-                    "5512c4f54e3ace4484e59cdc48976761",
-                ],
-            ),
-            Check(
-                "inconsistent",
-                "uqid",
-                [
-                    "194ed0fc57877f9ee8eee0fc5927b148",
-                    "00517751cc2f7920185e52926ce7a0c9",
-                ],
-            ),
-        ]
-        for check in checks:
-            data = get_review_data(check.review_type, sql_utils)
-            ids = [d[check.id_var] for d in data if isinstance(d, dict)]
-            set_diff = set(ids).symmetric_difference(set(check.ids))
-            assert not set_diff, f"IDs do not align: {set_diff}"
-
     def test_get_matches(self, sql_utils):
         # Fields, num_records in each case. Not ids, cause algorithm might change
         Check = namedtuple("Check", ["payload", "fields", "num_records"])
         checks = [
             Check(
                 {
-                    "review-type": "unlinked",
                     "record": {
                         "question_id": "83e32d72b46030e1abf5109b8b506fb8",
                         "year": 2011,
@@ -112,24 +40,24 @@ class TestGetDataMethods:
             ),
             Check(
                 {
-                    "review-type": "intermittent",
                     "record": {
-                        "uqid": "194ed0fc57877f9ee8eee0fc5927b148",
-                        "question_name": "Of the number of education and child development staff that left, the number that left for the following primary reason - Other - Specify Text",
-                        "question_number": "B.18.d-1",
-                        "question_text": "Other (e.g., change in job field, reason not provided)",
+                        "question_id": "6b2522aa7ff248ca4d80ac299104ca2e",
+                        "uqid": "5ff5919440ca5dcd4c9dbda1eff168d4",
+                        "year": 2017,
                     },
                 },
-                {"uqid", "question_number", "question_name", "question_text"},
-                1,
+                {"question_id", "uqid", "year"},
+                2,
             ),
             Check(
                 {
-                    "review-type": "inconsistent",
-                    "record": {"uqid": "00517751cc2f7920185e52926ce7a0c9"},
+                    "record": {
+                        "uqid": "00517751cc2f7920185e52926ce7a0c9",
+                        "question_id": "4167b6decdcd59db40b69e0fba43e7f0",
+                    },
                 },
-                {"question_id", "question_name", "question_number", "question_text"},
-                3,
+                {"uqid", "question_id"},
+                2,
             ),
         ]
         for check in checks:
@@ -150,34 +78,32 @@ class TestGetDataMethods:
         checks = [
             Check(
                 {
-                    "column": "category",
                     "keyword": "^Staff$",
-                    "qtype": "all",
                 },
-                ["83e32d72b46030e1abf5109b8b506fb8"],
+                {"83e32d72b46030e1abf5109b8b506fb8"},
             ),
             Check(
                 {
-                    "column": "subsection",
                     "keyword": "child development staff - qualifications",
-                    "qtype": "all",
                 },
-                [
+                {
                     "83e32d72b46030e1abf5109b8b506fb8",
                     "87fe124509e4e9e48b26a65b78c87acd",
-                ],
+                },
             ),
         ]
         for check in checks:
             data = get_search_results(**check.kwargs, db=sql_utils)
             ids = [key for key in data.keys() if key != "columns"]
-            set_diff = set(ids).symmetric_difference(set(check.ids))
-            assert not set_diff, f"IDs do not align: {set_diff}"
+            set_diff = set(ids).symmetric_difference(check.ids)
+            assert (
+                not set_diff
+            ), f"IDs do not align: Expected {check.ids}; Got {ids}; Diff {set_diff}"
 
 
 @pytest.mark.usefixtures("create_database", "insert_question_records")
 class TestQuestionLinker:
-    def test_update_links(self, question_linker, sql_utils):
+    def test_update_links(self, question_linker, sql_utils, question_linker_payload):
         def get_ids(payload: dict):
             return (
                 payload["base_question_id"],
@@ -193,7 +119,9 @@ class TestQuestionLinker:
 
         # In case 1, both uqids should be totally removed from the database
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["1"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["1"]
+            )
             result = conn.execute(
                 select(question_table).where(question_table.c["uqid"] == base_uqid)
             )
@@ -233,7 +161,9 @@ class TestQuestionLinker:
 
         # In case 2, uqid for match_qid should remain the same, uqid for base_qid should change
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["2"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["2"]
+            )
             result = conn.execute(
                 select(question_table.c["uqid"])
                 .where(question_table.c["question_id"] == match_qid)
@@ -269,7 +199,9 @@ class TestQuestionLinker:
 
         # In case 3, base uqid should be kept the other should be removed
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["3"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["3"]
+            )
             # Base question has base uqid
             result = conn.execute(
                 query_template.where(
@@ -321,7 +253,9 @@ class TestQuestionLinker:
 
         # In case 4 match keeps uqid, base gets match uqid
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["4"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["4"]
+            )
 
             # Base question has match uqid
             result = conn.execute(
@@ -365,7 +299,9 @@ class TestQuestionLinker:
 
         # In case 5 record should appear as confirmed in the changelog
         with sql_utils.engine.connect() as conn:
-            base_qid, base_uqid, match_qid, match_uqid = get_ids(payload["5"])
+            base_qid, base_uqid, match_qid, match_uqid = get_ids(
+                question_linker_payload["5"]
+            )
 
             result = conn.execute(
                 select(uqid_changelog).where(
@@ -380,4 +316,4 @@ class TestQuestionLinker:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_update_links"])
+    pytest.main([__file__, "-sk", "test_get_matches"])
