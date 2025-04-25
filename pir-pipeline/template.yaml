@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Lambda function for ingesting Program Information Report (PIR) data
+
+Parameters:
+  DBName:
+    Type: String
+    Description: Database configuration
+
+  DBHost:
+    Type: String
+    Description: Database configuration
+    NoEcho: true
+
+  DBPort:
+    Type: Number
+    Description: Database configuration
+
+  DBPassword:
+    Type: String
+    Description: Database configuration
+    NoEcho: true
+
+  DBUser:
+    Type: String
+    Description: Database configuration
+
+Resources:
+  PIRInvoker:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pir_invoker/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Timeout: 600
+      MemorySize: 2048
+      Environment:
+        Variables:
+          DB_USER: !Ref DBUser
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: S3Bucket
+            Events: "s3:ObjectCreated:*"
+    
+  PIRIngestor:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pir_ingestor/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Timeout: 600
+      MemorySize: 2048
+      Environment:
+        Variables:
+          DB_USER: !Ref DBUser
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: pir-data-files
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
