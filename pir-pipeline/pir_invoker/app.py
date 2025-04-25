@@ -34,7 +34,7 @@ def lambda_handler(event, context):
         for object in objects:
             ingestor_event = {"Bucket": bucket, "Key": object["Key"]}
             lmda.invoke(FunctionName="pir-pipeline-PIRIngestor-B8bZy9dFaMaS", InvocationType="Event", Payload=json.dumps(ingestor_event).encode("utf-8"))
-            
+
         # Wait until all objects are processed by Ingestor
         bucket_has_objects = True
         while_init_time = time.time()

@@ -28,6 +28,47 @@ Parameters:
     Description: Database configuration
 
 Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaRDSAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                  - rds:Connect
+                  - rds:ExecuteStatement
+                  - rds:BatchExecuteStatement
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:ListObjects
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:CopyObject
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                  - ec2:AttachNetworkInterface
+                Resource: "*"
+
   PIRInvoker:
     Type: AWS::Serverless::Function
     Properties:
@@ -50,7 +91,8 @@ Resources:
             Bucket:
               Ref: S3Bucket
             Events: "s3:ObjectCreated:*"
-    
+      Role: !GetAtt LambdaExecutionRole.Arn
+      
   PIRIngestor:
     Type: AWS::Serverless::Function
     Properties:
@@ -66,6 +108,7 @@ Resources:
           DB_PORT: !Ref DBPort
           DB_PASSWORD: !Ref DBPassword
           DB_NAME: !Ref DBName
+      Role: !GetAtt LambdaExecutionRole.Arn
 
   S3Bucket:
     Type: AWS::S3::Bucket
