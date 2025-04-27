@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables } from "../utilities.js";
 
 const searchForm = document.getElementById("search-form")
 searchForm.addEventListener("submit", async (e) => {
@@ -26,8 +26,12 @@ function getFlashcardData(e) {
     const row = element.closest('tr');
     const rowRecord = rowToJSON(row);
 
-    sessionStorage.setItem('flashcardData', JSON.stringify(rowRecord));
-    window.location.href = "/search/flashcard";
+    document.getElementById("search-modal").setAttribute("open", "true");
+    document.getElementById("search-modal").removeAttribute("hidden");
+    
+    fetch("/search/data", { "method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(rowRecord)})
+        .then(response => response.json())
+        .then(data => updateFlashcardTables(data))
 }
 
 document.getFlashcardData = getFlashcardData;

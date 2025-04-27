@@ -1,0 +1,43 @@
+#cds-modal-div {
+    background: #F4F4F4;
+}
+
+cds-modal {
+    overflow-y: auto;
+}
+
+cds-modal-footer {
+    background-color: #C6C6C6;
+}
+
+.modal-table-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#flashcard-question-table,
+#flashcard-matches-table {
+    width: 75%;
+}
+
+.modal-box {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+}
+
+#modal-search-form {
+   margin-left: 7.25%;
+}
+
+
+/* Buttons */
+/* #cancel-button,
+#confirm-button {
+    width: 25%;
+} */
+
+#modal-button-filler-div {
+    width: 75%;
+}
