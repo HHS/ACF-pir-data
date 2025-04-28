@@ -181,7 +181,7 @@ def link():
     # Add a link/unlink entry to session
     if action == "build":
         link_dict = session.get("link_dict")
-        dict_id = data["base_question_id"] + data.get("match_question_id", "")
+        dict_id = f"{data["base_question_id"]}{data.get("match_question_id", "") if data.get("match_question_id") else ""}"
         dict_id = md5(dict_id.encode("utf-8")).hexdigest()
         if link_dict:
             if (dict_id in link_dict) and (
