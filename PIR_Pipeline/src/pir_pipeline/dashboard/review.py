@@ -181,16 +181,20 @@ def link():
     # Add a link/unlink entry to session
     if action == "build":
         link_dict = session.get("link_dict")
-        dict_id = md5(str(data).encode("utf-8")).hexdigest()
+        dict_id = data["base_question_id"] + data.get("match_question_id", "")
+        dict_id = md5(dict_id.encode("utf-8")).hexdigest()
         if link_dict:
-            # May need to handle user selecting the same link twice, may not
-            # if dict_id in link_dict:
-            #     flash()
-            link_dict[dict_id] = data
+            if (dict_id in link_dict) and (
+                link_dict[dict_id]["link_type"] != data["link_type"]
+            ):
+                del link_dict[dict_id]
+            else:
+                link_dict[dict_id] = data
         else:
             link_dict = OrderedDict({dict_id: data})
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
+        print(session["link_dict"])
     # Execute all linking actions
     elif action == "finalize":
         db = get_db()

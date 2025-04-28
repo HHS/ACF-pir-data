@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON, updateFlashcardTables } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink } from "../utilities.js";
 
 const searchForm = document.getElementById("search-form")
 searchForm.addEventListener("submit", async (e) => {
@@ -35,3 +35,4 @@ function getFlashcardData(e) {
 }
 
 document.getFlashcardData = getFlashcardData;
+document.storeLink = storeLink;

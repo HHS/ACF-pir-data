@@ -397,6 +397,8 @@ function buildReviewTable(data, table = document.createElement("table")) {
                 } 
             }
             else {
+                row.id = `collapse-${table.id}-tr-${record_num}`
+
                 if (row_data["year"].match("-|,")) {
                     accordionDiv.appendChild(expandButton);
                     actionsCell.appendChild(accordionDiv);
@@ -418,15 +420,26 @@ function buildReviewTable(data, table = document.createElement("table")) {
     return table
 }
 
+// Store link logic should be updated on search page because
+// the links should be ephemeral and should update as unlink and link
+// are clicked within a modal. Changes should be committed immediately
+// on clicking confirm changes. 
 function storeLink(event) {
     const button = event.target;
+
+    const matchesTable = document.getElementById("flashcard-matches-table"); 
     const matchRow = button.closest("tr");
-    const baseRow = document.getElementById("flashcard-question-table").getElementsByTagName("tr")[1];
+
+    const questionTable = document.getElementById("flashcard-question-table");
+    const baseRow = questionTable.getElementsByTagName("tr")[1];
+
     const baseRecord = rowToJSON(baseRow);
     const matchRecord = rowToJSON(matchRow)
 
+    const linkType = button.value
+
     const linkDetails = {
-        "link_type": button.value,
+        "link_type": linkType,
         "base_question_id": baseRecord.question_id,
         "base_uqid": baseRecord.uqid,
         "match_question_id": matchRecord.question_id,
@@ -444,7 +457,28 @@ function storeLink(event) {
             "Content-type": "application/json"
         },
         "body": JSON.stringify(payload)
-    })
+    });
+
+    const matchRows = document.querySelectorAll(`tr[id*="${matchRow.id}"]`);
+    for (let i = 0; i < matchRows.length; i++) {
+        let row = matchRows[i];
+        row = document.getElementById(row.id);
+        const button = row.getElementsByClassName("btn");
+        if (linkType == "link") {
+            questionTable.getElementsByTagName("tbody")[0].appendChild(row);
+            if (button.length > 0) {
+                button[0].value = "unlink";
+                button[0].innerHTML = "Unlink";
+            }
+        } else if (linkType == "unlink") {
+            const tbody = matchesTable.getElementsByTagName("tbody")[0]
+           tbody.insertBefore(row, tbody.firstChild);
+            if (button.length > 0) {
+                button[0].value = "link";
+                button[0].innerHTML = "Link";
+            }
+        }
+    };
 }
 
 export {
