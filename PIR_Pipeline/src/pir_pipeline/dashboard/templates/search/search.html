@@ -26,7 +26,8 @@
         <div id="cds-modal-div">
             <cds-modal-header close-button="">
                 <cds-modal-close-button></cds-modal-close-button>
-                <div></div>
+                <div class="spacer"></div>
+                <div id="search-modal-header">Editing</div>
             </cds-modal-header>
             <cds-modal-body>                
                 <div class="modal-table-box">
@@ -52,8 +53,12 @@
             </cds-modal-body>
             <cds-modal-footer>
                 <div id="modal-button-filler-div"></div>
-                <cds-modal-footer-button id="cancel-button" kind="secondary" data-modal-close="" size="sm" tab-index="0" tooltip-alignment="" tooltip-position="top" type="button" has-main-content="">Cancel</cds-modal-footer-button>
-                <cds-modal-footer-button id="confirm-button" kind="primary" size="sm" tab-index="0" tooltip-alignment="" tooltip-position="top" type="button" has-main-content="">Confirm Changes</cds-modal-footer-button>
+                <cds-modal-footer-button id="cancel-button" kind="secondary" data-modal-close="" size="sm" tab-index="0" tooltip-alignment="" tooltip-position="top" type="button" has-main-content="">
+                    Cancel
+                </cds-modal-footer-button>
+                <cds-modal-footer-button id="confirm-button" kind="primary" size="sm" tab-index="0" tooltip-alignment="" tooltip-position="top" type="button" has-main-content="" onclick="commitChanges(event)">
+                    Confirm Changes
+                </cds-modal-footer-button>
             </cds-modal-footer>
         </div>
       </cds-modal>

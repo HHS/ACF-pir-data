@@ -41,3 +41,8 @@ cds-modal-footer {
 #modal-button-filler-div {
     width: 75%;
 }
+
+#search-modal-header {
+    margin-left: 12.5%;
+    font-size: 24px;
+}
