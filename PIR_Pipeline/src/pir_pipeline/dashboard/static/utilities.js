@@ -441,9 +441,7 @@ function storeLink(event) {
     const linkDetails = {
         "link_type": linkType,
         "base_question_id": baseRecord.question_id,
-        "base_uqid": baseRecord.uqid,
-        "match_question_id": matchRecord.question_id,
-        "match_uqid": matchRecord.uqid
+        "match_question_id": matchRecord.question_id
     }
 
     const payload = {

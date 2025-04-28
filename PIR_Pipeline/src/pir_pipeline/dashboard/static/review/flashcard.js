@@ -33,15 +33,14 @@ async function flashcardAction(e) {
     const formData = new FormData(form);
     const name = e.submitter.name;
     let value = e.submitter.value;
+    
     if (value == "confirm") {
         const questionTable = document.getElementById("flashcard-question-table");
         let baseRecord = rowToJSON(questionTable.getElementsByTagName("tr")[1]);
         const linkDetails = {
             "link_type": value,
             "base_question_id": baseRecord.question_id,
-            "base_uqid": baseRecord.uqid,
-            "match_question_id": null,
-            "match_uqid": null
+            "match_question_id": null
         }
 
         const payload = {

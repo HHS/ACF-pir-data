@@ -22,12 +22,11 @@ async function flashcardAction(e) {
         
     const questionTable = document.getElementById("flashcard-question-table");
     let baseRecord = rowToJSON(questionTable.getElementsByTagName("tr")[1]);
+
     const linkDetails = {
         "link_type": value,
         "base_question_id": baseRecord.question_id,
-        "base_uqid": baseRecord.uqid,
         "match_question_id": null,
-        "match_uqid": null
     }
 
     const payload = {
