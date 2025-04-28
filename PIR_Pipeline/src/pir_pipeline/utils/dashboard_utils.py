@@ -340,10 +340,23 @@ class QuestionLinker:
 
     def get_ids(self):
         """Return the ids from the present record"""
-        base_uqid = self._record.get("base_uqid")
+        question = self._db.tables["question"]
+
         base_qid = self._record.get("base_question_id")
-        match_uqid = self._record.get("match_uqid")
         match_qid = self._record.get("match_question_id")
+
+        base_uqid = self._db.get_scalar(
+            select(question.c["uqid"]).where(
+                question.c["question_id"] == bindparam("question_id")
+            ),
+            {"question_id": base_qid},
+        )
+        match_uqid = self._db.get_scalar(
+            select(question.c["uqid"]).where(
+                question.c["question_id"] == bindparam("question_id")
+            ),
+            {"question_id": match_qid},
+        )
 
         return base_qid, base_uqid, match_qid, match_uqid
 
