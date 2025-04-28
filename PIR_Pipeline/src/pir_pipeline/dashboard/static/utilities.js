@@ -1,3 +1,35 @@
+// Logic adapted from Gemini
+function getLinkingSVG(button) {
+    if (button.value == "unlink") {
+        fetch('/static/images/Close--large.svg')
+            .then(response => response.text())
+            .then(svgData => {
+                const parser = new DOMParser();
+                const svgDOM = parser.parseFromString(svgData, 'image/svg+xml');
+                const svgElement = svgDOM.documentElement;
+                button.appendChild(svgElement);
+            })
+    } else if (button.value == "link") {
+        fetch('/static/images/Add--large.svg')
+            .then(response => response.text())
+            .then(svgData => {
+                const parser = new DOMParser();
+                const svgDOM = parser.parseFromString(svgData, 'image/svg+xml');
+                const svgElement = svgDOM.documentElement;
+                button.appendChild(svgElement);
+            })
+    } else if (button.value == "review") {
+        fetch('/static/images/Edit.svg')
+            .then(response => response.text())
+            .then(svgData => {
+                const parser = new DOMParser();
+                const svgDOM = parser.parseFromString(svgData, 'image/svg+xml');
+                const svgElement = svgDOM.documentElement;
+                button.appendChild(svgElement);
+            })
+    }
+}
+
 function updateTable(event) {
     // Get the form data
     const form = event.srcElement;
@@ -7,15 +39,15 @@ function updateTable(event) {
     const tables = document.getElementsByTagName("table");
     const table = tables[0];
 
-    fetch(document.URL, {"method": "POST", "body": formData})
-    .then(response => response.json())
-    .then(data => {
-        if (table.id.match("review")) {
-            buildTable(data, table)
-        } else {
-            buildSearchTable(data, table)
-        }
-    });
+    fetch(document.URL, { "method": "POST", "body": formData })
+        .then(response => response.json())
+        .then(data => {
+            if (table.id.match("review")) {
+                buildTable(data, table)
+            } else {
+                buildSearchTable(data, table)
+            }
+        });
 }
 
 function buildTable(data, table) {
@@ -30,7 +62,7 @@ function buildTable(data, table) {
     accordionDivBase.className = "accordion";
 
     const linkButtonBase = document.createElement("button");
-    linkButtonBase.className = "btn btn-primary";
+    // linkButtonBase.className = "btn btn-primary";
     linkButtonBase.setAttribute("onclick", "storeLink(event)");
 
     // Other constants
@@ -54,7 +86,7 @@ function buildTable(data, table) {
         headerRow.appendChild(column);
     }
     let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Action"; 
+    actionsColumn.innerHTML = "Action";
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
@@ -82,7 +114,7 @@ function buildTable(data, table) {
             expandButton.setAttribute("onclick", `getQuestionData(event, '${reviewType}')`);
             const accordionDiv = accordionDivBase.cloneNode(true);
             accordionDiv.appendChild(expandButton);
-            
+
             const actionsCell = document.createElement("td");
             actionsCell.appendChild(accordionDiv);
             row.appendChild(actionsCell);
@@ -108,19 +140,19 @@ function buildTable(data, table) {
             if (["unlinked", "intermittent"].find(item => item == reviewType)) {
                 const linkButton = linkButtonBase.cloneNode(true);
                 linkButton.value = "link";
-                linkButton.innerHTML = "Link";
+                getLinkingSVG(linkButton);
                 actionsCell.append(linkButton);
             }
             else if (reviewType == "inconsistent") {
                 const unlinkButton = linkButtonBase.cloneNode(true);
                 unlinkButton.value = "unlink";
-                unlinkButton.innerHTML = "Unlink";
+                getLinkingSVG(unlinkButton);
                 actionsCell.append(unlinkButton);
             }
-            
+
 
             row.append(actionsCell);
-        } 
+        }
 
         body.appendChild(row);
         if (table.id == "review-results-table") {
@@ -161,10 +193,10 @@ function getQuestionData(event, reviewType) {
         "review-type": reviewType,
         "record": record
     }
-    
-    fetch("/review/match", {"method": "POST", "headers": {"Content-type": "application/json"}, "body": JSON.stringify(payload)})
-    .then(response => response.json())
-    .then(data => fillMatchDiv(div, data));
+
+    fetch("/review/match", { "method": "POST", "headers": { "Content-type": "application/json" }, "body": JSON.stringify(payload) })
+        .then(response => response.json())
+        .then(data => fillMatchDiv(div, data));
 }
 
 function fillMatchDiv(div, data) {
@@ -190,7 +222,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
     const reviewButtonBase = document.createElement("button");
     reviewButtonBase.setAttribute("onclick", "getFlashcardData(event)");
-    reviewButtonBase.className = "btn btn-primary";
+    reviewButtonBase.value = "review";
 
     // Set table header row
     table.innerHTML = '';
@@ -207,7 +239,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
         headerRow.appendChild(column);
     }
     let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Action"; 
+    actionsColumn.innerHTML = "Action";
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
@@ -220,8 +252,8 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
         const expandButton = expandButtonBase.cloneNode(true);
         expandButton.innerHTML = "";
-        
-        
+
+
         const accordionDiv = accordionDivBase.cloneNode(true);
 
         const actionsCell = document.createElement("td");
@@ -241,7 +273,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 cell.setAttribute("name", key);
                 row.appendChild(cell);
             }
-                
+
             const trID = table.id + "-tr-" + record_num + "-" + i;
             expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
 
@@ -263,7 +295,7 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 }
                 actionsCell.appendChild(accordionDiv);
                 const reviewButton = reviewButtonBase.cloneNode(true);
-                reviewButton.innerHTML = "Review";
+                getLinkingSVG(reviewButton);
                 actionsCell.appendChild(reviewButton);
                 row.appendChild(actionsCell);
             }
@@ -289,9 +321,9 @@ function updateFlashcardTables(data) {
     tables["question"] = question.outerHTML;
 
     const matchesTable = document.getElementById("flashcard-matches-table");
-    
+
     if (Object.keys(data["matches"]).length === 0) {
-        
+
     } else if (matchesTable) {
         var matches = buildReviewTable(data["matches"], matchesTable);
     } else {
@@ -321,7 +353,7 @@ function buildReviewTable(data, table = document.createElement("table")) {
     accordionDivBase.className = "accordion";
 
     const linkButtonBase = document.createElement("button");
-    linkButtonBase.className = "btn btn-primary";
+    // linkButtonBase.className = "btn btn-primary";
     linkButtonBase.setAttribute("onclick", "storeLink(event)");
 
     // Set table header row
@@ -339,7 +371,7 @@ function buildReviewTable(data, table = document.createElement("table")) {
         headerRow.appendChild(column);
     }
     let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Action"; 
+    actionsColumn.innerHTML = "Action";
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
@@ -352,8 +384,8 @@ function buildReviewTable(data, table = document.createElement("table")) {
 
         const expandButton = expandButtonBase.cloneNode(true);
         expandButton.innerHTML = "";
-        
-        
+
+
         const accordionDiv = accordionDivBase.cloneNode(true);
 
         // Get all records associated with this question_id/uqid
@@ -371,12 +403,12 @@ function buildReviewTable(data, table = document.createElement("table")) {
                 cell.setAttribute("name", key);
                 row.appendChild(cell);
             }
-                
+
             const actionsCell = document.createElement("td");
             const trID = table.id + "-tr-" + record_num + "-" + i;
             expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
 
-            const linkButton = linkButtonBase.cloneNode(true); 
+            const linkButton = linkButtonBase.cloneNode(true);
 
             if (i > 0) {
                 row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
@@ -391,10 +423,10 @@ function buildReviewTable(data, table = document.createElement("table")) {
                 expandButton.setAttribute("aria-controls", expandValue);
 
                 linkButton.value = "unlink";
-                linkButton.innerHTML = "Unlink";
+                getLinkingSVG(linkButton);
                 if (table.id == "flashcard-question-table") {
                     actionsCell.appendChild(linkButton);
-                } 
+                }
             }
             else {
                 row.id = `collapse-${table.id}-tr-${record_num}`
@@ -403,12 +435,12 @@ function buildReviewTable(data, table = document.createElement("table")) {
                     accordionDiv.appendChild(expandButton);
                     actionsCell.appendChild(accordionDiv);
                 }
-                
+
                 linkButton.value = "link";
-                linkButton.innerHTML = "Link";
+                getLinkingSVG(linkButton);
                 if (table.id != "flashcard-question-table") {
                     actionsCell.appendChild(linkButton);
-                }                
+                }
             }
 
             row.appendChild(actionsCell);
@@ -425,9 +457,12 @@ function buildReviewTable(data, table = document.createElement("table")) {
 // are clicked within a modal. Changes should be committed immediately
 // on clicking confirm changes. 
 function storeLink(event) {
-    const button = event.target;
+    let button = event.target;
+    if (button.tagName != "BUTTON") {
+        button = button.closest("button");
+    }
 
-    const matchesTable = document.getElementById("flashcard-matches-table"); 
+    const matchesTable = document.getElementById("flashcard-matches-table");
     const matchRow = button.closest("tr");
 
     const questionTable = document.getElementById("flashcard-question-table");
@@ -461,19 +496,27 @@ function storeLink(event) {
     for (let i = 0; i < matchRows.length; i++) {
         let row = matchRows[i];
         row = document.getElementById(row.id);
-        const button = row.getElementsByClassName("btn");
+        if (row.className.match("accordion-collapse")) {
+            console.log(row);
+            row.className = "";
+        }
+        let button = row.getElementsByTagName("svg");
         if (linkType == "link") {
             questionTable.getElementsByTagName("tbody")[0].appendChild(row);
             if (button.length > 0) {
-                button[0].value = "unlink";
-                button[0].innerHTML = "Unlink";
+                button = button[0].closest("button");
+                button.value = "unlink";
+                button.innerHTML = "";
+                getLinkingSVG(button);
             }
         } else if (linkType == "unlink") {
             const tbody = matchesTable.getElementsByTagName("tbody")[0]
-           tbody.insertBefore(row, tbody.firstChild);
+            tbody.insertBefore(row, tbody.firstChild);
             if (button.length > 0) {
-                button[0].value = "link";
-                button[0].innerHTML = "Link";
+                button = button[0].closest("button");
+                button.value = "link";
+                button.innerHTML = "";
+                getLinkingSVG(button);
             }
         }
     };
