@@ -6,7 +6,7 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
-from sqlalchemy import bindparam
+from sqlalchemy import bindparam, select
 
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -200,7 +200,15 @@ class PIRLinker:
                     self._cross["uqid_x"] != self._cross["uqid_y"]
                 ]
         else:
-            self._cross = df[df["uqid_x"] != df["uqid_y"]]
+            question_table = self._sql.tables["question"]
+            years = self._sql.get_records(
+                select(question_table.c["year"])
+                .where(question_table.c["uqid"] == bindparam("uqid"))
+                .distinct(),
+                {"uqid": df["uqid_x"].unique()[0]},
+            )["year"].tolist()
+            self._cross = df[df["year_y"].map(lambda x: x not in years)]
+            self._cross = self._cross[self._cross["uqid_x"] != self._cross["uqid_y"]]
 
         # Remove cases where unique_question_id combination is duplicated
         if len(unique_ids) == 1:

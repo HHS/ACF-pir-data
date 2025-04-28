@@ -49,7 +49,11 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
         return []
 
     # Get matches
-    matches = PIRLinker(records, db).fuzzy_link(5)
+    linker = PIRLinker(records, db)
+    if payload["record"]["uqid"]:
+        linker._unique_question_id = "uqid"
+
+    matches = linker.fuzzy_link(5)
     matches = matches[payload["record"].keys()]
 
     records = matches.to_dict(orient="records")
