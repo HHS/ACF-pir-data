@@ -148,13 +148,14 @@ def get_search_results(
                 header = conn.execute(header_row_query, {id_column: ident})
                 header_row = header.one()
                 header_row = {key: header_row[i] for i, key in enumerate(header.keys())}
-                header_row.update(
-                    {
-                        "year": get_year_range(
-                            table, ("question_id", header_row["question_id"]), db
-                        )
-                    }
-                )
+
+                if header_row.get("uqid"):
+                    id_tuple = ("uqid", header_row["uqid"])
+                else:
+                    id_tuple = ("question_id", header_row["question_id"])
+
+                header_row.update({"year": get_year_range(table, id_tuple, db)})
+
                 if header_row["year"].find("-|,") > -1:
                     search_dict[ident] = [header_row, result_dict]
                 else:
@@ -282,23 +283,26 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
         years = result.scalars().all()
 
     years = sorted(years)
+    if len(years) == 1:
+        return str(years[0])
+
     str_years = []
     prev_year = None
-    contiguous = 1
+    year_list = []
     for year in years:
-        if prev_year is None:
-            pass
-        elif prev_year != year - 1:
-            contiguous = 0
+        if prev_year == year - 1:
+            year_list.append(str(year))
+        else:
+            year_list = [str(year)]
+            str_years.append(year_list)
 
-        str_years.append(str(year))
+        prev_year = year
 
-    if len(years) == 1:
-        output = str(years[0])
-    elif contiguous:
-        output = f"{min(years)} - {max(years)}"
-    else:
-        output = ", ".join(str_years)
+    output = [
+        "-".join((item[0], item[-1])) if len(item) > 1 else item[0]
+        for item in str_years
+    ]
+    output = ", ".join(output)
 
     return output
 
@@ -528,19 +532,9 @@ class QuestionLinker:
 if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
-    db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_matches(
-        {
-            "record": {
-                "question_id": "798c68eddccc058290e91ec452e8dbce",
-                "year": 2012,
-                "uqid": "bd9386d82a8a1654f05ad59a92349330",
-                "question_name": "Visual Impairment Received Services",
-                "question_number": "C.27.g-2",
-                "question_text": "Visual impairment, including blindness - # of children receiving special services",
-                "question_type": "Number",
-                "section": "C",
-            }
-        },
-        db,
+    db = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
+    print(
+        get_year_range(
+            db.tables["question"], ("uqid", "903863a832c884bdf311237ed570c44d"), db
+        )
     )
