@@ -96,9 +96,12 @@ class TestReviewRoutes:
 
     def test_post_link(self, client):
         with client:
-            client.post("/review/link", json={"action": "build", "data": {"A": "B"}})
+            client.post(
+                "/review/link",
+                json={"action": "build", "data": {"base_question_id": "B"}},
+            )
             assert session["link_dict"][list(session["link_dict"].keys())[-1]] == {
-                "A": "B"
+                "base_question_id": "B"
             }
 
     def test_post_finalize(self, client, question_linker_payload, sql_utils):
@@ -133,4 +136,4 @@ class TestReviewRoutes:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_post_link"])
+    pytest.main([__file__, "-sk", "test_post_finalize"])

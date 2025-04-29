@@ -192,7 +192,10 @@ class PIRLinker:
         )
 
         # Drop cases where year is equal or uqid is equal
-        if self._unique_question_id == "question_id" and not df.empty:
+        if df.empty:
+            self._cross = df
+            return self
+        elif self._unique_question_id == "question_id":
             self._cross = df[df["year_x"] != df["year_y"]]
 
             if self._cross["uqid_x"].unique().tolist()[0] is not None:

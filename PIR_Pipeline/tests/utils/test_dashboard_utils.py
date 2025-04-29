@@ -311,7 +311,7 @@ class TestQuestionLinker:
             record = result.one()
 
             assert record[5] == 1, f"Flag is False: {record[5]}"
-            assert record[2] is None, f"Record has a question_id: {record[2]}"
+            assert record[2] == base_qid, f"Incorrect question_id: {record[2]}"
             assert record[4] is None, f"Record has a new_uqid: {record[4]}"
 
 

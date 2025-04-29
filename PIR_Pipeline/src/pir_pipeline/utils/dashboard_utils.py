@@ -50,7 +50,7 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
 
     # Get matches
     linker = PIRLinker(records, db)
-    if payload["record"]["uqid"]:
+    if payload["record"].get("uqid"):
         linker._unique_question_id = "uqid"
 
     matches = linker.fuzzy_link(5)

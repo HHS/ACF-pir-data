@@ -127,4 +127,4 @@ class TestPIRLinker:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-s", "-vv", "-k", "test_fuzzy_link"])
+    pytest.main([__file__, "-s", "-vv", "-k", "test_update_unlinked"])

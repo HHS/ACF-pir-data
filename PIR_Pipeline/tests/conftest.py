@@ -409,7 +409,7 @@ def question_linker_payload():
         },
         "5": {
             "link_type": "confirm",
-            "base_question_id": None,
+            "base_question_id": "0008a5809edbdca1d1141ea1f2eb8dfa",
             "base_uqid": "5512c4f54e3ace4484e59cdc48976761",
             "match_question_id": None,
             "match_uqid": None,
