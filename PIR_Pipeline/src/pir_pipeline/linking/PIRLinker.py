@@ -108,6 +108,25 @@ class PIRLinker:
 
         return self
 
+    def consolidate_uqids(self) -> Self:
+        df = self._data
+        unique_columns = ["question_name", "question_text", "section", "question_type"]
+        modal_uqid = (
+            df[df["uqid"].notna()]
+            .groupby(unique_columns)[["uqid"]]
+            .apply(lambda x: x.mode())
+            .reset_index()
+        )
+        modal_uqid = modal_uqid[~modal_uqid[unique_columns].duplicated()]
+        df = df.merge(modal_uqid, how="left", on=unique_columns, validate="many_to_one")
+
+        df["uqid"] = df["uqid_y"].combine_first(df["uqid_x"])
+        df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
+
+        df.replace({np.nan: None}, inplace=True)
+        self._data = df
+        self._data = self._data[self._question_columns]
+
     def direct_link(self) -> Self:
         """Make a direct link on question_id
 
@@ -368,10 +387,8 @@ class PIRLinker:
         uqid_dict = {}
         df["uqid"] = df.apply(lambda row: self.gen_uqid(row, uqid_dict), axis=1)
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
-
-        df.replace({np.nan: None}, inplace=True)
         self._data = df
-        self._data = self._data[self._question_columns]
+        self.consolidate_uqids()
 
         self._logger.info("Records prepared for insertion.")
 
@@ -437,7 +454,7 @@ class PIRLinker:
 
 
 if __name__ == "__main__":
-    sql_alchemy = SQLAlchemyUtils(**DB_CONFIG, database="pir")
+    sql_alchemy = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
     records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"
     )
