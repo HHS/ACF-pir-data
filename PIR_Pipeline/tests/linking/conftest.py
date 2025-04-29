@@ -15,14 +15,14 @@ def question_records():
         },
         "year": {i: 2008 + (i % 2) for i in range(10)},
         "uqid": {i: None for i in range(10)},
-        "category": {i: "" for i in range(10)},
-        "question_name": {i: "" for i in range(10)},
-        "question_number": {i: "" for i in range(10)},
+        "category": {i: None for i in range(10)},
+        "question_name": {i: None for i in range(10)},
+        "question_number": {i: None for i in range(10)},
         "question_order": {i: 0.0 for i in range(10)},
-        "question_text": {i: "" for i in range(10)},
-        "question_type": {i: "" for i in range(10)},
-        "section": {i: "" for i in range(10)},
-        "subsection": {i: "" for i in range(10)},
+        "question_text": {i: None for i in range(10)},
+        "question_type": {i: None for i in range(10)},
+        "section": {i: None for i in range(10)},
+        "subsection": {i: None for i in range(10)},
     }
     records = pd.DataFrame.from_dict(question_db).to_dict(orient="records")
     return records
