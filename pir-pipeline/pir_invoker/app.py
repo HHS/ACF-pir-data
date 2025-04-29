@@ -3,6 +3,7 @@ import os
 import time
 
 import boto3
+from sqlalchemy import select
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -28,24 +29,36 @@ def lambda_handler(event, context):
     try:
         bucket = event['Records'][0]['s3']['bucket']['name']
         prefix = "input"
-        list_objects = s3.list_objects(Bucket=bucket, Prefix=prefix)
-        objects = list_objects["Contents"]
-        
-        for object in objects:
-            ingestor_event = {"Bucket": bucket, "Key": object["Key"]}
-            lmda.invoke(FunctionName="pir-pipeline-PIRIngestor-B8bZy9dFaMaS", InvocationType="Event", Payload=json.dumps(ingestor_event).encode("utf-8"))
 
-        # Wait until all objects are processed by Ingestor
         bucket_has_objects = True
         while_init_time = time.time()
+        processed = []
+        iteration = 0
+        
         while bucket_has_objects:
+            # Check for objects in the bucket
             list_objects = s3.list_objects(Bucket=bucket, Prefix=prefix)
-            objects = list_objects["Contents"]
-            time_elapsed = time.time() - while_init_time
-            if len(objects) == 1 and objects[0]["Key"] == f"{bucket}/":
+            try:
+                # If objects are present, process them using the ingestor
+                objects = list_objects["Contents"]
+                for object in objects:
+                    if object["Key"] not in processed:
+                        ingestor_event = {"Bucket": bucket, "Key": object["Key"]}
+                        lmda.invoke(FunctionName="pir-pipeline-PIRIngestor-B8bZy9dFaMaS", InvocationType="Event", Payload=json.dumps(ingestor_event).encode("utf-8"))
+                        processed.append(object["Key"])
+                        
+                iteration += 1
+            except KeyError:
+                # If no objects are present, continue to linking or exit
                 bucket_has_objects = False
                 
-                records = sql_utils.get_records("SELECT * FROM unlinked").to_dict(
+                if iteration == 0:
+                    message = "Bucket has no objects"
+                    return {"message": message}
+            
+            time_elapsed = time.time() - while_init_time
+            if not bucket_has_objects:              
+                records = sql_utils.get_records(select(sql_utils.tables["unlinked"])).to_dict(
                     orient="records"
                 )
                 PIRLinker(records, sql_utils).link().update_unlinked()
