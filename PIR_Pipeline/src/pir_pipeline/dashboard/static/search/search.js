@@ -1,6 +1,7 @@
-import { updateTable, rowToJSON, updateFlashcardTables, storeLink } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildReviewTable } from "../utilities.js";
 
 const searchForm = document.getElementById("search-form");
+const modalSearchForm = document.getElementById("modal-search-form");
 const searchModal = document.getElementById("search-modal");
 
 searchForm.addEventListener("submit", async (e) => {
@@ -21,6 +22,21 @@ searchForm.addEventListener("submit", async (e) => {
     updateTable(e);
 })
 
+modalSearchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!document.getElementById("modal-keyword-search").value) {
+        return;
+    };
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const table = document.getElementById("flashcard-matches-table");
+
+    fetch("/search", { "method": "POST", "body": formData })
+        .then(response => response.json())
+        .then(data => buildReviewTable(data, table))
+})
+
 function getFlashcardData(e) {
     e.preventDefault();
     const element = e.target;
@@ -31,10 +47,10 @@ function getFlashcardData(e) {
     searchModal.setAttribute("open", "true");
     searchModal.removeAttribute("hidden");
 
-    fetch("/search/data", { 
-        "method": "POST", 
-        "headers": { "Content-type": "application/json" }, 
-        "body": JSON.stringify(rowRecord) 
+    fetch("/search/data", {
+        "method": "POST",
+        "headers": { "Content-type": "application/json" },
+        "body": JSON.stringify(rowRecord)
     })
         .then(response => response.json())
         .then(data => updateFlashcardTables(data))
@@ -60,8 +76,8 @@ function commitChanges(e) {
 
 // Observe the modal and remove content if it is closed
 // Adapted from https://stackoverflow.com/questions/41424989/javascript-listen-for-attribute-change
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
+const observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (mutation) {
         if (mutation.type === "attributes") {
             if (mutation.attributeName == "open" && mutation.oldValue == "true") {
                 const tables = searchModal.getElementsByTagName("table");
