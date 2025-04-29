@@ -30,6 +30,7 @@ def lambda_handler(event, context):
         bucket = event["Bucket"]
         PIRIngestor(key, sql_utils).ingest()
         s3.copy(event, bucket, key.replace("input", "processed"))
+        s3.delete_object(Bucket=bucket, Key=key)
         return {"message": "Success"}
     except Exception as e:
         print(e)
