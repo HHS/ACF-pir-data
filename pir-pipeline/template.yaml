@@ -57,6 +57,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:CopyObject
+                  - s3:DeleteObject
                 Resource: "*"
               - Effect: Allow
                 Action:
@@ -67,6 +68,16 @@ Resources:
                   - ec2:DescribeSecurityGroups
                   - ec2:DescribeVpcs
                   - ec2:AttachNetworkInterface
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
                 Resource: "*"
 
   PIRInvoker:
@@ -92,6 +103,17 @@ Resources:
               Ref: S3Bucket
             Events: "s3:ObjectCreated:*"
       Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds:
+          - subnet-05a4beee2caec0250
+          - subnet-000610402911cfbea
+          - subnet-06b2240ad98c370b1
+        SecurityGroupIds:
+          - sg-0d4e6531d12ef234f
+      Policies: 
+        - LambdaInvokePolicy:
+            FunctionName:
+              !Ref PIRIngestor
       
   PIRIngestor:
     Type: AWS::Serverless::Function
@@ -109,6 +131,13 @@ Resources:
           DB_PASSWORD: !Ref DBPassword
           DB_NAME: !Ref DBName
       Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds:
+          - subnet-05a4beee2caec0250
+          - subnet-000610402911cfbea
+          - subnet-06b2240ad98c370b1
+        SecurityGroupIds:
+          - sg-0d4e6531d12ef234f
 
   S3Bucket:
     Type: AWS::S3::Bucket
