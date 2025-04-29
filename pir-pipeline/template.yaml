@@ -110,10 +110,6 @@ Resources:
           - subnet-06b2240ad98c370b1
         SecurityGroupIds:
           - sg-0d4e6531d12ef234f
-      Policies: 
-        - LambdaInvokePolicy:
-            FunctionName:
-              !Ref PIRIngestor
       
   PIRIngestor:
     Type: AWS::Serverless::Function
