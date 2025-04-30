@@ -79,16 +79,23 @@ Resources:
                 Action:
                   - lambda:InvokeFunction
                 Resource: "*"
-
-  PIRInvoker:
+              - Effect: Allow
+                Action:
+                  - events:PutTargets
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:DescribeRule
+                Resource: '*'
+     
+  PIRIngestor:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: pir_invoker/
+      CodeUri: pir_ingestor/
       Handler: app.lambda_handler
       Runtime: python3.12
       Timeout: 600
       MemorySize: 2048
-      ReservedConcurrentExecutions: 1
+      ReservedConcurrentExecutions: 2
       Environment:
         Variables:
           DB_USER: !Ref DBUser
@@ -116,11 +123,11 @@ Resources:
           - subnet-06b2240ad98c370b1
         SecurityGroupIds:
           - sg-0d4e6531d12ef234f
-      
-  PIRIngestor:
+    
+  PIRLinker:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: pir_ingestor/
+      CodeUri: pir_linker/
       Handler: app.lambda_handler
       Runtime: python3.12
       Timeout: 600
@@ -140,6 +147,17 @@ Resources:
           - subnet-06b2240ad98c370b1
         SecurityGroupIds:
           - sg-0d4e6531d12ef234f
+
+  # Adapted from GPT
+  LambdaInvokeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: LambdaInvokeEvery30Minutes
+      ScheduleExpression: cron(0/30 * * * ? *)
+      State: DISABLED
+      Targets:
+        - Arn: !GetAtt PIRLinker.Arn
+          Id: TargetFunction
 
   S3Bucket:
     Type: AWS::S3::Bucket
