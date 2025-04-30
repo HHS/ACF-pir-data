@@ -144,6 +144,10 @@ form#finished-button {
     border-color: var(--secondary);
 }
 
+.accordion-button {
+    background-color: transparent;
+}
+
 /* Card customization */
 .card {
     background-color: #fff;
@@ -213,8 +217,8 @@ div.card-body {
     border: 1px solid var(--secondary); 
 }
 
-tr[class*=" collapsible-row-"] {
-    background: grey;
+tr[class *= "collapsible-row"]>td {
+    background: #F9F9F9;
 }
 
 /* Card styling */
