@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildReviewTable } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildReviewTable, expandContractRow } from "../utilities.js";
 
 const searchForm = document.getElementById("search-form");
 const modalSearchForm = document.getElementById("modal-search-form");
@@ -97,3 +97,4 @@ observer.observe(searchModal, {
 document.getFlashcardData = getFlashcardData;
 document.storeLink = storeLink;
 document.commitChanges = commitChanges;
+document.expandContractRow = expandContractRow;

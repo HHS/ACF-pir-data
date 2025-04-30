@@ -290,6 +290,8 @@ function buildSearchTable(data, table = document.createElement("table")) {
                 expandButton.setAttribute("aria-controls", expandValue);
             }
             else {
+                row.setAttribute("onclick", "expandContractRow(event)");
+
                 if (row_data["year"].match(",|-")) {
                     accordionDiv.appendChild(expandButton);
                 }
@@ -497,7 +499,6 @@ function storeLink(event) {
         let row = matchRows[i];
         row = document.getElementById(row.id);
         if (row.className.match("accordion-collapse")) {
-            console.log(row);
             row.className = "";
         }
         let button = row.getElementsByTagName("svg");
@@ -522,6 +523,18 @@ function storeLink(event) {
     };
 }
 
+function expandContractRow(event) {
+    var element = event.srcElement;
+    if (element.tagName == "TD") {
+        element = element.closest("tr");
+    }
+    const expandButton = element.getElementsByClassName("accordion-button");
+
+    if (expandButton[0]) {
+        expandButton[0].click()
+    };
+}
+
 export {
     buildTable,
     updateTable,
@@ -530,5 +543,6 @@ export {
     rowToJSON,
     updateFlashcardTables,
     storeLink,
-    buildReviewTable
+    buildReviewTable,
+    expandContractRow
 }
