@@ -93,7 +93,7 @@ Resources:
       CodeUri: pir_ingestor/
       Handler: app.lambda_handler
       Runtime: python3.12
-      Timeout: 600
+      Timeout: 900
       MemorySize: 2048
       ReservedConcurrentExecutions: 2
       Environment:
@@ -130,7 +130,7 @@ Resources:
       CodeUri: pir_linker/
       Handler: app.lambda_handler
       Runtime: python3.12
-      Timeout: 600
+      Timeout: 300
       MemorySize: 2048
       Environment:
         Variables:
