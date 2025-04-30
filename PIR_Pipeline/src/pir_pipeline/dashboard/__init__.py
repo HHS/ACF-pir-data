@@ -9,7 +9,7 @@ def create_app(test_config=None, **kwargs):
     app.config.from_mapping(SECRET_KEY="dev")
 
     if test_config is None:
-        app.config.from_pyfile("config.py", silent=True)
+        app.config.from_pyfile("test_config.py", silent=True)
     else:
         app.config.from_mapping(test_config)
 

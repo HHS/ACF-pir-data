@@ -325,7 +325,12 @@ function updateFlashcardTables(data) {
     const matchesTable = document.getElementById("flashcard-matches-table");
 
     if (Object.keys(data["matches"]).length === 0) {
+        // When no matches are found render a message
+        try {
+            matchesTable.innerHTML = "No suitable matches found. Try searching instead."
+        } catch {
 
+        }
     } else if (matchesTable) {
         var matches = buildReviewTable(data["matches"], matchesTable);
     } else {

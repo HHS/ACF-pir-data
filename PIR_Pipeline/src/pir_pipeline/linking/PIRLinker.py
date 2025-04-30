@@ -284,7 +284,13 @@ class PIRLinker:
             ), self._logger.error(
                 f"Number of matches should be an integer greater than 0, not {num_matches}"
             )
-            self.join_on_type_and_section("data")
+            try:
+                self.join_on_type_and_section("data")
+            except AssertionError as e:
+                if self._cross.empty:
+                    return pd.DataFrame(columns=self._original_columns)
+
+                raise e
 
         # Add similarity score variables
         for column in ["question_name", "question_number", "question_text"]:
