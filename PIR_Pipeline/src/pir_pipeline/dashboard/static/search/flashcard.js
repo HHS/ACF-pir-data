@@ -1,9 +1,10 @@
-import { rowToJSON, updateFlashcardTables, storeLink } from "../utilities.js";
+import { rowToJSON, updateFlashcardTables, storeLink, buildReviewTable } from "../utilities.js";
 
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
 
 async function buildFlashcardPage() {
     const rowRecord = sessionStorage.getItem("flashcardData");
+    sessionStorage.removeItem("flashcardData");
     const rowRecordJson = JSON.parse(rowRecord);
 
     const reviewTypeInput = document.getElementById("review-type-input");
@@ -21,12 +22,11 @@ async function flashcardAction(e) {
         
     const questionTable = document.getElementById("flashcard-question-table");
     let baseRecord = rowToJSON(questionTable.getElementsByTagName("tr")[1]);
+
     const linkDetails = {
         "link_type": value,
         "base_question_id": baseRecord.question_id,
-        "base_uqid": baseRecord.uqid,
         "match_question_id": null,
-        "match_uqid": null
     }
 
     const payload = {
@@ -45,6 +45,22 @@ async function flashcardAction(e) {
     window.history.back()
 
 }
+
+const searchForm = document.getElementById("search-form")
+searchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!document.getElementById("keyword-search").value) {
+        return;
+    };
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const table = document.getElementById("flashcard-matches-table");
+
+    fetch("/search", {"method": "POST", "body": formData})
+    .then(response => response.json())
+    .then(data => buildReviewTable(data, table))
+})
 
 document.storeLink = storeLink;
 document.updateFlashcardTables = updateFlashcardTables;
