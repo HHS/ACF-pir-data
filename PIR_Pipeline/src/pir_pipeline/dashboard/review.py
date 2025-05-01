@@ -176,10 +176,10 @@ def link():
     """Handle storage of link/unlink actions"""
     payload = request.get_json()
     action = payload["action"]
-    data = payload["data"]
 
     # Add a link/unlink entry to session
     if action == "build":
+        data = payload["data"]
         link_dict = session.get("link_dict")
         dict_id = f"{data["base_question_id"]}{data.get("match_question_id", "") if data.get("match_question_id") else ""}"
         dict_id = md5(dict_id.encode("utf-8")).hexdigest()

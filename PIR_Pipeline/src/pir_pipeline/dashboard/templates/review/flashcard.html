@@ -1,24 +1,11 @@
 {% extends "base.html" %}
 
 {% block header %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/review.css') }}">
     <h1 class="page-title">{% block title %}Review{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-    <div class="form-parent">
-        <div class="form-container left">
-            <form id="flashcard-buttons" onsubmit="flashcardAction(event)">
-                    <button class="btn btn-primary" type="submit" name="action" value="previous">Previous</button>
-                    <button class="btn btn-primary" type="submit" name="action" value="confirm">Mark Complete</button>
-                    <button class="btn btn-primary" type="submit" name="action" value="next">Next</button>
-            </form>
-        </div>
-        <div class="form-container right">
-            <form id="finished-button" method="post">
-                    <button class="btn btn-primary" type="submit" name="action" value="finish">Finish</button>
-            </form>
-        </div>
-    </div>
     <div class="table-box">
         <table id="flashcard-question-table" class="table table-hover">
         </table>
@@ -41,4 +28,23 @@
 
 {% block scripts %}
     <script type="module" src="{{ url_for('static', filename='review/flashcard.js') }}"></script>
+    <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/button.min.js"></script>
+{% endblock %}
+
+{% block footer %}
+    <div class="footer">
+        <div class="form-parent">
+            <div class="form-container left">
+                <form id="flashcard-buttons" onsubmit="flashcardAction(event)">
+                    <button class="wrapper-button" type="submit" name="action" value="previous"><cds-button kind="secondary">Previous</cds-button></button>
+                    <button class="wrapper-button" type="submit" name="action" value="next"><cds-button kind="secondary">Next</cds-button></button>
+                </form>
+            </div>
+            <div class="form-container right">
+                <form id="finished-button" onsubmit="flashcardAction(event)">
+                    <button class="wrapper-button" type="submit" name="action" value="confirm"><cds-button kind="primary">Confirm</cds-button></button>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}

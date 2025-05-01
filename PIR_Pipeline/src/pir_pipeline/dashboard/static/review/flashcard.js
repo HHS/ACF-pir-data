@@ -29,6 +29,7 @@ function buildFlashcardPage() {
 
 async function flashcardAction(e) {
     e.preventDefault();
+    console.log(e)
     const form = e.target;
     const formData = new FormData(form);
     const name = e.submitter.name;
@@ -43,7 +44,7 @@ async function flashcardAction(e) {
             "match_question_id": null
         }
 
-        const payload = {
+        let payload = {
             "action": "build",
             "data": linkDetails
         }
@@ -55,6 +56,19 @@ async function flashcardAction(e) {
             },
             "body": JSON.stringify(payload)
         })
+
+        payload = {
+            "action": "finalize"
+        }
+
+        await fetch("/review/link", {
+            "method": "POST",
+            "headers": {
+                "Content-type": "application/json"
+            },
+            "body": JSON.stringify(payload)
+        })
+
         value = "next";
     }
     formData.append(name, value);
