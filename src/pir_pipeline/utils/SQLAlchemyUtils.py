@@ -246,7 +246,7 @@ class SQLAlchemyUtils(SQLUtils):
         upsert_columns = [column.lower() for column in upsert_columns]
 
         # If there are more than 20000 records, ingest in batches
-        batch_size = 40000
+        batch_size = 80000
         if len(records) > batch_size:
             num_records = len(records)
             # Logic sourced from Microsoft Copilot
