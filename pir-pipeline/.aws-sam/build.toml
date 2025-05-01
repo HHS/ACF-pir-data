@@ -5,7 +5,7 @@ codeuri = "/home/reggie.gilliard@acf.hhs.local/repos/ohsdata/pir-pipeline/pir_in
 runtime = "python3.12"
 architecture = "x86_64"
 handler = "app.lambda_handler"
-manifest_hash = "ee960ae7fabde4c416daffe6e5b80f92"
+manifest_hash = "8ec5b057edb78d78ade9fd7f12604c6b"
 packagetype = "Zip"
 functions = ["PIRIngestor"]
 
@@ -14,7 +14,7 @@ codeuri = "/home/reggie.gilliard@acf.hhs.local/repos/ohsdata/pir-pipeline/pir_li
 runtime = "python3.12"
 architecture = "x86_64"
 handler = "app.lambda_handler"
-manifest_hash = "ee960ae7fabde4c416daffe6e5b80f92"
+manifest_hash = "8ec5b057edb78d78ade9fd7f12604c6b"
 packagetype = "Zip"
 functions = ["PIRLinker"]
 
