@@ -504,7 +504,7 @@ function storeLink(event) {
         let row = matchRows[i];
         row = document.getElementById(row.id);
         if (row.className.match("accordion-collapse")) {
-            row.className = "";
+            row.className = row.className + " show";
         }
         let button = row.getElementsByTagName("svg");
         if (linkType == "link") {
