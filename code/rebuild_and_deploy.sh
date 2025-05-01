@@ -1,5 +1,5 @@
 # Activate virtual environment
-source .sam_venv/bin/activate
+source venv/bin/activate
 
 # Rebuild python package
 python3.12 -m build --wheel
