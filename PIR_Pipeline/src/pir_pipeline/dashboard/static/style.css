@@ -144,6 +144,10 @@ form#finished-button {
     border-color: var(--secondary);
 }
 
+.accordion-button {
+    background-color: transparent;
+}
+
 /* Card customization */
 .card {
     background-color: #fff;
@@ -171,7 +175,7 @@ section {
 
 section#tables {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
 }
 
 /* Additions */
@@ -191,6 +195,7 @@ h1.page-title {
 
 div.card-body {
     padding: 1em;
+    display: flex;
 }
 
 .table-box {
@@ -213,8 +218,8 @@ div.card-body {
     border: 1px solid var(--secondary); 
 }
 
-tr[class*=" collapsible-row-"] {
-    background: grey;
+tr[class *= "collapsible-row"]>td {
+    background: #F9F9F9;
 }
 
 /* Card styling */
@@ -225,11 +230,29 @@ tr[class*=" collapsible-row-"] {
 
 .card-body {
     text-align: center;
-    font-size: 32px;
+    font-size: 16px;
 }
 
 .card-container {
     display: flex;
     align-items: center;
     flex-direction: column;
+}
+
+div.information {
+    width: 25%;
+}
+
+div.information-block {
+    padding: .2em;
+    margin: .5em;
+}
+
+div.information-block > p {
+    font-size: 12px;
+    text-align: start;
+}
+
+div.information-block > h4 {
+    text-align: start;
 }

@@ -6,7 +6,7 @@ from typing import Self
 import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
-from sqlalchemy import bindparam
+from sqlalchemy import bindparam, select
 
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -211,7 +211,10 @@ class PIRLinker:
         )
 
         # Drop cases where year is equal or uqid is equal
-        if self._unique_question_id == "question_id" and not df.empty:
+        if df.empty:
+            self._cross = df
+            return self
+        elif self._unique_question_id == "question_id":
             self._cross = df[df["year_x"] != df["year_y"]]
 
             if self._cross["uqid_x"].unique().tolist()[0] is not None:
@@ -219,7 +222,15 @@ class PIRLinker:
                     self._cross["uqid_x"] != self._cross["uqid_y"]
                 ]
         else:
-            self._cross = df[df["uqid_x"] != df["uqid_y"]]
+            question_table = self._sql.tables["question"]
+            years = self._sql.get_records(
+                select(question_table.c["year"])
+                .where(question_table.c["uqid"] == bindparam("uqid"))
+                .distinct(),
+                {"uqid": df["uqid_x"].unique()[0]},
+            )["year"].tolist()
+            self._cross = df[df["year_y"].map(lambda x: x not in years)]
+            self._cross = self._cross[self._cross["uqid_x"] != self._cross["uqid_y"]]
 
         # Remove cases where unique_question_id combination is duplicated
         if len(unique_ids) == 1:
@@ -273,7 +284,13 @@ class PIRLinker:
             ), self._logger.error(
                 f"Number of matches should be an integer greater than 0, not {num_matches}"
             )
-            self.join_on_type_and_section("data")
+            try:
+                self.join_on_type_and_section("data")
+            except AssertionError as e:
+                if self._cross.empty:
+                    return pd.DataFrame(columns=self._original_columns)
+
+                raise e
 
         # Add similarity score variables
         for column in ["question_name", "question_number", "question_text"]:

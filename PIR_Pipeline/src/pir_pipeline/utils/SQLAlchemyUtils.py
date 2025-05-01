@@ -299,6 +299,18 @@ class SQLAlchemyUtils(SQLUtils):
 
         return data
 
+    def get_scalar(self, query: str | Select, records: dict):
+        """Return a scalar from a query
+
+        Args:
+            query (str|Select): A query to execute
+            records (dict): A dictionary containing parameters to match
+        """
+
+        with self.engine.connect() as conn:
+            result = conn.execute(query, records)
+            return result.scalar()
+
 
 if __name__ == "__main__":
     SQLAlchemyUtils(

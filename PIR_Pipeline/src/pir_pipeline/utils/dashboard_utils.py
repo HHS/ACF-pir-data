@@ -49,7 +49,11 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
         return []
 
     # Get matches
-    matches = PIRLinker(records, db).fuzzy_link(5)
+    linker = PIRLinker(records, db)
+    if payload["record"].get("uqid"):
+        linker._unique_question_id = "uqid"
+
+    matches = linker.fuzzy_link(5)
     matches = matches[payload["record"].keys()]
 
     records = matches.to_dict(orient="records")
@@ -148,13 +152,14 @@ def get_search_results(
                 header = conn.execute(header_row_query, {id_column: ident})
                 header_row = header.one()
                 header_row = {key: header_row[i] for i, key in enumerate(header.keys())}
-                header_row.update(
-                    {
-                        "year": get_year_range(
-                            table, ("question_id", header_row["question_id"]), db
-                        )
-                    }
-                )
+
+                if header_row.get("uqid"):
+                    id_tuple = ("uqid", header_row["uqid"])
+                else:
+                    id_tuple = ("question_id", header_row["question_id"])
+
+                header_row.update({"year": get_year_range(table, id_tuple, db)})
+
                 if header_row["year"].find("-|,") > -1:
                     search_dict[ident] = [header_row, result_dict]
                 else:
@@ -282,23 +287,26 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
         years = result.scalars().all()
 
     years = sorted(years)
+    if len(years) == 1:
+        return str(years[0])
+
     str_years = []
     prev_year = None
-    contiguous = 1
+    year_list = []
     for year in years:
-        if prev_year is None:
-            pass
-        elif prev_year != year - 1:
-            contiguous = 0
+        if prev_year == year - 1:
+            year_list.append(str(year))
+        else:
+            year_list = [str(year)]
+            str_years.append(year_list)
 
-        str_years.append(str(year))
+        prev_year = year
 
-    if len(years) == 1:
-        output = str(years[0])
-    elif contiguous:
-        output = f"{min(years)} - {max(years)}"
-    else:
-        output = ", ".join(str_years)
+    output = [
+        "-".join((item[0], item[-1])) if len(item) > 1 else item[0]
+        for item in str_years
+    ]
+    output = ", ".join(output)
 
     return output
 
@@ -332,10 +340,23 @@ class QuestionLinker:
 
     def get_ids(self):
         """Return the ids from the present record"""
-        base_uqid = self._record.get("base_uqid")
+        question = self._db.tables["question"]
+
         base_qid = self._record.get("base_question_id")
-        match_uqid = self._record.get("match_uqid")
         match_qid = self._record.get("match_question_id")
+
+        base_uqid = self._db.get_scalar(
+            select(question.c["uqid"]).where(
+                question.c["question_id"] == bindparam("question_id")
+            ),
+            {"question_id": base_qid},
+        )
+        match_uqid = self._db.get_scalar(
+            select(question.c["uqid"]).where(
+                question.c["question_id"] == bindparam("question_id")
+            ),
+            {"question_id": match_qid},
+        )
 
         return base_qid, base_uqid, match_qid, match_uqid
 
@@ -528,19 +549,9 @@ class QuestionLinker:
 if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
-    db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_matches(
-        {
-            "record": {
-                "question_id": "798c68eddccc058290e91ec452e8dbce",
-                "year": 2012,
-                "uqid": "bd9386d82a8a1654f05ad59a92349330",
-                "question_name": "Visual Impairment Received Services",
-                "question_number": "C.27.g-2",
-                "question_text": "Visual impairment, including blindness - # of children receiving special services",
-                "question_type": "Number",
-                "section": "C",
-            }
-        },
-        db,
+    db = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
+    print(
+        get_year_range(
+            db.tables["question"], ("uqid", "903863a832c884bdf311237ed570c44d"), db
+        )
     )
