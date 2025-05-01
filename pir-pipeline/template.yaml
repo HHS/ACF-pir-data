@@ -154,10 +154,17 @@ Resources:
     Properties:
       Name: LambdaInvokeEvery30Minutes
       ScheduleExpression: cron(0,30 * * * ? *)
-      State: ENABLED
+      State: DISABLED
       Targets:
         - Arn: !GetAtt PIRLinker.Arn
           Id: TargetFunction
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PIRLinker
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
 
   S3Bucket:
     Type: AWS::S3::Bucket
