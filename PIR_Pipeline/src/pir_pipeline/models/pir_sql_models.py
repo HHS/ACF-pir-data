@@ -10,8 +10,9 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    and_,
     func,
+    null,
+    or_,
     select,
 )
 
@@ -116,42 +117,6 @@ linked = view(
     "linked", sql_metadata, select(question).where(question.c.uqid.is_not(None))
 )
 
-# Intermittent link view
-year_query = select(func.count(func.distinct(question.c.year))).scalar_subquery()
-uqid_query = (
-    select(question.c.uqid)
-    .group_by(question.c.uqid)
-    .having(func.count(question.c.uqid) < year_query)
-)
-query = (
-    select(question)
-    .where(
-        and_(
-            question.c.uqid.in_(uqid_query), question.c.uqid.not_in(confirmed_subquery)
-        )
-    )
-    .distinct()
-)
-
-intermittent = view("intermittent", sql_metadata, query)
-
-# Inconsistent link view
-subquery = select(linked.c.question_id, linked.c.uqid).distinct().subquery()
-right = (
-    select(subquery.c.uqid)
-    .group_by(subquery.c.uqid)
-    .having(func.count(subquery.c.question_id) > 1)
-    .subquery()
-)
-query = (
-    select(linked)
-    .join(right, linked.c.uqid == right.c.uqid)
-    .distinct()
-    .where(question.c.uqid.not_in(confirmed_subquery))
-)
-
-inconsistent = view("inconsistent", sql_metadata, query)
-
 # Confirmed view
 query = (
     select(question)
@@ -165,7 +130,7 @@ confirmed = view("confirmed", sql_metadata, query)
 # Unconfirmed view
 query = (
     select(question)
-    .where(question.c.uqid.not_in(confirmed_subquery))
+    .where(or_(question.c.uqid.not_in(confirmed_subquery), question.c.uqid == null()))
     .distinct()
     .order_by(question.c.year, question.c.question_number)
 )
