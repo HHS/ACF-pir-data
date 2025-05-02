@@ -6,11 +6,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
+
 @pytest.fixture
 def driver():
     driver = webdriver.Firefox()
     yield driver
     driver.quit()
+
 
 def test_search_results_exist(driver):
     driver.get("http://127.0.0.1:5000/search/")
@@ -68,22 +70,28 @@ def test_edit_search_results_exist(driver):
         except:
             continue
 
-    assert matched_row is not None, f"No row found with question_id = {question_id_value}"
+    assert (
+        matched_row is not None
+    ), f"No row found with question_id = {question_id_value}"
 
     # Click the edit button inside that matched row
-    edit_button = matched_row.find_element(By.XPATH, './/button[@onclick="getFlashcardData(event)"]')
+    edit_button = matched_row.find_element(
+        By.XPATH, './/button[@onclick="getFlashcardData(event)"]'
+    )
     edit_button.click()
 
     # Wait for the modal to become visible
     try:
         WebDriverWait(driver, 10).until(
-            lambda d: d.find_element(By.ID, "search-modal").get_attribute("hidden") is None
+            lambda d: d.find_element(By.ID, "search-modal").get_attribute("hidden")
+            is None
         )
         modal_visible = True
     except TimeoutException:
         modal_visible = False
 
     assert modal_visible, "Edit modal did not appear after clicking Edit button."
+
 
 def test_storelink_button_effect(driver):
     driver.get("http://127.0.0.1:5000/search/")
@@ -104,7 +112,12 @@ def test_storelink_button_effect(driver):
     )
 
     edit_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, '//table[@id="search-results-table"]//button[@onclick="getFlashcardData(event)"]'))
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//table[@id="search-results-table"]//button[@onclick="getFlashcardData(event)"]',
+            )
+        )
     )
     edit_button.click()
 
@@ -122,16 +135,24 @@ def test_storelink_button_effect(driver):
 
     # Click the storeLink button in the first row
     storelink_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]'))
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]',
+            )
+        )
     )
     storelink_button.click()
 
     # Count rows again after clicking
     rows_after = count_modal_rows()
     print(f"Rows after clicking storeLink: {rows_after}")
-    print(rows_after == rows_before-1)
+    print(rows_after == rows_before - 1)
     # Final assertion or output
-    assert rows_after == rows_before-1, "Row count did not change after clicking storeLink."
+    assert (
+        rows_after == rows_before - 1
+    ), "Row count did not change after clicking storeLink."
+
 
 def test_storelink_button_x_effect(driver):
     driver.get("http://127.0.0.1:5000/search/")
@@ -152,7 +173,12 @@ def test_storelink_button_x_effect(driver):
     )
 
     edit_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, '//table[@id="search-results-table"]//button[@onclick="getFlashcardData(event)"]'))
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//table[@id="search-results-table"]//button[@onclick="getFlashcardData(event)"]',
+            )
+        )
     )
     edit_button.click()
 
@@ -163,27 +189,40 @@ def test_storelink_button_x_effect(driver):
 
     # Click the storeLink button in the first row
     storelink_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]'))
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]',
+            )
+        )
     )
     storelink_button.click()
 
     # Count rows in modal table before clicking storeLink
     def count_modal_rows():
-        return len(driver.find_elements(By.CSS_SELECTOR, "#flashcard-question-table tr"))
+        return len(
+            driver.find_elements(By.CSS_SELECTOR, "#flashcard-question-table tr")
+        )
 
     rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
     print(f"Rows before clicking storeLink: {rows_before}")
 
     # Click the storeLink button in the first row
     storelink_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, '//tr[@id="collapse-flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]'))
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//tr[@id="collapse-flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
+            )
+        )
     )
     storelink_button.click()
-     
+
     # Count rows again after clicking
     rows_after = count_modal_rows()
     print(f"Rows after clicking storeLink: {rows_after}")
-    print(rows_after == rows_before-1)
+    print(rows_after == rows_before - 1)
     # Final assertion or output
-    assert rows_after == rows_before-1, "Row count did not change after clicking storeLink."
-
+    assert (
+        rows_after == rows_before - 1
+    ), "Row count did not change after clicking storeLink."
