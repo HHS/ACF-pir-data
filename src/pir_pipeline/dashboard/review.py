@@ -194,7 +194,7 @@ def link():
             link_dict = OrderedDict({dict_id: data})
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
-        print(session["link_dict"])
+
     # Execute all linking actions
     elif action == "finalize":
         db = get_db()

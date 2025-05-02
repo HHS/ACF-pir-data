@@ -1,15 +1,30 @@
+import hashlib
 import os
 
 from flask import Flask
+from flask.sessions import SecureCookieSessionInterface
+from itsdangerous import URLSafeTimedSerializer
 
+
+# Adapted from GPT 4.0
+class CustomSessionInterface(SecureCookieSessionInterface):
+    def get_signing_serializer(self, app):
+        return URLSafeTimedSerializer(
+            app.secret_key, 
+            salt="cookie-session", 
+            serializer=None, 
+            signer_kwargs={"digest_method": hashlib.sha256}
+        )
 
 # Adapted from https://flask.palletsprojects.com/en/stable/tutorial/
 def create_app(test_config=None, **kwargs):
     app = Flask(__name__, instance_relative_config=True, **kwargs)
-    app.config.from_mapping(SECRET_KEY="dev")
+    app.secret_key = "dev"
+    app.session_interface = CustomSessionInterface()
+
 
     if test_config is None:
-        app.config.from_pyfile("test_config.py", silent=True)
+        app.config.from_pyfile("config.py", silent=True)
     else:
         app.config.from_mapping(test_config)
 
