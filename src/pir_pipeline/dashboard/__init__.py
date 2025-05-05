@@ -10,18 +10,18 @@ from itsdangerous import URLSafeTimedSerializer
 class CustomSessionInterface(SecureCookieSessionInterface):
     def get_signing_serializer(self, app):
         return URLSafeTimedSerializer(
-            app.secret_key, 
-            salt="cookie-session", 
-            serializer=None, 
-            signer_kwargs={"digest_method": hashlib.sha256}
+            app.secret_key,
+            salt="cookie-session",
+            serializer=None,
+            signer_kwargs={"digest_method": hashlib.sha256},
         )
+
 
 # Adapted from https://flask.palletsprojects.com/en/stable/tutorial/
 def create_app(test_config=None, **kwargs):
     app = Flask(__name__, instance_relative_config=True, **kwargs)
     app.secret_key = "dev"
     app.session_interface = CustomSessionInterface()
-
 
     if test_config is None:
         app.config.from_pyfile("config.py", silent=True)

@@ -55,9 +55,13 @@ class TestSQLAlchemyUtilsNoData:
         config.pop("user")
         query = select(text("'Connection Made'"))
 
-        with SQLAlchemyUtils.__new__(SQLAlchemyUtils).gen_engine(
-            **config, database="pir_test", drivername=request.module.drivername
-        )._engine.connect() as conn:
+        with (
+            SQLAlchemyUtils.__new__(SQLAlchemyUtils)
+            .gen_engine(
+                **config, database="pir_test", drivername=request.module.drivername
+            )
+            ._engine.connect() as conn
+        ):
             result = conn.execute(query)
             value = result.first()
 

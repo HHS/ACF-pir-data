@@ -117,7 +117,9 @@ def valid_hash_rows():
         }
     )
 
-    expected_uid_hashes = uid_rows.apply(lambda x: hashlib.sha1(''.join(x).encode()).hexdigest(), axis=1).tolist()
+    expected_uid_hashes = uid_rows.apply(
+        lambda x: hashlib.sha1("".join(x).encode()).hexdigest(), axis=1
+    ).tolist()
 
     qid_rows = pd.DataFrame(
         {
@@ -126,7 +128,9 @@ def valid_hash_rows():
         }
     )
 
-    expected_qid_hashes = qid_rows.apply(lambda x: hashlib.sha1(''.join(x).encode()).hexdigest(), axis=1).tolist()
+    expected_qid_hashes = qid_rows.apply(
+        lambda x: hashlib.sha1("".join(x).encode()).hexdigest(), axis=1
+    ).tolist()
 
     return {
         "uid_rows": uid_rows,

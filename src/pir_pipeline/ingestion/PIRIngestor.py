@@ -130,11 +130,11 @@ class PIRIngestor:
             "Workbook does not contain the year in the file name."
         )
         self._year = int(year.group(1))
-        
+
         # Read the data
         if os.environ.get("IN_AWS_LAMBDA"):
-            s3 = boto3.resource('s3')
-            object = s3.Object('pir-data', self._workbook)
+            s3 = boto3.resource("s3")
+            object = s3.Object("pir-data", self._workbook)
             self._workbook = pd.ExcelFile(BytesIO(object.get()["Body"].read()))
         else:
             self._workbook = pd.ExcelFile(self._workbook)
@@ -709,7 +709,7 @@ class PIRIngestor:
             for record in initial_records:
                 cleaned = model.model_validate(record).model_dump()
                 cleaned_records.append(cleaned)
-                
+
             self._logger.info(f"Validated records against pydantic model for: {table}")
 
             self._sql.insert_records(cleaned_records, table)
@@ -738,7 +738,7 @@ class PIRIngestor:
         fin_time = time.time()
         overall_time = fin_time - start_time
         self._logger.info(f"Processed {self._year} in {overall_time/60} minutes")
-        
+
         close_logger(self._logger)
 
         return self
@@ -758,9 +758,9 @@ class PIRIngestor:
 
 if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
-    
-    s3 = boto3.resource('s3')
-    files = [obj.key for obj in s3.Bucket('pir-data').objects.filter(Prefix='input')]
+
+    s3 = boto3.resource("s3")
+    files = [obj.key for obj in s3.Bucket("pir-data").objects.filter(Prefix="input")]
 
     overall_init_time = time.time()
     for file in files:

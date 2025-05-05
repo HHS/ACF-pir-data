@@ -15,13 +15,14 @@ try:
         "password": os.getenv("DB_PASSWORD"),
         "host": os.getenv("DB_HOST"),
         "port": os.getenv("DB_PORT"),
-        "database": os.getenv("DB_NAME")
+        "database": os.getenv("DB_NAME"),
     }
     os.environ["IN_AWS_LAMBDA"] = "True"
     sql_utils = SQLAlchemyUtils(**DB_CONFIG)
 except Exception as e:
     print(f"Error creating sql_utils object: {e}")
     raise e
+
 
 def lambda_handler(event, context):
     try:
@@ -30,7 +31,7 @@ def lambda_handler(event, context):
         )
         PIRLinker(records, sql_utils).link().update_unlinked()
         message = "Records linked successfully."
-        
+
         return {"message": message}
     except Exception as e:
         print(e)
