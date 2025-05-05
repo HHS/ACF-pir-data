@@ -48,31 +48,30 @@ class TestSearchRoutes:
         Sending a POST request to /search/data is meant to return values from the review page for the associated record.
         In this case, the qid values are found in tests/conftest.py"""
 
-        unlinked_id_to_test = "83e32d72b46030e1abf5109b8b506fb8"
-        expected_qid_match_result = "87fe124509e4e9e48b26a65b78c87acd"
-
         response = client.post(
             "/search/",
             data={
-                "keyword-search": "83e32",
+                "keyword-search": "0e9fdf808ccf193218f64d62ab9b0c60f860de6b",
             },
         )
+        
         parsed_response = json.loads(response.text)
 
         # response.text is a dictionary of lists
-        review_query = parsed_response[unlinked_id_to_test][0]
-        review_query.update({"review-type": "unlinked"})
+        review_query = parsed_response[list(parsed_response.keys())[1]][0]
 
         # /search/data provides the same response as pressing the "Review" button for the associated record
         response = client.post("/search/data", json=review_query)
         parsed_response = json.loads(response.text)
+        expected_qid = "8e96da390b28ba6f5571ee1f68716cca982ccca0"
 
         assert all(
             [key in parsed_response.keys() for key in ["matches", "question"]]
         ), f"Expected response keys ['matches', 'question'], got {parsed_response.keys()}"
+        
         assert (
-            expected_qid_match_result in parsed_response["matches"].keys()
-        ), f"Expected matches to contain qid: {expected_qid_match_result}"
+            expected_qid in parsed_response["matches"].keys()
+        ), f"Expected matches to contain qid: {expected_qid}"
 
     def test_get_flashcard(self, client):
         response = client.get("/search/flashcard")
@@ -90,4 +89,4 @@ class TestSearchRoutes:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_post_flashcard"])
+    pytest.main([__file__, "-sk", "test_post_data"])
