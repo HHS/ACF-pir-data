@@ -15,6 +15,7 @@ from pir_pipeline.utils.dashboard_utils import (
 def insert_question_records(sql_utils, question_linker_records):
     sql_utils.insert_records(question_linker_records, "question")
 
+
 @pytest.fixture
 def question_linker(sql_utils, question_linker_payload):
     question_linker = QuestionLinker(question_linker_payload, sql_utils)

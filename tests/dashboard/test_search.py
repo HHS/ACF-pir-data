@@ -54,7 +54,7 @@ class TestSearchRoutes:
                 "keyword-search": "0e9fdf808ccf193218f64d62ab9b0c60f860de6b",
             },
         )
-        
+
         parsed_response = json.loads(response.text)
 
         # response.text is a dictionary of lists
@@ -68,7 +68,7 @@ class TestSearchRoutes:
         assert all(
             [key in parsed_response.keys() for key in ["matches", "question"]]
         ), f"Expected response keys ['matches', 'question'], got {parsed_response.keys()}"
-        
+
         assert (
             expected_qid in parsed_response["matches"].keys()
         ), f"Expected matches to contain qid: {expected_qid}"
