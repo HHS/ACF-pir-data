@@ -5,7 +5,7 @@ codeuri = "/home/reggie.gilliard@acf.hhs.local/repos/ACF-pir-data/pir-pipeline/p
 runtime = "python3.12"
 architecture = "x86_64"
 handler = "app.lambda_handler"
-manifest_hash = "bdb673511fff58be8ef3ed6854d30fb4"
+manifest_hash = "563e0879713419f3a464e20086bb5807"
 packagetype = "Zip"
 functions = ["PIRIngestor"]
 
@@ -14,7 +14,7 @@ codeuri = "/home/reggie.gilliard@acf.hhs.local/repos/ACF-pir-data/pir-pipeline/p
 runtime = "python3.12"
 architecture = "x86_64"
 handler = "app.lambda_handler"
-manifest_hash = "bdb673511fff58be8ef3ed6854d30fb4"
+manifest_hash = "563e0879713419f3a464e20086bb5807"
 packagetype = "Zip"
 functions = ["PIRLinker"]
 

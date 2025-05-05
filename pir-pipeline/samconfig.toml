@@ -18,7 +18,7 @@ confirm_changeset = true
 resolve_s3 = true
 s3_prefix = "pir-pipeline"
 region = "us-east-1"
-parameter_overrides = "DBName=\"pir\" DBPort=\"5432\" DBUser=\"ohsadmin\""
+parameter_overrides = "DBName=\"pir_data\" DBPort=\"5432\" DBUser=\"ohsadmin\""
 image_repositories = []
 
 [default.package.parameters]
