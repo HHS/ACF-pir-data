@@ -1,3 +1,0 @@
-mysql_connector_repackaged==0.3.1
-pywin32==306
-watchdog==3.0.0
