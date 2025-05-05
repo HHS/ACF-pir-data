@@ -73,20 +73,6 @@ class TestSearchRoutes:
             expected_qid in parsed_response["matches"].keys()
         ), f"Expected matches to contain qid: {expected_qid}"
 
-    def test_get_flashcard(self, client):
-        response = client.get("/search/flashcard")
-        assert (
-            """<script type="module" src="/static/search/flashcard.js"></script>"""
-            in response.text
-        ), "Incorrect response"
-
-    def test_post_flashcard(self, client):
-        response = client.post("/search/flashcard")
-        location = response.headers["Location"]
-        assert (
-            location == "/review/finalize"
-        ), f"Redirected to incorrect url: {location}"
-
 
 if __name__ == "__main__":
     pytest.main([__file__, "-sk", "test_post_data"])

@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 from hashlib import sha1
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, render_template, request, session
 from sqlalchemy import func, select
 
 from pir_pipeline.dashboard.db import get_db
@@ -67,10 +67,6 @@ def flashcard():
 
         form = request.form
         action = form["action"]
-
-        # Render finalize page if user clicks finish
-        if action == "finish":
-            return redirect(url_for("review.finalize"))
 
         # Move to the next question
         if action == "next":
