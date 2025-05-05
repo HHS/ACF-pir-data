@@ -1,4 +1,4 @@
 pip install -U pip
-pip install PIR_Pipeline/.
+pip install .
 
-python3 -m pytest PIR_Pipeline/tests
+python3 -m pytest tests/
