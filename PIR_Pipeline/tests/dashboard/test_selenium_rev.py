@@ -6,6 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
+
 @pytest.fixture
 def driver():
     driver = webdriver.Firefox()
@@ -32,12 +33,12 @@ def test_search_button(driver):
 
     # Get all rows and pick the first data row (skip header if present)
     rows = driver.find_elements(By.CSS_SELECTOR, "#search-results-table tr")
-    
+
     # Asserts the search results exist in the table
     assert len(rows) > 0, "No search results found in the table."
 
     first_data_row = None
-       
+
     for row in rows:
         try:
             qid_cell = row.find_element(By.CSS_SELECTOR, 'td[name="question_id"]')
@@ -47,7 +48,7 @@ def test_search_button(driver):
                 break
         except:
             continue
-    
+
     # Asserts the valid question id exist in the table
     assert first_data_row is not None, "No valid row with a question_id was found."
 
@@ -64,7 +65,8 @@ def test_search_button(driver):
     # Wait for the modal to become visible
     try:
         WebDriverWait(driver, 10).until(
-            lambda d: d.find_element(By.ID, "search-modal").get_attribute("hidden") is None
+            lambda d: d.find_element(By.ID, "search-modal").get_attribute("hidden")
+            is None
         )
         modal_visible = True
     except TimeoutException:
@@ -95,7 +97,7 @@ def test_search_button(driver):
     rows_after = count_modal_rows()
     # print(f"Rows after clicking storeLink: {rows_after}")
     # print(rows_after == rows_before - 1)
-    # Assert the function of the + symbol 
+    # Assert the function of the + symbol
     assert (
         rows_after == rows_before - 1
     ), "Row count did not change after clicking storeLink."
@@ -125,7 +127,7 @@ def test_search_button(driver):
     # print(f"Rows after clicking storeLink: {rows_after}")
     # print(rows_after == rows_before - 1)
     # Final assertion or output
-    # Assert the function of the X symbol 
+    # Assert the function of the X symbol
     assert (
         rows_after == rows_before - 1
     ), "Row count did not change after clicking storeLink."
