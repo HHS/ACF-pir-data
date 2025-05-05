@@ -64,16 +64,6 @@ def search():
     return render_template("search/search.html")
 
 
-@bp.route("/flashcard", methods=["GET", "POST"])
-def flashcard():
-    """Return flashcard for a search question under review"""
-
-    if request.method == "POST":
-        return redirect(url_for("review.finalize"))
-
-    return render_template("search/flashcard.html")
-
-
 @bp.route("/data", methods=["POST"])
 def data():
     """Get data for rendering a flashcard"""

@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 from hashlib import sha1
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, redirect, render_template, request, session, url_for
 from sqlalchemy import func, select
 
 from pir_pipeline.dashboard.db import get_db
@@ -56,42 +56,6 @@ def get_flashcard_question(
 def index():
     """Render first flashcard"""
     return render_template("review/flashcard.html")
-
-
-@bp.route("/finalize", methods=["GET", "POST"])
-def finalize():
-    """Render the finalization page, for reviewing changes made using the dashboard"""
-
-    # Flash an error if no linking actions were performed
-    if not session.get("link_dict"):
-        flash("No linking actions performed.")
-        return render_template("review/flashcard.html")
-
-    if request.method == "POST":
-        form = request.form
-        action = form["action"]
-        link_dict = session.get("link_dict")
-
-        # Remove a linking action from the dictionary
-        if action == "remove":
-            finalize_id = form["finalize-id"]
-
-            link_dict.pop(finalize_id)
-            if not link_dict.keys():
-                del session["link_dict"]
-
-            session["link_dict"] = link_dict
-
-            return render_template("review/finalize.html")
-        # Commit all linking actions
-        elif action == "commit":
-            db = get_db()
-            QuestionLinker(link_dict, db).update_links()
-            session.pop("link_dict")
-
-            return render_template("review/flashcard.html")
-
-    return render_template("review/finalize.html")
 
 
 @bp.route("/flashcard", methods=["GET", "POST"])
@@ -159,16 +123,6 @@ def data():
         session["max_questions"] = max_questions
 
     return json.dumps(output)
-
-
-@bp.route("/match", methods=["POST"])
-def match():
-    """Get matching questions for the target question"""
-    db = get_db()
-    payload = request.get_json()
-    matches = get_matches(payload, db)
-
-    return json.dumps(matches)
 
 
 @bp.route("/link", methods=["POST"])
