@@ -11,7 +11,7 @@ try:
         "password": os.getenv("DB_PASSWORD"),
         "host": os.getenv("DB_HOST"),
         "port": os.getenv("DB_PORT"),
-        "database": os.getenv("DB_NAME")
+        "database": os.getenv("DB_NAME"),
     }
     os.environ["IN_AWS_LAMBDA"] = "True"
     sql_utils = SQLAlchemyUtils(**DB_CONFIG)
@@ -26,8 +26,8 @@ s3 = boto3.client("s3")
 
 def lambda_handler(event, context):
     try:
-        key = event['Records'][0]['s3']['object']['key']
-        bucket = event['Records'][0]['s3']['bucket']['name']
+        key = event["Records"][0]["s3"]["object"]["key"]
+        bucket = event["Records"][0]["s3"]["bucket"]["name"]
         PIRIngestor(key, sql_utils).ingest()
         original_object = {"Bucket": bucket, "Key": key}
         s3.copy(original_object, bucket, key.replace("input", "processed"))

@@ -1,4 +1,5 @@
 """Utilities for interacting with SQL via SQLAlchemy"""
+
 import os
 from subprocess import run as srun
 from typing import Self

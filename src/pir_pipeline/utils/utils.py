@@ -20,6 +20,7 @@ def error_thrower(logger: logging.Logger, message: str, error_type: Exception):
     logger.error(message)
     raise error_type(message)
 
+
 def get_searchable_columns(columns: list[str]) -> list[str]:
     """Return non-identifying columns formatted for external audiences
 
@@ -67,11 +68,15 @@ def get_logger(name: str):
     logger.setLevel(logging.DEBUG)
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(fmt="%(asctime)s|%(name)s|%(levelname)s|%(message)s", datefmt="%Y-%m-%d %I:%M:%S")
+    formatter = logging.Formatter(
+        fmt="%(asctime)s|%(name)s|%(levelname)s|%(message)s",
+        datefmt="%Y-%m-%d %I:%M:%S",
+    )
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
     return logger
+
 
 def close_logger(logger: logging.Logger):
     for handler in logger.handlers:
