@@ -33,7 +33,7 @@ jobs:
           done
       - name: Run unit tests
         id: unit_tests
-        run: bash PIR_Pipeline/code/unit_tests.sh
+        run: bash code/unit_tests.sh
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432

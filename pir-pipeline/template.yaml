@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Lambda function for ingesting Program Information Report (PIR) data
+
+Parameters:
+  DBName:
+    Type: String
+    Description: Database configuration
+
+  DBHost:
+    Type: String
+    Description: Database configuration
+    NoEcho: true
+
+  DBPort:
+    Type: Number
+    Description: Database configuration
+
+  DBPassword:
+    Type: String
+    Description: Database configuration
+    NoEcho: true
+
+  DBUser:
+    Type: String
+    Description: Database configuration
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaRDSAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                  - rds:Connect
+                  - rds:ExecuteStatement
+                  - rds:BatchExecuteStatement
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:ListObjects
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:CopyObject
+                  - s3:DeleteObject
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                  - ec2:AttachNetworkInterface
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - events:PutTargets
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:DescribeRule
+                Resource: '*'
+     
+  PIRIngestor:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pir_ingestor/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Timeout: 900
+      MemorySize: 4096
+      ReservedConcurrentExecutions: 1
+      Environment:
+        Variables:
+          DB_USER: !Ref DBUser
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket:
+              Ref: S3Bucket
+            Events: "s3:ObjectCreated:*"
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: "input/"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds:
+          - subnet-05a4beee2caec0250
+          - subnet-000610402911cfbea
+          - subnet-06b2240ad98c370b1
+        SecurityGroupIds:
+          - sg-0d4e6531d12ef234f
+    
+  PIRLinker:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: pir_linker/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Timeout: 300
+      MemorySize: 2048
+      Environment:
+        Variables:
+          DB_USER: !Ref DBUser
+          DB_HOST: !Ref DBHost
+          DB_PORT: !Ref DBPort
+          DB_PASSWORD: !Ref DBPassword
+          DB_NAME: !Ref DBName
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds:
+          - subnet-05a4beee2caec0250
+          - subnet-000610402911cfbea
+          - subnet-06b2240ad98c370b1
+        SecurityGroupIds:
+          - sg-0d4e6531d12ef234f
+
+  # Adapted from GPT
+  LambdaInvokeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: LambdaInvokeEvery30Minutes
+      ScheduleExpression: cron(0,30 * * * ? *)
+      State: DISABLED
+      Targets:
+        - Arn: !GetAtt PIRLinker.Arn
+          Id: TargetFunction
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PIRLinker
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: pir-data-files
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain

@@ -1,0 +1,258 @@
+/* Adapted from Claude 3.5 S */
+/* Custom CSS to override Bootstrap defaults with your color palette */
+:root {
+    --primary: #336A90;
+    --secondary: #779cb5;
+    --dark: #172C3C;
+    --light: #E2EFF7;
+    --info: #BCD9ED;
+    --accent: #BFB0A3;
+    --gray-dark: #21272D;
+    --gray: #80858C;
+}
+
+/* Body and general styles */
+body {
+    background-color: white;
+    color: var(--gray-dark);
+}
+
+/* Navbar customization */
+.navbar-custom {
+    background-color: var(--primary);
+}
+
+.navbar-custom .navbar-brand,
+.navbar-custom .navbar-nav .nav-link {
+    color: var(--light);
+}
+
+.navbar-custom .navbar-nav .nav-link:hover {
+    color: var(--info);
+}
+
+.navbar-custom .navbar-toggler {
+    border-color: var(--light);
+}
+
+.navbar {
+    padding: 0em 5em;
+}
+
+.navbar-title {
+    color: var(--light);
+}
+
+nav {
+    margin-bottom: 1em;
+}
+
+/* Table customization */
+.table {
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(23, 44, 60, 0.1);
+}
+
+.table thead th {
+    background-color: var(--primary);
+    color: var(--light);
+    border-bottom: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--info);
+}
+
+table#search-results-table {
+    margin-top: 1em;
+}
+
+table#search-results-table tbody tr td,
+table#search-results-table thead tr th {
+    width: 10em;
+    white-space: pre-wrap;
+}
+
+/* Form elements customization */
+.form-control {
+    border-color: var(--secondary);
+    background-color: #fff;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
+}
+
+.form-select {
+    border-color: var(--secondary);
+}
+
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(51, 106, 144, 0.25);
+}
+
+/* From https://stackoverflow.com/questions/57978278/form-input-displayed-above-text-field-using-flexbox */
+
+form#flashcard-buttons {
+    display: flex;
+}
+
+form#flashcard-buttons > button {
+    margin-right: .5em;
+}
+
+form#finished-button {
+    display: flex;
+}
+
+.form-parent {
+    display: flex;
+    margin-bottom: 1em;
+}
+
+.form-container {
+    display: flex;
+    width: 50%;
+}
+
+.form-container.right {
+    justify-content: end;
+    justify-self: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction : column;
+    /* margin-right: 40px; */
+}
+
+/* Custom button styles */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    background-color: #264A64;
+    border-color: #264A64;
+}
+
+.btn-secondary {
+    background-color: var(--secondary);
+    border-color: var(--secondary);
+}
+
+.accordion-button {
+    background-color: transparent;
+}
+
+/* Card customization */
+.card {
+    background-color: #fff;
+    border-color: var(--secondary);
+}
+
+.card-header {
+    background-color: var(--primary);
+    color: var(--light);
+}
+
+/* Search bar customization */
+.search-wrapper .input-group-text {
+    background-color: var(--primary);
+    color: var(--light);
+    border-color: var(--primary);
+}
+
+
+/* Sections */
+section {
+    margin-left: 5em;
+    margin-right: 5em;
+}
+
+section#tables {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Additions */
+
+img.logo {
+    max-width: 3em;
+    max-height: 3em;
+}
+
+/* Headings */
+
+h1.page-title {
+    text-align: center;
+}
+
+/* Divs */
+
+div.card-body {
+    padding: 1em;
+    display: flex;
+}
+
+.table-box {
+    overflow: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.table-box::-webkit-scrollbar {
+    display:none;
+}
+
+/* Errors */
+
+/* Adapted from  https://flask.palletsprojects.com/en/stable/tutorial/static/ */
+.flash { 
+    margin: 1em 0; 
+    padding: 1em; 
+    background: var(--info); 
+    border: 1px solid var(--secondary); 
+}
+
+tr[class *= "collapsible-row"]>td {
+    background: #F9F9F9;
+}
+
+/* Card styling */
+.card {
+    width: 50%;
+    margin-bottom: 1em;
+}
+
+.card-body {
+    text-align: center;
+    font-size: 16px;
+}
+
+.card-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+div.information {
+    width: 25%;
+}
+
+div.information-block {
+    padding: .2em;
+    margin: .5em;
+}
+
+div.information-block > p {
+    font-size: 12px;
+    text-align: start;
+}
+
+div.information-block > h4 {
+    text-align: start;
+}

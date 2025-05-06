@@ -16,7 +16,7 @@ jobs:
         run: |
           pip install -U pip
           pip install black
-          black PIR_Pipeline
+          black .
       - name: Commit formatted code
         id: push
         run: |
