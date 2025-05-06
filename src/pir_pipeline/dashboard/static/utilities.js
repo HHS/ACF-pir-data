@@ -112,7 +112,11 @@ function buildTable(data, table = document.createElement("table")) {
     headerRow.appendChild(document.createElement("th"));
     for (let i = 0; i < header.length; i++) {
         const column = document.createElement("th");
-        column.innerHTML = header[i];
+        const columnName = header[i];
+        column.innerHTML = columnName;
+        if (["Question ID", "UQID"].includes(columnName)) {
+            column.setAttribute("hidden", "true");
+        }
         headerRow.appendChild(column);
     }
 
@@ -184,6 +188,9 @@ function buildTable(data, table = document.createElement("table")) {
                 const cell = document.createElement("td");
                 cell.innerHTML = row_data[key];
                 cell.setAttribute("name", key);
+                if (["question_id", "uqid"].includes(key)) {
+                    cell.setAttribute("hidden", "true");
+                }
                 row.appendChild(cell);
             }
 
