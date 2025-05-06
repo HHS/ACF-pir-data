@@ -1,4 +1,4 @@
-import { updateFlashcardTables, rowToJSON, storeLink, buildReviewTable } from "../utilities.js";
+import { updateFlashcardTables, rowToJSON, storeLink, buildTable } from "../utilities.js";
 
 // Run buildFlashcardPage when the page is loaded
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
@@ -115,7 +115,7 @@ searchForm.addEventListener("submit", async (e) => {
     // Get search results for the form data and replace the matches table
     fetch("/search", { "method": "POST", "body": formData })
         .then(response => response.json())
-        .then(data => buildReviewTable(data, table))
+        .then(data => buildTable(data, table))
 })
 
 document.storeLink = storeLink;

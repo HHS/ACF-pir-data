@@ -53,74 +53,8 @@ function updateTable(event) {
     fetch(document.URL, { "method": "POST", "body": formData })
         .then(response => response.json())
         .then(data => {
-            if (table.id.match("review")) {
-                buildTable(data, table)
-            } else {
-                buildSearchTable(data, table)
-            }
+            buildTable(data, table);
         });
-}
-
-/**
- * Populate the target table with the provided data
- * 
- * @param {*} data JSON formatted data to use to populate the table
- * @param {*} table The table to build/update
- * @returns An HTML table element
- */
-function buildTable(data, table) {
-    // Constant buttons
-    const expandButtonBase = document.createElement("button");
-    expandButtonBase.className = "accordion-button collapsed";
-    expandButtonBase.setAttribute("type", "button");
-    expandButtonBase.setAttribute("data-bs-toggle", "collapse");
-    expandButtonBase.setAttribute("aria-expanded", "false");
-
-    const accordionDivBase = document.createElement("div");
-    accordionDivBase.className = "accordion";
-
-    const linkButtonBase = document.createElement("button");
-    linkButtonBase.setAttribute("onclick", "storeLink(event)");
-
-    // Set table header row
-    table.innerHTML = '';
-
-    let header = data[0]; // List of column names
-    let head = document.createElement("thead");
-    let headerRow = document.createElement("tr");
-    head.appendChild(headerRow)
-
-    // Add column headers
-    for (let i = 0; i < header.length; i++) {
-        const column = document.createElement("th");
-        column.innerHTML = header[i];
-        headerRow.appendChild(column);
-    }
-    let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Action";
-    headerRow.appendChild(actionsColumn);
-    table.appendChild(head);
-
-    // Populating the table body
-    let body = document.createElement("tbody");
-
-    for (let i = 1; i < data.length; i++) {
-        const row = document.createElement("tr");
-
-        // Add data to the table
-        let row_data = data[i]; // Table entry
-        for (let key in row_data) {
-            const cell = document.createElement("td");
-            cell.innerHTML = row_data[key];
-            cell.setAttribute("name", key);
-            row.appendChild(cell);
-        }
-
-        body.appendChild(row);
-    }
-
-    table.appendChild(body);
-    return table;
 }
 
 /**
@@ -148,7 +82,7 @@ function rowToJSON(row) {
  * @param {*} table An HTML table to fill with content
  * @returns An HTML table element
  */
-function buildSearchTable(data, table = document.createElement("table")) {
+function buildTable(data, table = document.createElement("table")) {
     // Constant buttons
     const expandButtonBase = document.createElement("button");
     expandButtonBase.className = "accordion-button collapsed";
@@ -163,6 +97,9 @@ function buildSearchTable(data, table = document.createElement("table")) {
     reviewButtonBase.setAttribute("onclick", "getFlashcardData(event)");
     reviewButtonBase.value = "review";
 
+    const linkButtonBase = document.createElement("button");
+    linkButtonBase.setAttribute("onclick", "storeLink(event)");
+
     // Set table header row
     table.innerHTML = '';
 
@@ -172,13 +109,14 @@ function buildSearchTable(data, table = document.createElement("table")) {
     head.appendChild(headerRow)
 
     // Add column headers
+    headerRow.appendChild(document.createElement("th"));
     for (let i = 0; i < header.length; i++) {
         const column = document.createElement("th");
         column.innerHTML = header[i];
         headerRow.appendChild(column);
     }
+
     let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Action";
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
@@ -196,8 +134,6 @@ function buildSearchTable(data, table = document.createElement("table")) {
 
         const accordionDiv = accordionDivBase.cloneNode(true);
 
-        const actionsCell = document.createElement("td");
-
         // Get all records associated with this question_id/uqid
         const records = data[key];
 
@@ -205,17 +141,15 @@ function buildSearchTable(data, table = document.createElement("table")) {
         for (let i = 0; i < records.length; i++) {
             const row = document.createElement("tr");
 
-            // Add cells for each value in a record
             let row_data = records[i];
-            for (let key in row_data) {
-                const cell = document.createElement("td");
-                cell.innerHTML = row_data[key];
-                cell.setAttribute("name", key);
-                row.appendChild(cell);
-            }
+            
+            const actionsCell = document.createElement("td");
+            const buttonCell = document.createElement("td");
 
+            const linkButton = linkButtonBase.cloneNode(true);
             const trID = table.id + "-tr-" + record_num + "-" + i;
-            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
+            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);    
+            expandButton.id = table.id + "-button-" + record_num;
 
             // If not the first row, this row should be hidden/collapsible
             if (i > 0) {
@@ -229,22 +163,51 @@ function buildSearchTable(data, table = document.createElement("table")) {
                     expandValue = row.id;
                 }
                 expandButton.setAttribute("aria-controls", expandValue);
+                row.appendChild(document.createElement("td"));
             }
             // Otherwise, it is the header-row
             else {
-                row.setAttribute("onclick", "expandContractRow(event)");
+                // row.setAttribute("onclick", "expandContractRow(event)");
 
                 if (row_data["year"].match(",|-")) {
                     accordionDiv.appendChild(expandButton);
                 }
 
                 actionsCell.appendChild(accordionDiv);
-
-                const reviewButton = reviewButtonBase.cloneNode(true);
-                getLinkingSVG(reviewButton);
-                
-                actionsCell.appendChild(reviewButton);
                 row.appendChild(actionsCell);
+                row.id = table.id + "-tr-" + record_num;
+            }
+
+            
+            // Add cells for each value in a record
+            for (let key in row_data) {
+                const cell = document.createElement("td");
+                cell.innerHTML = row_data[key];
+                cell.setAttribute("name", key);
+                row.appendChild(cell);
+            }
+
+            if (i == 0) {
+                if (table.id == "search-results-table") {
+                    const reviewButton = reviewButtonBase.cloneNode(true);
+                    getLinkingSVG(reviewButton);
+                    
+                    buttonCell.appendChild(reviewButton);
+                } else {
+                    if (table.id != "flashcard-question-table") {
+                        linkButton.value = "link";
+                        getLinkingSVG(linkButton);
+                        buttonCell.appendChild(linkButton);
+                    }
+                }
+                row.appendChild(buttonCell);
+            } else {
+                if (table.id == "flashcard-question-table") {
+                    linkButton.value = "unlink";
+                    getLinkingSVG(linkButton);
+                    buttonCell.appendChild(linkButton);
+                }
+                row.appendChild(buttonCell);
             }
             body.appendChild(row);
         }
@@ -267,9 +230,9 @@ function updateFlashcardTables(data) {
     const tables = {}
 
     if (questionTable) {
-        var question = buildReviewTable(data["question"], questionTable);
+        var question = buildTable(data["question"], questionTable);
     } else {
-        var question = buildReviewTable(data["question"]);
+        var question = buildTable(data["question"]);
     }
     question.id = "flashcard-question-table";
     question.className = "table table-hover";
@@ -281,14 +244,16 @@ function updateFlashcardTables(data) {
     if (Object.keys(data["matches"]).length === 0) {
         // When no matches are found render a message
         try {
-            matchesTable.innerHTML = "No suitable matches found. Try searching instead."
+            const tbody = document.createElement("tbody");
+            tbody.innerHTML = "No suitable matches found. Try searching instead.";
+            matchesTable.appendChild(tbody);
         } catch {
 
         }
     } else if (matchesTable) {
-        var matches = buildReviewTable(data["matches"], matchesTable);
+        var matches = buildTable(data["matches"], matchesTable);
     } else {
-        var matches = buildReviewTable(data["matches"]);
+        var matches = buildTable(data["matches"]);
     }
 
     try {
@@ -300,126 +265,6 @@ function updateFlashcardTables(data) {
     }
 
     return Promise.resolve(tables)
-}
-
-/**
- * 
- * @param {*} data The data to use to populate the table
- * @param {*} table The table to update
- * @returns 
- */
-function buildReviewTable(data, table = document.createElement("table")) {
-    // Constant buttons
-    const expandButtonBase = document.createElement("button");
-    expandButtonBase.className = "accordion-button collapsed";
-    expandButtonBase.setAttribute("type", "button");
-    expandButtonBase.setAttribute("data-bs-toggle", "collapse");
-    expandButtonBase.setAttribute("aria-expanded", "false");
-
-    const accordionDivBase = document.createElement("div");
-    accordionDivBase.className = "accordion";
-
-    const linkButtonBase = document.createElement("button");
-    // linkButtonBase.className = "btn btn-primary";
-    linkButtonBase.setAttribute("onclick", "storeLink(event)");
-
-    // Set table header row
-    table.innerHTML = '';
-
-    let header = data["columns"];
-    let head = document.createElement("thead");
-    let headerRow = document.createElement("tr");
-    head.appendChild(headerRow)
-
-    // Add column headers
-    for (let i = 0; i < header.length; i++) {
-        const column = document.createElement("th");
-        column.innerHTML = header[i];
-        headerRow.appendChild(column);
-    }
-    let actionsColumn = document.createElement("th");
-    actionsColumn.innerHTML = "Action";
-    headerRow.appendChild(actionsColumn);
-    table.appendChild(head);
-
-    let body = document.createElement("tbody");
-    let record_num = 0;
-    for (let key in data) {
-        if (key == "columns") {
-            continue
-        }
-
-        const expandButton = expandButtonBase.cloneNode(true);
-        expandButton.innerHTML = "";
-
-
-        const accordionDiv = accordionDivBase.cloneNode(true);
-
-        // Get all records associated with this question_id/uqid
-        const records = data[key];
-
-        // Loop through each record
-        for (let i = 0; i < records.length; i++) {
-            const row = document.createElement("tr");
-
-            // Add cells for each value in a record
-            let row_data = records[i];
-            for (let key in row_data) {
-                const cell = document.createElement("td");
-                cell.innerHTML = row_data[key];
-                cell.setAttribute("name", key);
-                row.appendChild(cell);
-            }
-
-            const actionsCell = document.createElement("td");
-            const trID = table.id + "-tr-" + record_num + "-" + i;
-            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);
-
-            const linkButton = linkButtonBase.cloneNode(true);
-
-            // If not the first row, this row should be hidden/collapsible
-            if (i > 0) {
-                row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
-                row.id = `collapse-${trID}`;
-                let expandValue = expandButton.getAttribute("aria-controls")
-                if (expandValue) {
-                    expandValue += ` ${row.id}`;
-                }
-                else {
-                    expandValue = row.id;
-                }
-                expandButton.setAttribute("aria-controls", expandValue);
-
-                linkButton.value = "unlink";
-                getLinkingSVG(linkButton);
-                if (table.id == "flashcard-question-table") {
-                    actionsCell.appendChild(linkButton);
-                }
-            }
-            // Otherwise, it is the header-row
-            else {
-                row.id = `collapse-${table.id}-tr-${record_num}`
-
-                if (row_data["year"].match("-|,")) {
-                    accordionDiv.appendChild(expandButton);
-                    actionsCell.appendChild(accordionDiv);
-                }
-
-                linkButton.value = "link";
-                getLinkingSVG(linkButton);
-                if (table.id != "flashcard-question-table") {
-                    actionsCell.appendChild(linkButton);
-                }
-            }
-
-            row.appendChild(actionsCell);
-            body.appendChild(row);
-        }
-        record_num += 1
-    }
-
-    table.appendChild(body);
-    return table
 }
 
 /**
@@ -466,14 +311,33 @@ function storeLink(event) {
     });
 
     // Move the row(s) involved in the match to the questionTable/matchesTable
-    const matchRows = document.querySelectorAll(`tr[id*="${matchRow.id}"]`);
-
+    if (matchRow.className.match("collapse")) {
+        var matchRows = document.querySelectorAll(`tr[id="${matchRow.id}"]`);
+    } else {
+        var matchRows = document.querySelectorAll(`tr[id*="${matchRow.id}"]`);
+    }
+    
     for (let i = 0; i < matchRows.length; i++) {
         let row = matchRows[i];
         row = document.getElementById(row.id);
 
-        if (row.className.match("accordion-collapse")) {
-            row.className = row.className + " show";
+        if (!row.className.match("accordion-collapse")) {
+            
+        } else if (linkType == "link") {
+            const idNumberRegex = /-\d$/;
+            const showRegex = /\sshow/g;
+            let collapseButtonId = "flashcard-" + row.id.replace(idNumberRegex, "");
+            collapseButtonId = collapseButtonId.replace("tr", "button");
+            const collapseButton = document.getElementById(collapseButtonId);
+            row.id = "collapse-flashcard-" + row.id;
+
+            if (collapseButton.getAttribute("aria-expanded") === "true") {
+                row.className += " show";
+            } else {
+                row.className = row.className.replace(showRegex, "");
+            }
+        } else if (linkType == "unlink") {
+            row.id = row.id.replace("collapse-flashcard-", "");
         }
 
         let button = row.getElementsByTagName("svg");
@@ -530,10 +394,8 @@ function expandContractRow(event) {
 export {
     buildTable,
     updateTable,
-    buildSearchTable,
     rowToJSON,
     updateFlashcardTables,
     storeLink,
-    buildReviewTable,
     expandContractRow
 }

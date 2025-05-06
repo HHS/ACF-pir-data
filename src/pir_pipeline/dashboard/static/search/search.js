@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildReviewTable, expandContractRow } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow } from "../utilities.js";
 
 // Constant forms and modals
 const searchForm = document.getElementById("search-form");
@@ -41,7 +41,7 @@ modalSearchForm.addEventListener("submit", async (e) => {
 
     fetch("/search", { "method": "POST", "body": formData })
         .then(response => response.json())
-        .then(data => buildReviewTable(data, table))
+        .then(data => buildTable(data, table))
 })
 
 /**
