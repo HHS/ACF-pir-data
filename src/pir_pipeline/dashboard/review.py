@@ -41,11 +41,14 @@ def get_flashcard_question(
     output = {"question": get_search_results(record[id_column], db, id_column)}
 
     matches = get_matches({"record": record}, db)
-    if matches:
+
+    if matches and len(matches) > 1:
         matches.pop(0)
         output["matches"] = search_matches(matches, id_column, db)
+    elif matches and len(matches) == 1:
+        output["matches"] = {"columns": output["question"]["columns"]}
     else:
-        output["matches"] = {}
+        output["matches"] = {"columns": output["question"]["columns"]}
 
     session["current_question"] = offset
 
