@@ -171,7 +171,7 @@ function buildTable(data, table = document.createElement("table")) {
             }
             // Otherwise, it is the header-row
             else {
-                // row.setAttribute("onclick", "expandContractRow(event)");
+                row.setAttribute("onclick", "expandContractRow(event)");
 
                 if (row_data["year"].match(",|-")) {
                     accordionDiv.appendChild(expandButton);
@@ -331,13 +331,11 @@ function storeLink(event) {
         if (!row.className.match("accordion-collapse")) {
             
         } else if (linkType == "link") {
-            const idNumberRegex = /-\d$/;
+            const buttonIdRegex = /flashcard-\w+-table-tr-\d/;
             const showRegex = /\sshow/g;
-            let collapseButtonId = "flashcard-" + row.id.replace(idNumberRegex, "");
-            collapseButtonId = collapseButtonId.replace("tr", "button");
+            let collapseButtonId = row.id.match(buttonIdRegex)[0];
             const collapseButton = document.getElementById(collapseButtonId);
             row.id = "collapse-flashcard-" + row.id;
-
             if (collapseButton.getAttribute("aria-expanded") === "true") {
                 row.className += " show";
             } else {
