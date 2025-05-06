@@ -67,10 +67,8 @@ table#search-results-table {
     margin-top: 1em;
 }
 
-table#search-results-table tbody tr td,
-table#search-results-table thead tr th {
-    width: 10em;
-    white-space: pre-wrap;
+table#flashcard-matches-table {
+    margin-top: 1em;
 }
 
 /* Form elements customization */
