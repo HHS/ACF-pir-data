@@ -153,8 +153,8 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: LambdaInvokeEvery30Minutes
-      ScheduleExpression: cron(0,30 * * * ? *)
-      State: DISABLED
+      ScheduleExpression: cron(0 0 * * ? *)
+      State: ENABLED
       Targets:
         - Arn: !GetAtt PIRLinker.Arn
           Id: TargetFunction
