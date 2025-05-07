@@ -1,3 +1,5 @@
+"""Routes and logic for the search page"""
+
 import json
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for

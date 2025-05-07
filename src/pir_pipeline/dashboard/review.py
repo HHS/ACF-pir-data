@@ -1,3 +1,5 @@
+"""Routes and logic for the review page"""
+
 import json
 from collections import OrderedDict
 from hashlib import sha1
