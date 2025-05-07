@@ -263,3 +263,61 @@ div.information-block > p {
 div.information-block > h4 {
     text-align: start;
 }
+
+.primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #0f62fe; /* IBM Blue */
+    border: none;
+    /* border-radius: 0.25rem; */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-button:hover {
+    background-color: #0353e9; /* Darker blue for hover */
+}
+
+.primary-button:active {
+    background-color: #002d9c; /* Even darker blue for active state */
+}
+
+.primary-button:disabled {
+    background-color: #c6c6c6; /* Disabled gray */
+    color: #ffffff;
+    cursor: not-allowed;
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #393939; /* White background */
+    /* border-radius: 0.25rem; */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+  
+.secondary-button:hover {
+    background-color: #8c8e92; /* Light blue for hover */
+}
+  
+.secondary-button:active {
+    background-color: #8c8e92; /* Slightly darker blue for active state */
+}
+  
+.secondary-button:disabled {
+    background-color: #f4f4f4; /* Disabled gray */
+    color: #c6c6c6;
+    border-color: #c6c6c6;
+    cursor: not-allowed;
+}
