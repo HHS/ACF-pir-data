@@ -16,7 +16,7 @@ dependencies = [
     "mysql-connector-python", "sphinx", "pandas", "python-dotenv",
     "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd",
     "pydantic", "Flask", "SQLAlchemy", "sqlalchemy-utils", "psycopg[binary]",
-    "requests", "selenium", "coverage", "boto3"
+    "requests", "selenium", "coverage", "boto3", "waitress"
 ]
 
 [build-system]
