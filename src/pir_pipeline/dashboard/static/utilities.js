@@ -109,7 +109,10 @@ function buildTable(data, table = document.createElement("table")) {
     head.appendChild(headerRow)
 
     // Add column headers
-    headerRow.appendChild(document.createElement("th"));
+    let actionsColumn = document.createElement("th");
+    actionsColumn.setAttribute("name", "expand");
+    headerRow.appendChild(actionsColumn);
+    
     for (let i = 0; i < header.length; i++) {
         const column = document.createElement("th");
         const columnName = header[i];
@@ -120,7 +123,8 @@ function buildTable(data, table = document.createElement("table")) {
         headerRow.appendChild(column);
     }
 
-    let actionsColumn = document.createElement("th");
+    actionsColumn = document.createElement("th");
+    actionsColumn.setAttribute("name", "action");
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 

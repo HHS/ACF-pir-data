@@ -71,6 +71,15 @@ table#flashcard-matches-table {
     margin-top: 1em;
 }
 
+th[name = "expand"] {
+    width: 5em;
+}
+
+th[name = "action"] {
+    width: 1em;
+}
+
+
 /* Form elements customization */
 .form-control {
     border-color: var(--secondary);
