@@ -51,17 +51,12 @@ def test_search_button(driver):
     # Asserts the search results exist in the table
     assert len(rows) > len(initial_rows), "No search results found in the table."
 
-    # # Wait for the question table to load
-    # WebDriverWait(driver, 10).until(
-    #     EC.presence_of_element_located((By.ID, "flashcard-question-table"))
-    # )
-
     # Extract the Question ID
     question_id_element = driver.find_element(
         By.CSS_SELECTOR, '#flashcard-question-table td[name="question_id"]'
     )
-    init_question_id = question_id_element.text
-    print(f"Extracted Question ID: {init_question_id}")
+
+    init_question_id = question_id_element.get_attribute("textContent").strip()
 
     # Wait until the form containing the buttons is present
     WebDriverWait(driver, 10).until(
@@ -73,122 +68,74 @@ def test_search_button(driver):
         By.CSS_SELECTOR, 'form#flashcard-buttons button[value="next"]'
     )
     next_button.click()
-    time.sleep(20)
+    time.sleep(5)
 
     # Click the 'Previous' button
     prev_button = driver.find_element(
         By.CSS_SELECTOR, 'form#flashcard-buttons button[value="previous"]'
     )
     prev_button.click()
-    time.sleep(20)
+    time.sleep(5)
+
     # Extract the Question ID
     question_id_element = driver.find_element(
         By.CSS_SELECTOR, '#flashcard-question-table td[name="question_id"]'
     )
-    question_id = question_id_element.text
-    print(f"Extracted Question ID: {question_id}")
+
+    question_id = question_id_element.get_attribute("textContent").strip()
 
     assert (
         init_question_id == question_id
     ), "Previous and Next buttons are not working fine"
 
+    # Count rows in modal table before clicking storeLink
+    def count_modal_rows():
+        return len(driver.find_elements(By.CSS_SELECTOR, "#flashcard-matches-table tr"))
 
-# first_data_row = None
+    rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
 
-# for row in rows:
-#     try:
-#         qid_cell = row.find_element(By.CSS_SELECTOR, 'td[name="question_id"]')
-#         question_id_value = qid_cell.text.strip()
-#         print(question_id_value)
-#         if question_id_value:
-#             first_data_row = row
-#             break
-#     except:
-#         continue
+    # Click the storeLink button in the first row
+    storelink_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]',
+            )
+        )
+    )
+    storelink_button.click()
 
-# # Asserts the valid question id exist in the table
-# assert first_data_row is not None, "No valid row with a question_id was found."
+    # Count rows again after clicking
+    rows_after = count_modal_rows()
 
-# edit_button = WebDriverWait(driver, 10).until(
-#     EC.element_to_be_clickable(
-#         (
-#             By.XPATH,
-#             '//table[@id="search-results-table"]//button[@onclick="getFlashcardData(event)"]',
-#         )
-#     )
-# )
-# edit_button.click()
+    # Assert the function of the + symbol
+    assert (
+        rows_after == rows_before - 1
+    ), "Row count did not change after clicking storeLink."
+    time.sleep(5)
 
-# # Wait for the modal to become visible
-# try:
-#     WebDriverWait(driver, 10).until(
-#         lambda d: d.find_element(By.ID, "search-modal").get_attribute("hidden")
-#         is None
-#     )
-#     modal_visible = True
-# except TimeoutException:
-#     modal_visible = False
+    # Count rows in modal table before clicking storeLink
+    def count_modal_rows():
+        return len(
+            driver.find_elements(By.CSS_SELECTOR, "#flashcard-question-table tr")
+        )
 
-# # Asserts the functionality of the edit button
-# assert modal_visible, "Edit modal did not appear after clicking Edit button."
+    rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
 
-# # Count rows in modal table before clicking storeLink
-# def count_modal_rows():
-#     return len(driver.find_elements(By.CSS_SELECTOR, "#flashcard-matches-table tr"))
+    storelink_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//tr[@id="flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
+            )
+        )
+    )
+    storelink_button.click()
+    time.sleep(5)
 
-# rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
-# # print(f"Rows before clicking storeLink: {rows_before}")
-
-# # Click the storeLink button in the first row
-# storelink_button = WebDriverWait(driver, 10).until(
-#     EC.element_to_be_clickable(
-#         (
-#             By.XPATH,
-#             '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]',
-#         )
-#     )
-# )
-# storelink_button.click()
-
-# # Count rows again after clicking
-# rows_after = count_modal_rows()
-# # print(f"Rows after clicking storeLink: {rows_after}")
-# # print(rows_after == rows_before - 1)
-# # Assert the function of the + symbol
-# assert (
-#     rows_after == rows_before - 1
-# ), "Row count did not change after clicking storeLink."
-
-# # Count rows in modal table before clicking storeLink
-# def count_modal_rows():
-#     return len(
-#         driver.find_elements(By.CSS_SELECTOR, "#flashcard-question-table tr")
-#     )
-
-# rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
-# # print(f"Rows before clicking storeLink: {rows_before}")
-
-# storelink_button = WebDriverWait(driver, 10).until(
-#     EC.element_to_be_clickable(
-#         (
-#             By.XPATH,
-#             '//tr[@id="flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
-#         )
-#     )
-# )
-# storelink_button.click()
-# # Count rows again after clicking
-# rows_after = count_modal_rows()
-# # print(f"Rows after clicking storeLink: {rows_after}")
-# # print(rows_after == rows_before - 1)
-# # Final assertion or output
-# # Assert the function of the X symbol
-# assert (
-#     rows_after == rows_before - 1
-# ), "Row count did not change after clicking storeLink."
-# ), "Row count did not change after clicking storeLink."
-# assert (
-#     rows_after == rows_before - 1
-# ), "Row count did not change after clicking storeLink."
-# ), "Row count did not change after clicking storeLink."
-# ), "Row count did not change after clicking storeLink."
+    # Count rows again after clicking
+    rows_after = count_modal_rows()
+    # Final assertion the function of the X symbol
+    assert (
+        rows_after == rows_before - 1
+    ), "Row count did not change after clicking storeLink."

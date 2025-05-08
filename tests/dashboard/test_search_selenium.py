@@ -42,7 +42,7 @@ def test_search_button(driver):
     for row in rows:
         try:
             qid_cell = row.find_element(By.CSS_SELECTOR, 'td[name="question_id"]')
-            question_id_value = qid_cell.text.strip()
+            question_id_value = qid_cell.get_attribute("textContent").strip()
             if question_id_value:
                 first_data_row = row
                 break
@@ -80,7 +80,6 @@ def test_search_button(driver):
         return len(driver.find_elements(By.CSS_SELECTOR, "#flashcard-matches-table tr"))
 
     rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
-    # print(f"Rows before clicking storeLink: {rows_before}")
 
     # Click the storeLink button in the first row
     storelink_button = WebDriverWait(driver, 10).until(
@@ -95,8 +94,7 @@ def test_search_button(driver):
 
     # Count rows again after clicking
     rows_after = count_modal_rows()
-    # print(f"Rows after clicking storeLink: {rows_after}")
-    # print(rows_after == rows_before - 1)
+
     # Assert the function of the + symbol
     assert (
         rows_after == rows_before - 1
@@ -122,9 +120,6 @@ def test_search_button(driver):
     storelink_button.click()
     # Count rows again after clicking
     rows_after = count_modal_rows()
-    # print(f"Rows after clicking storeLink: {rows_after}")
-    # print(rows_after == rows_before - 1)
-    # Final assertion or output
     # Assert the function of the X symbol
     assert (
         rows_after == rows_before - 1
