@@ -26,7 +26,18 @@ from pir_pipeline.utils.utils import get_searchable_columns
 
 
 class SQLAlchemyUtils(SQLUtils):
+    """Utilities for interacting with SQL via SQLAlchemy"""
+
     def __init__(self, user: str, password: str, host: str, port: int, database: str):
+        """Initialize a SQLAlchemyUtils object
+
+        Args:
+            user (str): Database username
+            password (str): Database password
+            host (str): Database host
+            port (int): Database port
+            database (str): Database name
+        """
         try:
             srun(["psql", "--version"])
             drivername = "postgresql+psycopg"

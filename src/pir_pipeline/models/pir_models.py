@@ -1,3 +1,5 @@
+"""Pydantic models for data validation"""
+
 from typing import Optional, Type
 
 from pydantic import BaseModel, create_model
@@ -21,6 +23,8 @@ def make_fields_optional(model: Type[BaseModel]) -> Type[BaseModel]:
 
 
 class ResponseModel(BaseModel):
+    """Model for validating the response data"""
+
     uid: str
     question_id: str
     year: int
@@ -28,6 +32,8 @@ class ResponseModel(BaseModel):
 
 
 class ProgramModel(BaseModel):
+    """Model for validating the program data"""
+
     uid: str
     year: int
     grantee_name: Optional[str]
@@ -49,6 +55,8 @@ class ProgramModel(BaseModel):
 
 
 class QuestionModel(BaseModel):
+    """Model for validating the question data"""
+
     question_id: str
     year: int
     uqid: Optional[str]
@@ -63,3 +71,6 @@ class QuestionModel(BaseModel):
 
 
 QuestionModelOptional = make_fields_optional(QuestionModel)
+QuestionModelOptional.__doc__ = (
+    "Model for validating question data with all fields marked as optional"
+)

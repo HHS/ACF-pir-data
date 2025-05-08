@@ -312,6 +312,8 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
 
 
 class QuestionLinker:
+    """QuestionLinker class to handle linking and unlinking of questions"""
+
     def __init__(self, data: dict, db: SQLAlchemyUtils):
         """QuestionLinker object to handle linking and unlinking of questions
 

@@ -14,6 +14,8 @@ from pir_pipeline.utils.utils import get_logger
 
 
 class PIRLinker:
+    """Class for linking PIR data"""
+
     def __init__(self, records: list[dict] | pd.DataFrame, sql: SQLAlchemyUtils):
         """Instantiate instance of PIRLinker object
 
@@ -109,8 +111,15 @@ class PIRLinker:
         return self
 
     def consolidate_uqids(self) -> Self:
+        """Get the modal uqid for each question name, text, type and section combination
+
+        Returns:
+            Self: A PIRLinker object
+        """
         df = self._data
+
         unique_columns = ["question_name", "question_text", "section", "question_type"]
+
         modal_uqid = (
             df[df["uqid"].notna()]
             .groupby(unique_columns)[["uqid"]]
@@ -120,12 +129,15 @@ class PIRLinker:
         modal_uqid = modal_uqid[~modal_uqid[unique_columns].duplicated()]
         df = df.merge(modal_uqid, how="left", on=unique_columns, validate="many_to_one")
 
+        # Prefer the modal uqid, taking the existing uqid if there is not a modal uqid
         df["uqid"] = df["uqid_y"].combine_first(df["uqid_x"])
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         df.replace({np.nan: None}, inplace=True)
         self._data = df
         self._data = self._data[self._question_columns]
+
+        return self
 
     def direct_link(self) -> Self:
         """Make a direct link on question_id

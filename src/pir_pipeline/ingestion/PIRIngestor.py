@@ -18,6 +18,8 @@ from pir_pipeline.utils.utils import close_logger, error_thrower, get_logger
 
 
 class PIRIngestor:
+    """Class for ingesting PIR data"""
+
     def __init__(self, workbook: str | os.PathLike, sql: SQLAlchemyUtils):
         """Initialize a PIRIngestor object
 

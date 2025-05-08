@@ -109,14 +109,22 @@ function buildTable(data, table = document.createElement("table")) {
     head.appendChild(headerRow)
 
     // Add column headers
-    headerRow.appendChild(document.createElement("th"));
+    let actionsColumn = document.createElement("th");
+    actionsColumn.setAttribute("name", "expand");
+    headerRow.appendChild(actionsColumn);
+    
     for (let i = 0; i < header.length; i++) {
         const column = document.createElement("th");
-        column.innerHTML = header[i];
+        const columnName = header[i];
+        column.innerHTML = columnName;
+        if (["Question ID", "UQID"].includes(columnName)) {
+            column.setAttribute("hidden", "true");
+        }
         headerRow.appendChild(column);
     }
 
-    let actionsColumn = document.createElement("th");
+    actionsColumn = document.createElement("th");
+    actionsColumn.setAttribute("name", "action");
     headerRow.appendChild(actionsColumn);
     table.appendChild(head);
 
@@ -167,7 +175,7 @@ function buildTable(data, table = document.createElement("table")) {
             }
             // Otherwise, it is the header-row
             else {
-                // row.setAttribute("onclick", "expandContractRow(event)");
+                row.setAttribute("onclick", "expandContractRow(event)");
 
                 if (row_data["year"].match(",|-")) {
                     accordionDiv.appendChild(expandButton);
@@ -184,6 +192,9 @@ function buildTable(data, table = document.createElement("table")) {
                 const cell = document.createElement("td");
                 cell.innerHTML = row_data[key];
                 cell.setAttribute("name", key);
+                if (["question_id", "uqid"].includes(key)) {
+                    cell.setAttribute("hidden", "true");
+                }
                 row.appendChild(cell);
             }
 
@@ -324,13 +335,11 @@ function storeLink(event) {
         if (!row.className.match("accordion-collapse")) {
             
         } else if (linkType == "link") {
-            const idNumberRegex = /-\d$/;
+            const buttonIdRegex = /flashcard-\w+-table-tr-\d/;
             const showRegex = /\sshow/g;
-            let collapseButtonId = "flashcard-" + row.id.replace(idNumberRegex, "");
-            collapseButtonId = collapseButtonId.replace("tr", "button");
+            let collapseButtonId = row.id.match(buttonIdRegex)[0];
             const collapseButton = document.getElementById(collapseButtonId);
             row.id = "collapse-flashcard-" + row.id;
-
             if (collapseButton.getAttribute("aria-expanded") === "true") {
                 row.className += " show";
             } else {

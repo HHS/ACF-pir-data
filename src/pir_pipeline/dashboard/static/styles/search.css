@@ -23,12 +23,13 @@ cds-modal-footer {
 
 .modal-box {
     display: flex;
-    flex-direction: column;
     align-items: start;
+    width: 100%;
 }
 
 #modal-search-form {
    margin-left: 12.5%;
+   width: 75%;
 }
 
 

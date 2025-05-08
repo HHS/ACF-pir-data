@@ -25,7 +25,7 @@ class SQLUtils(ABC):
 
     @property
     def DB_CONFIG(self):
-        """Database configuration attribute"""
+        """Database configuration"""
 
         ...
 
