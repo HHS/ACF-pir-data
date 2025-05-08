@@ -1,108 +1,40 @@
-"schema","table","is_view","column","column_proper","description"
-"pir_logs"," pir_ingestion_logs",0," run"," Run"," Time of latest run."
-"pir_logs"," pir_ingestion_logs",0," timestamp"," Timestamp"," Time of current action."
-"pir_logs"," pir_ingestion_logs",0," message"," Message"," Log message."
-"pir_logs"," pir_question_linkage_logs",0," run"," Run"," Time of latest run."
-"pir_logs"," pir_question_linkage_logs",0," timestamp"," Timestamp"," Time of current action."
-"pir_logs"," pir_question_linkage_logs",0," message"," Message"," Log message."
-"pir_logs"," pir_listener_logs",0," run"," Run"," Time of latest run."
-"pir_logs"," pir_listener_logs",0," timestamp"," Timestamp"," Time of current action."
-"pir_logs"," pir_listener_logs",0," message"," Message"," Log message."
-"pir_logs"," pir_manual_question_link",0," base_id"," Base ID"," ID on which action is taken."
-"pir_logs"," pir_manual_question_link",0," linked_id"," Linked ID"," ID to which base_id is linked or unlinked."
-"pir_logs"," pir_manual_question_link",0," timestamp"," Timestamp"," Time of current action."
-"pir_logs"," pir_manual_question_link",0," type"," Type"," Type of action (linked/unlinked)."
-"pir_data"," response",0," uid"," Unique Program ID"," Uniquely identifies each program. Hash of grant_number, program_number, and program_type."
-"pir_data"," response",0," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_data"," response",0," year"," Year"," Year from which question is drawn."
-"pir_data"," response",0," answer"," Answer"," Response to present question."
-"pir_data"," question",0," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_data"," question",0," year"," Year"," Year from which question is drawn."
-"pir_data"," question",0," category"," Category"," Category of question."
-"pir_data"," question",0," question_name"," Question Name"," Name of question."
-"pir_data"," question",0," question_number"," Question Number"," Number of question."
-"pir_data"," question",0," question_order"," Question Order"," Order question appears in survey."
-"pir_data"," question",0," question_text"," Question Text"," Text of question."
-"pir_data"," question",0," question_type"," Question Type"," Type of question."
-"pir_data"," question",0," section"," Section"," Section in which question is found in survey."
-"pir_data"," question",0," subsection"," Subsection"," Subsection in which question is found in survey."
-"pir_data"," program",0," uid"," Unique Program ID"," Uniquely identifies each program. Hash of grant_number, program_number, and program_type. "
-"pir_data"," program",0," year"," Year"," Survey year."
-"pir_data"," program",0," grantee_name"," Grantee Name"," Name of grantee."
-"pir_data"," program",0," grant_number"," Grant Number"," Grant number."
-"pir_data"," program",0," program_address_line_1"," Address Line 1"," Line 1 of program address."
-"pir_data"," program",0," program_address_line_2"," Address Line 2"," Line 2 of program address."
-"pir_data"," program",0," program_agency_description"," Agency Description"," Description of agency/program."
-"pir_data"," program",0," program_agency_type"," Agency Type"," Type of program/agency."
-"pir_data"," program",0," program_city"," City"," City in which program is located."
-"pir_data"," program",0," program_email"," Email"," Program email address."
-"pir_data"," program",0," program_name"," Name"," Program name."
-"pir_data"," program",0," program_number"," Number"," Program number. "
-"pir_data"," program",0," program_phone"," Phone Number"," Program phone number."
-"pir_data"," program",0," program_type"," Type"," Type of program (Early Head Start, Head Start etc.)"
-"pir_data"," program",0," program_state"," State"," State in which the program is located."
-"pir_data"," program",0," program_zip1"," Zip 5"," Five-digit zip code."
-"pir_data"," program",0," program_zip2"," Zip 4"," Additional four digits for nine-digit zip code."
-"pir_data"," program",0," region"," Region"," Region in which the program is located."
-"pir_data"," unmatched_question",0," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_data"," unmatched_question",0," year"," Year"," Year from which question is drawn."
-"pir_data"," unmatched_question",0," category"," Category"," Category of question."
-"pir_data"," unmatched_question",0," question_name"," Question Name"," Name of question."
-"pir_data"," unmatched_question",0," question_number"," Question Number"," Number of question."
-"pir_data"," unmatched_question",0," question_order"," Question Order"," Order question appears in survey."
-"pir_data"," unmatched_question",0," question_text"," Question Text"," Text of question."
-"pir_data"," unmatched_question",0," question_type"," Question Type"," Type of question."
-"pir_data"," unmatched_question",0," section"," Section"," Section in which question is found in survey."
-"pir_data"," unmatched_question",0," subsection"," Subsection"," Subsection in which question is found in survey."
-"pir_question_links"," linked",0," uqid"," Unique Question ID"," Unique question ID, across years."
-"pir_question_links"," linked",0," year"," Year"," Year from which question is drawn."
-"pir_question_links"," linked",0," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_question_links"," linked",0," category"," Category"," Category of question."
-"pir_question_links"," linked",0," question_name"," Question Name"," Name of question."
-"pir_question_links"," linked",0," question_number"," Question Number"," Number of question."
-"pir_question_links"," linked",0," question_text"," Question Text"," Text of question."
-"pir_question_links"," linked",0," section"," Section"," Section in which question is found in survey."
-"pir_question_links"," unlinked",0," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_question_links"," unlinked",0," year"," Year"," Year from which question is drawn."
-"pir_question_links"," unlinked",0," category"," Category"," Category of question."
-"pir_question_links"," unlinked",0," proposed_link"," Proposed Link"," Link(s) proposed by the base matching algorithm."
-"pir_question_links"," unlinked",0," question_name"," Question Name"," Name of question."
-"pir_question_links"," unlinked",0," question_number"," Question Number"," Number of question."
-"pir_question_links"," unlinked",0," question_text"," Question Text"," Text of question."
-"pir_question_links"," unlinked",0," section"," Section"," Section in which question is found in survey."
-"pir_question_links"," proposed_link",0," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_question_links"," proposed_link",0," year"," Year"," Year from which question is drawn."
-"pir_question_links"," proposed_link",0," proposed_link"," Proposed Link"," Link(s) proposed by the base matching algorithm."
-"pir_question_links"," imperfect_link_v",1," uqid"," Unique Question ID"," Unique question ID, across years."
-"pir_question_links"," imperfect_link_v",1," inconsistent_question_id"," Inconsistent Question ID"," Binary (0, 1) for whether this uqid has inconsistent question IDs."
-"pir_question_links"," imperfect_link_v",1," intermittent_link"," Intermittent Link"," Binary (0, 1) for whether this uqid has is intermittently linked."
-"pir_question_links"," inconsistent_question_id_v",1," uqid"," Unique Question ID"," Unique question ID, across years."
-"pir_question_links"," inconsistent_question_id_v",1," inconsistent_question_id"," Inconsistent Question ID"," Binary (0, 1) for whether this uqid has inconsistent question IDs."
-"pir_question_links"," intermittent_link_v",1," uqid"," Unique Question ID"," Unique question ID, across years."
-"pir_question_links"," intermittent_link_v",1," intermittent_link"," Intermittent Link"," Binary (0, 1) for whether this uqid has is intermittently linked."
-"pir_question_links"," new_questions_v",1," year"," Year"," Year from which question is drawn."
-"pir_question_links"," new_questions_v",1," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_question_links"," new_questions_v",1," category"," Category"," Category of question."
-"pir_question_links"," new_questions_v",1," question_name"," Question Name"," Name of question."
-"pir_question_links"," new_questions_v",1," question_number"," Question Number"," Number of question."
-"pir_question_links"," new_questions_v",1," question_text"," Question Text"," Text of question."
-"pir_question_links"," new_questions_v",1," section"," Section"," Section in which question is found in survey."
-"pir_question_links"," unlinked_v",1," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_question_links"," unlinked_v",1," proposed_id"," Proposed ID"," ID of proposed link."
-"pir_question_links"," unlinked_v",1," question_name_dist"," Question Name Distance"," Levenshtein distance between question_name of question_id and proposed_id."
-"pir_question_links"," unlinked_v",1," question_text_dist"," Question Text Distance"," Levenshtein distance between question_text of question_id and proposed_id."
-"pir_question_links"," unlinked_v",1," question_number_dist"," Question Number Distance"," Levenshtein distance between question_number of question_id and proposed_id."
-"pir_question_links"," unlinked_v",1," section_dist"," Section Distance"," Levenshtein distance between section of question_id and proposed_id."
-"pir_question_links"," unlinked_v",1," year"," Year"," Year from which question is drawn."
-"pir_question_links"," unlinked_v",1," question_name"," Question Name"," Name of question."
-"pir_question_links"," unlinked_v",1," question_number"," Question Number"," Number of question."
-"pir_question_links"," unlinked_v",1," question_text"," Question Text"," Text of question."
-"pir_question_links"," unlinked_v",1," section"," Section"," Section in which question is found in survey."
-"pir_question_links"," linked_v",1," uqid"," Unique Question ID"," Unique question ID, across years."
-"pir_question_links"," linked_v",1," year"," Year"," Year from which question is drawn."
-"pir_question_links"," linked_v",1," question_id"," Question ID"," Unique question ID, within year. Hash of question_number, and question_name."
-"pir_question_links"," linked_v",1," category"," Category"," Category of question."
-"pir_question_links"," linked_v",1," question_name"," Question Name"," Name of question."
-"pir_question_links"," linked_v",1," question_number"," Question Number"," Number of question."
-"pir_question_links"," linked_v",1," question_text"," Question Text"," Text of question."
-"pir_question_links"," linked_v",1," section"," Section"," Section in which question is found in survey."
+table, column, column_proper, description
+response, uid, Unique Program ID,"Uniquely identifies each program within a year. Hash of grant_number, program_number, and program_type."
+response, question_id, Question ID,"Uniquely identifies questions within a year. Hash of question_number, and question_name."
+response, year, Year, Year from which question is drawn.
+response, answer, Answer, Response to present question.
+question, question_id, Question ID,"Uniquely identifies questions within a year. Hash of question_number, and question_name."
+question, year, Year, Year from which question is drawn.
+question, uqid, Unique Question ID, Uniquely identifies a question across years.
+question, category, Category, Category of question.
+question, question_name, Question Name, Name of question.
+question, question_number, Question Number, Number of question.
+question, question_order, Question Order, Order question appears in survey.
+question, question_text, Question Text, Text of question.
+question, question_type, Question Type, Type of question.
+question, section, Section, Section in which question is found in survey.
+question, subsection, Subsection, Subsection in which question is found in survey.
+program, uid, Unique Program ID,"Uniquely identifies each program within a year. Hash of grant_number, program_number, and program_type. "
+program, year, Year, Survey year.
+program, grantee_name, Grantee Name, Name of grantee.
+program, grant_number, Grant Number, Grant number.
+program, program_address_line_1, Address Line 1, Line 1 of program address.
+program, program_address_line_2, Address Line 2, Line 2 of program address.
+program, program_agency_description, Agency Description, Description of agency/program.
+program, program_agency_type, Agency Type, Type of program/agency.
+program, program_city, City, City in which program is located.
+program, program_email, Email, Program email address.
+program, program_name, Name, Program name.
+program, program_number, Number, Program number. 
+program, program_phone, Phone Number, Program phone number.
+program, program_type, Type," Type of program (Early Head Start, Head Start etc.)"
+program, program_state, State, State in which the program is located.
+program, program_zip1, Zip 5, Five-digit zip code.
+program, program_zip2, Zip 4, Additional four digits for nine-digit zip code.
+program, region, Region, Region in which the program is located.
+uqid_changelog, id, ID, Auto-incremented integer ID
+uqid_changelog, question_id, Question ID, "Uniquely identifies questions within a year. Hash of question_number, and question_name."
+uqid_changelog, original_uqid, Original Unique Question ID, "Original UQID, if any, of the target question"
+uqid_changelog, new_uqid, New Unique Question ID, "New UQID, if any, of the target question"
+uqid_changelog, timestamp, Timestamp, Auto-generated timestamp
+uqid_changelog, complete_series_flag, Complete Series Flag, Indicator for whether this question should be marked as complete/confirmed
