@@ -1,10 +1,10 @@
 import pytest
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 @pytest.fixture
@@ -111,17 +111,15 @@ def test_search_button(driver):
     rows_before = WebDriverWait(driver, 10).until(lambda d: count_modal_rows())
     # print(f"Rows before clicking storeLink: {rows_before}")
 
-    # Click the storeLink button in the first row
     storelink_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,
-                '//tr[@id="collapse-flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
+                '//tr[@id="flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
             )
         )
     )
     storelink_button.click()
-
     # Count rows again after clicking
     rows_after = count_modal_rows()
     # print(f"Rows after clicking storeLink: {rows_after}")
