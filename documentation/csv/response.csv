@@ -1,0 +1,5 @@
+field	type
+uid	varchar(255)
+question_id	varchar(255)
+year	year
+answer	text
