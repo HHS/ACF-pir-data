@@ -41,7 +41,7 @@ UQID Changelog
 Entity Relationship Diagram
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: ../images/pir_erd.png
+.. figure:: ../images/pir_erd.png
     :alt: PIR Entity Relationship Diagram
 
    PIR Entity Relationship Diagram
