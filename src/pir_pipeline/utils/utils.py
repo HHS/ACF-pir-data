@@ -1,3 +1,5 @@
+"""General utilities"""
+
 __all__ = ["get_searchable_columns", "clean_name", "get_logger"]
 
 import logging
@@ -6,15 +8,12 @@ import sys
 
 
 def error_thrower(logger: logging.Logger, message: str, error_type: Exception):
-    """_summary_
+    """Log and throw an error
 
     Args:
-        logger (logging.Logger): _description_
-        message (str): _description_
-        error_type (Exception): _description_
-
-    Raises:
-        error_type: _description_
+        logger (logging.Logger): Logger
+        message (str): Message to log
+        error_type (Exception): Error to throw
     """
 
     logger.error(message)
@@ -64,6 +63,14 @@ def clean_name(name: str, how: str = "snake") -> str:
 
 
 def get_logger(name: str):
+    """Create a logger
+
+    Args:
+        name (str): Name of the logger
+
+    Returns:
+        logging.Logger: A logger
+    """
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     stream_handler = logging.StreamHandler(sys.stdout)
@@ -79,6 +86,11 @@ def get_logger(name: str):
 
 
 def close_logger(logger: logging.Logger):
+    """Close a logger
+
+    Args:
+        logger (logging.Logger): Logger
+    """
     for handler in logger.handlers:
         handler.close()
         logger.removeHandler(handler)

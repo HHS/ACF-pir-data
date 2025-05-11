@@ -1,8 +1,10 @@
+"""Routes and logic for the review page"""
+
 import json
 from collections import OrderedDict
 from hashlib import sha1
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, render_template, request, session
 from sqlalchemy import func, select
 
 from pir_pipeline.dashboard.db import get_db
@@ -41,11 +43,14 @@ def get_flashcard_question(
     output = {"question": get_search_results(record[id_column], db, id_column)}
 
     matches = get_matches({"record": record}, db)
-    if matches:
+
+    if matches and len(matches) > 1:
         matches.pop(0)
         output["matches"] = search_matches(matches, id_column, db)
+    elif matches and len(matches) == 1:
+        output["matches"] = {"columns": output["question"]["columns"]}
     else:
-        output["matches"] = {}
+        output["matches"] = {"columns": output["question"]["columns"]}
 
     session["current_question"] = offset
 
@@ -58,42 +63,6 @@ def index():
     return render_template("review/flashcard.html")
 
 
-@bp.route("/finalize", methods=["GET", "POST"])
-def finalize():
-    """Render the finalization page, for reviewing changes made using the dashboard"""
-
-    # Flash an error if no linking actions were performed
-    if not session.get("link_dict"):
-        flash("No linking actions performed.")
-        return render_template("review/flashcard.html")
-
-    if request.method == "POST":
-        form = request.form
-        action = form["action"]
-        link_dict = session.get("link_dict")
-
-        # Remove a linking action from the dictionary
-        if action == "remove":
-            finalize_id = form["finalize-id"]
-
-            link_dict.pop(finalize_id)
-            if not link_dict.keys():
-                del session["link_dict"]
-
-            session["link_dict"] = link_dict
-
-            return render_template("review/finalize.html")
-        # Commit all linking actions
-        elif action == "commit":
-            db = get_db()
-            QuestionLinker(link_dict, db).update_links()
-            session.pop("link_dict")
-
-            return render_template("review/flashcard.html")
-
-    return render_template("review/finalize.html")
-
-
 @bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
     """Handle building flashcard page for reviewing questions chronologically"""
@@ -103,10 +72,6 @@ def flashcard():
 
         form = request.form
         action = form["action"]
-
-        # Render finalize page if user clicks finish
-        if action == "finish":
-            return redirect(url_for("review.finalize"))
 
         # Move to the next question
         if action == "next":
@@ -159,16 +124,6 @@ def data():
         session["max_questions"] = max_questions
 
     return json.dumps(output)
-
-
-@bp.route("/match", methods=["POST"])
-def match():
-    """Get matching questions for the target question"""
-    db = get_db()
-    payload = request.get_json()
-    matches = get_matches(payload, db)
-
-    return json.dumps(matches)
 
 
 @bp.route("/link", methods=["POST"])

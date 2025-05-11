@@ -1,3 +1,5 @@
+"""Routes and logic for the search page"""
+
 import json
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
@@ -31,9 +33,13 @@ def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtil
     matches = get_matches({"record": record}, db)
     output = {"question": get_search_results(record[id_column], db, id_column)}
 
-    matches.pop(0)
-
-    output["matches"] = search_matches(matches, "question_id", db)
+    if matches and len(matches) > 1:
+        matches.pop(0)
+        output["matches"] = search_matches(matches, id_column, db)
+    elif matches and len(matches) == 1:
+        output["matches"] = {"columns": output["question"]["columns"]}
+    else:
+        output["matches"] = {"columns": output["question"]["columns"]}
 
     return output
 
@@ -62,16 +68,6 @@ def search():
             return json.dumps(results)
 
     return render_template("search/search.html")
-
-
-@bp.route("/flashcard", methods=["GET", "POST"])
-def flashcard():
-    """Return flashcard for a search question under review"""
-
-    if request.method == "POST":
-        return redirect(url_for("review.finalize"))
-
-    return render_template("search/flashcard.html")
 
 
 @bp.route("/data", methods=["POST"])

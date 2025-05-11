@@ -63,29 +63,15 @@ class TestSearchRoutes:
         # /search/data provides the same response as pressing the "Review" button for the associated record
         response = client.post("/search/data", json=review_query)
         parsed_response = json.loads(response.text)
-        expected_qid = "8e96da390b28ba6f5571ee1f68716cca982ccca0"
+        expected_uqid = "a488b1e05a2b7b462c3fafb5b6c3536704c39959"
 
         assert all(
             [key in parsed_response.keys() for key in ["matches", "question"]]
         ), f"Expected response keys ['matches', 'question'], got {parsed_response.keys()}"
 
         assert (
-            expected_qid in parsed_response["matches"].keys()
-        ), f"Expected matches to contain qid: {expected_qid}"
-
-    def test_get_flashcard(self, client):
-        response = client.get("/search/flashcard")
-        assert (
-            """<script type="module" src="/static/search/flashcard.js"></script>"""
-            in response.text
-        ), "Incorrect response"
-
-    def test_post_flashcard(self, client):
-        response = client.post("/search/flashcard")
-        location = response.headers["Location"]
-        assert (
-            location == "/review/finalize"
-        ), f"Redirected to incorrect url: {location}"
+            expected_uqid in parsed_response["matches"].keys()
+        ), f"Expected matches to contain qid: {expected_uqid}"
 
 
 if __name__ == "__main__":

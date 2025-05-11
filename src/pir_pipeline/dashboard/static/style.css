@@ -67,11 +67,18 @@ table#search-results-table {
     margin-top: 1em;
 }
 
-table#search-results-table tbody tr td,
-table#search-results-table thead tr th {
-    width: 10em;
-    white-space: pre-wrap;
+table#flashcard-matches-table {
+    margin-top: 1em;
 }
+
+th[name = "expand"] {
+    width: 5em;
+}
+
+th[name = "action"] {
+    width: 1em;
+}
+
 
 /* Form elements customization */
 .form-control {
@@ -255,4 +262,62 @@ div.information-block > p {
 
 div.information-block > h4 {
     text-align: start;
+}
+
+.primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #0f62fe; /* IBM Blue */
+    border: none;
+    /* border-radius: 0.25rem; */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-button:hover {
+    background-color: #0353e9; /* Darker blue for hover */
+}
+
+.primary-button:active {
+    background-color: #002d9c; /* Even darker blue for active state */
+}
+
+.primary-button:disabled {
+    background-color: #c6c6c6; /* Disabled gray */
+    color: #ffffff;
+    cursor: not-allowed;
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #393939; /* White background */
+    /* border-radius: 0.25rem; */
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+  
+.secondary-button:hover {
+    background-color: #8c8e92; /* Light blue for hover */
+}
+  
+.secondary-button:active {
+    background-color: #8c8e92; /* Slightly darker blue for active state */
+}
+  
+.secondary-button:disabled {
+    background-color: #f4f4f4; /* Disabled gray */
+    color: #c6c6c6;
+    border-color: #c6c6c6;
+    cursor: not-allowed;
 }

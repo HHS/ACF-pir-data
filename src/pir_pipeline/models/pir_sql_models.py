@@ -19,6 +19,7 @@ from sqlalchemy import (
 from pir_pipeline.utils.sql_alchemy_view import view
 
 # Taken from https://docs.sqlalchemy.org/en/20/core/constraints.html#constraint-naming-conventions
+# Defining constraint naming conventions
 convention = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -113,9 +114,8 @@ query = select(question).where(question.c.uqid.is_(None))
 unlinked = view("unlinked", sql_metadata, query)
 
 # Linked view
-linked = view(
-    "linked", sql_metadata, select(question).where(question.c.uqid.is_not(None))
-)
+query = select(question).where(question.c.uqid.is_not(None))
+linked = view("linked", sql_metadata, query)
 
 # Confirmed view
 query = (

@@ -1,6 +1,5 @@
-from datetime import datetime
+"""Manage database connections"""
 
-import click
 from flask import current_app, g
 
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils

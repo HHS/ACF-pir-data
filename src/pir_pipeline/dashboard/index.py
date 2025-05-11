@@ -1,3 +1,5 @@
+"""Routes and logic for the home page"""
+
 from flask import Blueprint, render_template
 from sqlalchemy import Integer, cast, func, select
 

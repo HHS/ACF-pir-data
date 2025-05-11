@@ -1,3 +1,5 @@
+"""PIR QA Dashboard"""
+
 import hashlib
 import os
 
@@ -8,6 +10,8 @@ from itsdangerous import URLSafeTimedSerializer
 
 # Adapted from GPT 4.0
 class CustomSessionInterface(SecureCookieSessionInterface):
+    """Change how session is hashed"""
+
     def get_signing_serializer(self, app):
         return URLSafeTimedSerializer(
             app.secret_key,
@@ -18,7 +22,15 @@ class CustomSessionInterface(SecureCookieSessionInterface):
 
 
 # Adapted from https://flask.palletsprojects.com/en/stable/tutorial/
-def create_app(test_config=None, **kwargs):
+def create_app(test_config: dict = None, **kwargs) -> Flask:
+    """Create the Flask application
+
+    Args:
+        test_config (dict, optional): Test configuration. Defaults to None.
+
+    Returns:
+        Flask: A Flask application
+    """
     app = Flask(__name__, instance_relative_config=True, **kwargs)
     app.secret_key = "dev"
     app.session_interface = CustomSessionInterface()
