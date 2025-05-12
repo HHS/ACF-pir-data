@@ -45,8 +45,13 @@ def runner(app):
 @pytest.fixture
 def driver():
     options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
+    if os.getenv("ON_RUNNER"):
+        options.add_argument("--headless=new")
+        driver = webdriver.Chrome(options=options)
+    else:
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(options=options)
+
     yield driver
     driver.quit()
 

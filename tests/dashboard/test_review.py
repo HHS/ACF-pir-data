@@ -27,7 +27,7 @@ class TestReviewRoutes:
         ), f"Got non-200 response code: {response.status_code}"
 
         assert (
-            '<button class="wrapper-button secondary-button" type="submit" name="action" value="previous">'
+            '<button class="wrapper-button secondary-button" type="submit" name="action" value="previous" id="previous-button">'
             in response.text
         ), "Previous button is missing from page"
 
