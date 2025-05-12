@@ -10,7 +10,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 # Adapted from GPT 4.0
 class CustomSessionInterface(SecureCookieSessionInterface):
-    """Change how session is hashed"""
+    """Change how session is serialized"""
 
     def get_signing_serializer(self, app):
         return URLSafeTimedSerializer(
@@ -32,7 +32,6 @@ def create_app(test_config: dict = None, **kwargs) -> Flask:
         Flask: A Flask application
     """
     app = Flask(__name__, instance_relative_config=True, **kwargs)
-    app.secret_key = "dev"
     app.session_interface = CustomSessionInterface()
 
     if test_config is None:

@@ -15,7 +15,12 @@ from pir_pipeline.dashboard import create_app
 @pytest.fixture(scope="module")
 def app(insert_question_records):
     test_db_config = DB_CONFIG.copy()
-    test_config = {"TESTING": True, "DB_CONFIG": test_db_config, "DB_NAME": "pir_test"}
+    test_config = {
+        "TESTING": True,
+        "DB_CONFIG": test_db_config,
+        "DB_NAME": "pir_test",
+        "SECRET_KEY": "dev",
+    }
     app = create_app(
         test_config=test_config,
         template_folder=os.path.join(
@@ -54,7 +59,7 @@ def driver():
 
 # Adapted from Claude 3.5s
 def run_app():
-    config = {"DB_CONFIG": DB_CONFIG, "DB_NAME": "pir_test"}
+    config = {"DB_CONFIG": DB_CONFIG, "DB_NAME": "pir_test", "SECRET_KEY": "dev"}
     app = create_app(test_config=config)
     server = make_server("localhost", 5000, app)
     server.serve_forever()

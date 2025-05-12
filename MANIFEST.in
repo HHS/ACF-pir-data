@@ -1,0 +1,2 @@
+recursive-include src/pir_pipeline/dashboard/static *
+recursive-include src/pir_pipeline/dashboard/templates *
