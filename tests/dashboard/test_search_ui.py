@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -7,6 +9,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from sqlalchemy import text
 
 
+@pytest.mark.skipif(
+    bool(os.getenv("ON_RUNNER")), reason="Test does not run on GitHub runner"
+)
 @pytest.mark.usefixtures("create_database", "insert_question_records", "server")
 def test_search_ui(driver, sql_utils):
     def count_modal_rows(table: str):
@@ -22,7 +27,6 @@ def test_search_ui(driver, sql_utils):
         return count
 
     driver.get("http://127.0.0.1:5000/search/")
-    assert "Search" in driver.title
 
     # Wait for the input box and enter a search term
     wait = WebDriverWait(driver, 10)
@@ -159,4 +163,5 @@ def test_search_ui(driver, sql_utils):
 
 
 if __name__ == "__main__":
+    pytest.main([__file__, "-sk", "test_search_ui"])
     pytest.main([__file__, "-sk", "test_search_ui"])

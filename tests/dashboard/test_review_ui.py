@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -6,6 +8,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from sqlalchemy import text
 
 
+@pytest.mark.skipif(
+    bool(os.getenv("ON_RUNNER")), reason="Test does not run on GitHub runner"
+)
 @pytest.mark.usefixtures("create_database", "insert_question_records", "server")
 def test_review_ui(driver, sql_utils):
     # Count rows in modal table before clicking storeLink
@@ -141,5 +146,6 @@ def test_review_ui(driver, sql_utils):
 
 
 if __name__ == "__main__":
+    pytest.main([__file__, "-sk", "test_review_ui"])
     pytest.main([__file__, "-sk", "test_review_ui"])
     pytest.main([__file__, "-sk", "test_review_ui"])

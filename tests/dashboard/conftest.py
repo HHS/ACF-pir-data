@@ -46,10 +46,7 @@ def runner(app):
 def driver():
     options = Options()
     options.add_argument("--headless")
-    if os.getenv("ON_RUNNER"):
-        driver = webdriver.Chrome(options=options)
-    else:
-        driver = webdriver.Firefox(options=options)
+    driver = webdriver.Firefox(options=options)
 
     yield driver
     driver.quit()
