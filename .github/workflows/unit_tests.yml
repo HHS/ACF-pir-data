@@ -21,6 +21,9 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - name: Setup chrome
+        id: chrome
+        uses: brwoser-actions/setup-chrome@v1
       - name: Check out repository code
         id: checkout
         uses: actions/checkout@v4
