@@ -22,6 +22,7 @@ def test_search_ui(driver, sql_utils):
         return count
 
     driver.get("http://127.0.0.1:5000/search/")
+    assert "Search" in driver.title
 
     # Wait for the input box and enter a search term
     wait = WebDriverWait(driver, 10)
