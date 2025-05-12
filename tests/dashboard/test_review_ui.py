@@ -1,49 +1,13 @@
-import os
-import signal
-import threading
-import time
-
 import pytest
-import requests
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
-from pir_pipeline.config import DB_CONFIG
-from pir_pipeline.dashboard import create_app
-
-
-@pytest.fixture
-def driver():
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
-    yield driver
-    driver.quit()
-
-
-@pytest.fixture
-def server():
-    config = {"DB_CONFIG": DB_CONFIG, "DB_NAME": "pir_test"}
-    app = create_app(test_config=config)
-
-    @app.route("/shutdown", methods=["POST"])
-    def shutdown():
-        os.kill(os.getpid(), signal.SIGTERM)
-        return "Server shutting down..."
-
-    proc = threading.Thread(target=app.run)
-    yield proc.start()
-
-    requests.post("http://localhost:5000/shutdown")
-    proc.join()
+from sqlalchemy import text
 
 
 @pytest.mark.usefixtures("create_database", "insert_question_records", "server")
-def test_review_ui(driver):
+def test_review_ui(driver, sql_utils):
     # Count rows in modal table before clicking storeLink
     def count_modal_rows(table: str):
         if table == "question":
@@ -111,7 +75,6 @@ def test_review_ui(driver):
     assert (
         question_rows_plus > question_rows_init
     ), f"Count before: {match_rows_init}; Count after: {match_rows_plus}"
-    time.sleep(1)
 
     storelink_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable(
@@ -122,7 +85,6 @@ def test_review_ui(driver):
         )
     )
     storelink_button.click()
-    time.sleep(1)
 
     match_rows_x = count_modal_rows("matches")
     question_rows_x = count_modal_rows("question")
@@ -152,14 +114,12 @@ def test_review_ui(driver):
         By.CSS_SELECTOR, 'form#flashcard-buttons button[value="next"]'
     )
     next_button.click()
-    time.sleep(1)
 
     # Click the 'Previous' button
     prev_button = driver.find_element(
         By.CSS_SELECTOR, 'form#flashcard-buttons button[value="previous"]'
     )
     prev_button.click()
-    time.sleep(1)
 
     # Extract the Question ID
     question_id_element = driver.find_element(
@@ -172,6 +132,19 @@ def test_review_ui(driver):
         init_question_id == question_id
     ), "Previous and Next buttons are not working fine"
 
+    # Check the confirm changes button
+    confirm_button = driver.find_element(By.ID, "confirm-button")
+    confirm_button.click()
+
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(text("SELECT question_id FROM confirmed"))
+        question_ids = result.scalars()
+
+    assert (
+        question_id in question_ids
+    ), f"{question_id} is not in confirmed IDs: {question_ids}"
+
 
 if __name__ == "__main__":
+    pytest.main([__file__, "-sk", "test_review_ui"])
     pytest.main([__file__, "-sk", "test_review_ui"])

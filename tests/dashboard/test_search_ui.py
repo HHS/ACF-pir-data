@@ -1,50 +1,14 @@
-import os
-import signal
-import threading
-import time
-
 import pytest
-import requests
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-
-from pir_pipeline.config import DB_CONFIG
-from pir_pipeline.dashboard import create_app
-
-
-@pytest.fixture
-def driver():
-    options = Options()
-    options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
-    yield driver
-    driver.quit()
-
-
-@pytest.fixture
-def server():
-    config = {"DB_CONFIG": DB_CONFIG, "DB_NAME": "pir_test"}
-    app = create_app(test_config=config)
-
-    @app.route("/shutdown", methods=["POST"])
-    def shutdown():
-        os.kill(os.getpid(), signal.SIGTERM)
-        return "Server shutting down..."
-
-    proc = threading.Thread(target=app.run)
-    yield proc.start()
-
-    requests.post("http://localhost:5000/shutdown")
-    proc.join()
+from sqlalchemy import text
 
 
 @pytest.mark.usefixtures("create_database", "insert_question_records", "server")
-def test_search_ui(driver):
+def test_search_ui(driver, sql_utils):
     def count_modal_rows(table: str):
         if table == "question":
             count = len(
@@ -141,7 +105,6 @@ def test_search_ui(driver):
     assert (
         question_rows_plus > question_rows_init
     ), f"Count before: {match_rows_init}; Count after: {match_rows_plus}"
-    time.sleep(1)
 
     storelink_button = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable(
@@ -152,7 +115,6 @@ def test_search_ui(driver):
         )
     )
     storelink_button.click()
-    time.sleep(1)
 
     match_rows_x = count_modal_rows("matches")
     question_rows_x = count_modal_rows("question")
@@ -164,6 +126,36 @@ def test_search_ui(driver):
     assert (
         question_rows_init == question_rows_x
     ), f"Count before: {match_rows_init}; Count after: {match_rows_plus}"
+
+    # Check confirm button
+    storelink_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable(
+            (
+                By.XPATH,
+                '//table[@id="flashcard-matches-table"]//button[@onclick="storeLink(event)"]',
+            )
+        )
+    )
+    storelink_button.click()
+    init_question_ids = driver.find_elements(
+        By.CSS_SELECTOR, '#flashcard-question-table td[name="question_id"]'
+    )
+    init_question_ids = set(
+        [question.get_attribute("textContent") for question in init_question_ids]
+    )
+
+    confirm_button = driver.find_element(value="confirm-button")
+    confirm_button.click()
+
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(text("SELECT question_id FROM uqid_changelog"))
+        question_ids = result.scalars()
+
+    question_ids = set(question_ids)
+
+    assert question_ids.issuperset(
+        init_question_ids
+    ), f"question_id set is not a superset of init_question_id set {question_ids.symmetric_difference(init_question_ids)}"
 
 
 if __name__ == "__main__":
