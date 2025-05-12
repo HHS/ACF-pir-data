@@ -75,6 +75,18 @@ th[name = "expand"] {
     width: 5em;
 }
 
+th[name = "Year"] {
+    width: 5em;
+}
+
+th[name="Question Number"] {
+    width: 10em;
+}
+
+th[name="Question Name"] {
+    width: 20em;
+}
+
 th[name = "action"] {
     width: 1em;
 }
