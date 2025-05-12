@@ -5,8 +5,9 @@
 {% endblock %}
 
 {% block content %}
+    <h3>Overall Progress</h3>
     <div class="card-body">
-        <cds-progress-bar label="Overall Progress" helper-text="{{ confirmed_questions }}/{{ total_questions }} questions confirmed" value="{{ confirmed_questions }}" max="{{ total_questions }}" size="big" status="active" type="default">
+        <cds-progress-bar helper-text="{{ confirmed_questions }}/{{ total_questions }} questions confirmed" value="{{ confirmed_questions }}" max="{{ total_questions }}" size="big" status="active" type="default">
         </cds-progress-bar>
     </div>
     <div class="card-body">

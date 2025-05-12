@@ -117,6 +117,7 @@ function buildTable(data, table = document.createElement("table")) {
         const column = document.createElement("th");
         const columnName = header[i];
         column.innerHTML = columnName;
+        column.setAttribute("name", columnName);
         if (["Question ID", "UQID"].includes(columnName)) {
             column.setAttribute("hidden", "true");
         }

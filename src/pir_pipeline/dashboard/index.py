@@ -34,7 +34,7 @@ def index():
             ).label("unconfirmed"),
         )
         .group_by(question.c.year)
-        .order_by(question.c.year)
+        .order_by(question.c.year.desc())
     )
 
     years = db.get_records(questions_by_year)
