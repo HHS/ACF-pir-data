@@ -107,7 +107,3 @@ If, however, these questions only shared one value (NOTE: The value of question 
 The algorithm would not link these questions, even though they are likely to reference the same thing.
 
 Reviewing and fixing bad links or linking questions that were missed in the linking process is accomplished via the PIR QA dashboard, a tool developed for analysts to address linking issues in the database. 
-
-## Pipeline Diagram
-
-![PIR Pipeline Diagram](../images/ohs_pir_architectural_diagram.png)

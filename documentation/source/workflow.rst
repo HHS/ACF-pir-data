@@ -208,11 +208,3 @@ likely to reference the same thing.
 Reviewing and fixing bad links or linking questions that were missed in
 the linking process is accomplished via the PIR QA dashboard, a tool
 developed for analysts to address linking issues in the database.
-
-Pipeline Diagram
-----------------
-
-.. figure:: ../images/ohs_pir_architectural_diagram.png
-   :alt: PIR Pipeline Diagram
-
-   PIR Pipeline Diagram
