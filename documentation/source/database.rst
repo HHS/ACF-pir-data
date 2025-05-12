@@ -42,9 +42,9 @@ Entity Relationship Diagram
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. figure:: ../images/pir_erd.png
-    :alt: PIR Entity Relationship Diagram
+	:alt: PIR Entity Relationship Diagram
 
-   PIR Entity Relationship Diagram
+   	PIR Entity Relationship Diagram
 
 Views
 -----

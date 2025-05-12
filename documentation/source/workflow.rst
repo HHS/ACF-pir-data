@@ -1,11 +1,11 @@
 PIR Pipeline Workflow
 =====================
 
-The PIR pipeline consists of three main steps: 1. Raw data upload - data
-are uploaded to an S3 bucket manually. 2. Data ingestion - raw data are
-processed and inserted into the PIR database. 3. Question linking - an
-attempt is made to link any questions that are missing uqid
-algorithmically.
+The PIR pipeline consists of three main steps: 
+
+1. Raw data upload - data are uploaded to an S3 bucket manually. 
+2. Data ingestion - raw data are processed and inserted into the PIR database. 
+3. Question linking - an attempt is made to link any questions that are missing uqid algorithmically.
 
 A diagram showing the PIR Pipeline as well as implementation details for
 the ingestion and linking processes are provided below.
@@ -29,24 +29,24 @@ Files uploaded to S3 should be Excel workbooks (.xls or .xlsx file
 extension). The extraction process expects to find the following sheets
 in the target workbook:
 
-1. Sheets containing the word “Section”
+1. Sheets containing the word "Section"
 
    a. These sheets should contain the responses provided by programs to
       a given section of the PIR survey. The sheet should begin with the
-      word "Section“, followed by a space and a single letter
-      (e.g. ”Section A"). Anything can follow the single letter. The
+      word "Section", followed by a space and a single letter
+      (e.g. "Section A"). Anything can follow the single letter. The
       first row should contain the question name. The second row should
       contain the question number or column name. All other rows should
       contain program-level data.
 
-2. One sheet called “Reference”
+2. One sheet called "Reference"
 
    b. This sheet should contain meta-data about the questions in each
       section. Crucial fields are category, section, subsection,
       question order, question number, question name, type, and question
       text.
 
-3. One sheet containing the word “Program” (i.e. “Program Details”)
+3. One sheet containing the word "Program" (i.e. "Program Details")
 
    c. This sheet should contain meta-data about the respondents
       (programs) to the PIR survey. The data should be unique by grant
@@ -62,7 +62,7 @@ Program
 ^^^^^^^
 
 1. Region is converted to numeric by extracting the region number from
-   text of the form "Region :raw-latex:`\d"`
+   text of the form "Region \\d"
 
 Question
 ^^^^^^^^
@@ -74,7 +74,7 @@ Question
 Response
 ^^^^^^^^
 
-1. The following steps are applied to each “Section” sheet:
+1. The following steps are applied to each "Section" sheet:
 
    1. Set the second row of the sheet (where column names/question
       numbers are stored) to the column names.
