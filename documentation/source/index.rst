@@ -6,10 +6,15 @@
 OHS Program Information Report Pipeline documentation
 =====================================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+General Documentation
+--------------------------------
 
+.. toctree::
+   workflow
+   database
+
+Module Documentation
+--------------------------------
 
 .. autosummary::
    :toctree: _autosummary

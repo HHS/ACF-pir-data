@@ -10,7 +10,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 # Adapted from GPT 4.0
 class CustomSessionInterface(SecureCookieSessionInterface):
-    """Change had"""
+    """Change how session is hashed"""
 
     def get_signing_serializer(self, app):
         return URLSafeTimedSerializer(
