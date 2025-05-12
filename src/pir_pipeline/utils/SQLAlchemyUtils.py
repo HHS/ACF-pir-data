@@ -329,5 +329,6 @@ class SQLAlchemyUtils(SQLUtils):
 
 if __name__ == "__main__":
     SQLAlchemyUtils(
-        **DB_CONFIG, database="pir", drivername="mysql+mysqlconnector"
+        **DB_CONFIG,
+        database="pir",  # drivername="mysql+mysqlconnector"
     ).create_db()
