@@ -24,16 +24,15 @@ def test_search_ui(driver, sql_utils):
     driver.get("http://127.0.0.1:5000/search/")
 
     # Wait for the input box and enter a search term
-    search_input = WebDriverWait(driver, 10).until(
+    wait = WebDriverWait(driver, 10)
+    search_input = wait.until(
         EC.visibility_of_element_located((By.ID, "keyword-search"))
     )
     search_input.send_keys("child" + Keys.RETURN)
 
     # Wait for the search results table and rows to appear
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "search-results-table"))
-    )
-    WebDriverWait(driver, 10).until(
+    wait.until(EC.presence_of_element_located((By.ID, "search-results-table")))
+    wait.until(
         lambda d: len(d.find_elements(By.CSS_SELECTOR, "#search-results-table tr")) > 0
     )
 
@@ -58,7 +57,7 @@ def test_search_ui(driver, sql_utils):
     # Asserts the valid question id exist in the table
     assert first_data_row is not None, "No valid row with a question_id was found."
 
-    edit_button = WebDriverWait(driver, 10).until(
+    edit_button = wait.until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,
@@ -70,7 +69,7 @@ def test_search_ui(driver, sql_utils):
 
     # Wait for the modal to become visible
     try:
-        WebDriverWait(driver, 10).until(
+        wait.until(
             lambda d: d.find_element(By.ID, "search-modal").get_attribute("hidden")
             is None
         )
@@ -84,7 +83,7 @@ def test_search_ui(driver, sql_utils):
     # Click the storeLink button in the first row
     question_rows_init = count_modal_rows("question")
     match_rows_init = count_modal_rows("matches")
-    storelink_button = WebDriverWait(driver, 10).until(
+    storelink_button = wait.until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,
@@ -106,7 +105,7 @@ def test_search_ui(driver, sql_utils):
         question_rows_plus > question_rows_init
     ), f"Count before: {match_rows_init}; Count after: {match_rows_plus}"
 
-    storelink_button = WebDriverWait(driver, 10).until(
+    storelink_button = wait.until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,
@@ -128,7 +127,7 @@ def test_search_ui(driver, sql_utils):
     ), f"Count before: {match_rows_init}; Count after: {match_rows_plus}"
 
     # Check confirm button
-    storelink_button = WebDriverWait(driver, 10).until(
+    storelink_button = wait.until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,

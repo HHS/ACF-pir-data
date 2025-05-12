@@ -24,26 +24,23 @@ def test_review_ui(driver, sql_utils):
     driver.get("http://127.0.0.1:5000/review")
 
     # Wait for the search results table and rows to appear
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "flashcard-matches-table"))
-    )
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, "flashcard-matches-table")))
 
-    WebDriverWait(driver, 10).until(
+    wait.until(
         lambda d: len(d.find_elements(By.CSS_SELECTOR, "#flashcard-matches-table tr"))
         > 0
     )
 
     # Get all rows and pick the first data row
     # Wait for the input box and enter a search term
-    search_input = WebDriverWait(driver, 10).until(
+    search_input = wait.until(
         EC.visibility_of_element_located((By.ID, "keyword-search"))
     )
     search_input.send_keys("child" + Keys.RETURN)
 
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "flashcard-matches-table"))
-    )
-    WebDriverWait(driver, 10).until(
+    wait.until(EC.presence_of_element_located((By.ID, "flashcard-matches-table")))
+    wait.until(
         lambda d: d.find_element(
             By.CSS_SELECTOR, "tr#flashcard-matches-table-tr-0 td[name='question_id']"
         ).get_attribute("textContent")
@@ -54,7 +51,7 @@ def test_review_ui(driver, sql_utils):
 
     question_rows_init = count_modal_rows("question")
     match_rows_init = count_modal_rows("matches")
-    storelink_button = WebDriverWait(driver, 10).until(
+    storelink_button = wait.until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,
@@ -76,7 +73,7 @@ def test_review_ui(driver, sql_utils):
         question_rows_plus > question_rows_init
     ), f"Count before: {match_rows_init}; Count after: {match_rows_plus}"
 
-    storelink_button = WebDriverWait(driver, 10).until(
+    storelink_button = wait.until(
         EC.element_to_be_clickable(
             (
                 By.XPATH,
@@ -105,9 +102,7 @@ def test_review_ui(driver, sql_utils):
     init_question_id = question_id_element.get_attribute("textContent").strip()
 
     # Wait until the form containing the buttons is present
-    WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.ID, "flashcard-buttons"))
-    )
+    wait.until(EC.presence_of_element_located((By.ID, "flashcard-buttons")))
 
     # Click the 'Next' button
     next_button = driver.find_element(
