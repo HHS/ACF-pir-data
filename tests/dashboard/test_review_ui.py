@@ -47,7 +47,8 @@ def test_review_ui(driver, sql_utils):
     wait.until(EC.presence_of_element_located((By.ID, "flashcard-matches-table")))
     wait.until(
         lambda d: d.find_element(
-            By.CSS_SELECTOR, "tr#flashcard-matches-table-tr-0 td[name='question_id']"
+            By.CSS_SELECTOR,
+            "tr#flashcard-matches-table-tr-10000 td[name='question_id']",
         ).get_attribute("textContent")
         == "0e93c25d3a95604f40d3a64e2298093b4faed6f2"
     )
@@ -82,7 +83,7 @@ def test_review_ui(driver, sql_utils):
         EC.element_to_be_clickable(
             (
                 By.XPATH,
-                '//tr[@id="flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
+                '//tr[@id="flashcard-matches-table-tr-10000"]//button[@onclick="storeLink(event)"]',
             )
         )
     )
@@ -146,6 +147,4 @@ def test_review_ui(driver, sql_utils):
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_review_ui"])
-    pytest.main([__file__, "-sk", "test_review_ui"])
     pytest.main([__file__, "-sk", "test_review_ui"])
