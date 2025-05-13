@@ -114,7 +114,7 @@ def test_search_ui(driver, sql_utils):
         EC.element_to_be_clickable(
             (
                 By.XPATH,
-                '//tr[@id="flashcard-matches-table-tr-0"]//button[@onclick="storeLink(event)"]',
+                '//tr[@id="flashcard-matches-table-tr-10000"]//button[@onclick="storeLink(event)"]',
             )
         )
     )

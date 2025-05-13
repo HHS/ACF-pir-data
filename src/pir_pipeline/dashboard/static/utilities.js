@@ -145,6 +145,7 @@ function buildTable(data, table = document.createElement("table")) {
 
         // Get all records associated with this question_id/uqid
         const records = data[key];
+        let record_num_str = `${record_num + 10000}`
 
         // Loop through each record
         for (let i = 0; i < records.length; i++) {
@@ -156,13 +157,13 @@ function buildTable(data, table = document.createElement("table")) {
             const buttonCell = document.createElement("td");
 
             const linkButton = linkButtonBase.cloneNode(true);
-            const trID = table.id + "-tr-" + record_num + "-" + i;
-            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num}-"]`);    
-            expandButton.id = table.id + "-button-" + record_num;
+            const trID = table.id + "-tr-" + record_num_str + "-" + i;
+            expandButton.setAttribute("data-bs-target", `tr[id*="${table.id}-tr-${record_num_str}-"]`);    
+            expandButton.id = table.id + "-button-" + record_num_str;
 
             // If not the first row, this row should be hidden/collapsible
             if (i > 0) {
-                row.className = `accordion-collapse collapse collapsible-row-${record_num}`;
+                row.className = `accordion-collapse collapse collapsible-row-${record_num_str}`;
                 row.id = `collapse-${trID}`;
                 let expandValue = expandButton.getAttribute("aria-controls")
                 if (expandValue) {
@@ -184,7 +185,7 @@ function buildTable(data, table = document.createElement("table")) {
 
                 actionsCell.appendChild(accordionDiv);
                 row.appendChild(actionsCell);
-                row.id = table.id + "-tr-" + record_num;
+                row.id = table.id + "-tr-" + record_num_str;
             }
 
             
@@ -336,7 +337,7 @@ function storeLink(event) {
         if (!row.className.match("accordion-collapse")) {
             
         } else if (linkType == "link") {
-            const buttonIdRegex = /flashcard-\w+-table-tr-\d/;
+            const buttonIdRegex = /flashcard-\w+-table-tr-\d+/;
             const showRegex = /\sshow/g;
             let collapseButtonId = row.id.match(buttonIdRegex)[0];
             const collapseButton = document.getElementById(collapseButtonId);
