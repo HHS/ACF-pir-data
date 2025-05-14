@@ -108,27 +108,7 @@ def get_search_results(
             )
 
     keyword_query = keyword_query.where(or_(*conditions)).order_by(
-        table.c[id_column], table.c["year"].desc()
-    )
-
-    # Get the maximum year
-    max_year_query = (
-        select(table.c[id_column], func.max(table.c.year).label("year"))
-        .group_by(table.c[id_column])
-        .subquery()
-    )
-
-    # Get data for the most recent year to create a header row
-    header_row_query = (
-        select(table.c[columns])
-        .join(
-            max_year_query,
-            and_(
-                table.c[id_column] == max_year_query.c[id_column],
-                table.c.year == max_year_query.c.year,
-            ),
-        )
-        .where(table.c[id_column] == bindparam(id_column))
+        table.c["uqid"], table.c["year"].desc()
     )
 
     # Put column headers in search results dictionary
@@ -142,7 +122,28 @@ def get_search_results(
         # Convert results to dictionary
         for res in result.all():
             result_dict = db.to_dict([res], columns)[0]
+            id_column = "uqid" if result_dict.get("uqid") else "question_id"
             ident = result_dict[id_column]
+
+            # Get the maximum year
+            max_year_query = (
+                select(table.c[id_column], func.max(table.c.year).label("year"))
+                .group_by(table.c[id_column])
+                .subquery()
+            )
+
+            # Get data for the most recent year to create a header row
+            header_row_query = (
+                select(table.c[columns])
+                .join(
+                    max_year_query,
+                    and_(
+                        table.c[id_column] == max_year_query.c[id_column],
+                        table.c.year == max_year_query.c.year,
+                    ),
+                )
+                .where(table.c[id_column] == bindparam(id_column))
+            )
 
             # Append instances of the same question_id to an existing list
             if ident in search_dict:
@@ -160,10 +161,7 @@ def get_search_results(
 
                 header_row.update({"year": get_year_range(table, id_tuple, db)})
 
-                if header_row["year"].find("-|,") > -1:
-                    search_dict[ident] = [header_row, result_dict]
-                else:
-                    search_dict[ident] = [header_row]
+                search_dict[ident] = [header_row]
 
     return search_dict
 
@@ -553,7 +551,7 @@ if __name__ == "__main__":
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
     print(
-        get_year_range(
-            db.tables["question"], ("uqid", "903863a832c884bdf311237ed570c44d"), db
-        )
+        get_search_results("903863a832c884bdf311237ed570c44d", db)[
+            "695fed8b2a237b322fcc5bd7fa52384e"
+        ]
     )
