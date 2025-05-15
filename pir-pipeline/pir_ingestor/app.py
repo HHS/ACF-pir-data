@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 
 import boto3
 
@@ -28,7 +29,9 @@ def lambda_handler(event, context):
     try:
         key = event["Records"][0]["s3"]["object"]["key"]
         bucket = event["Records"][0]["s3"]["bucket"]["name"]
-        PIRIngestor(key, sql_utils).ingest()
+        s3_location = namedtuple("S3Location", "bucket key")
+        location = s3_location(bucket, key)
+        PIRIngestor(location, sql_utils).ingest()
         original_object = {"Bucket": bucket, "Key": key}
         s3.copy(original_object, bucket, key.replace("input", "processed"))
         s3.delete_object(Bucket=bucket, Key=key)
