@@ -30,13 +30,13 @@ class PIRIngestor:
         self._data: dict[pd.DataFrame] = {}
         sql.create_db()
         self._sql = sql
-        
+
         if isinstance(workbook, str):
             self._workbook = workbook
         elif isinstance(workbook, tuple):
             self._bucket = workbook.bucket
             self._workbook = workbook.key
-            
+
         self._metrics: dict = {}
         self._logger = get_logger(__name__)
         self._logger.info("Initialized ingestor.")
