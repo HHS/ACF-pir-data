@@ -30,7 +30,13 @@ class PIRIngestor:
         self._data: dict[pd.DataFrame] = {}
         sql.create_db()
         self._sql = sql
-        self._workbook = workbook
+
+        if isinstance(workbook, str):
+            self._workbook = workbook
+        elif isinstance(workbook, tuple):
+            self._bucket = workbook.bucket
+            self._workbook = workbook.key
+
         self._metrics: dict = {}
         self._logger = get_logger(__name__)
         self._logger.info("Initialized ingestor.")
@@ -136,7 +142,7 @@ class PIRIngestor:
         # Read the data
         if os.environ.get("IN_AWS_LAMBDA"):
             s3 = boto3.resource("s3")
-            object = s3.Object("pir-data", self._workbook)
+            object = s3.Object(self._bucket, self._workbook)
             self._workbook = pd.ExcelFile(BytesIO(object.get()["Body"].read()))
         else:
             self._workbook = pd.ExcelFile(self._workbook)
