@@ -765,24 +765,33 @@ class PIRIngestor:
 
 
 if __name__ == "__main__":
+    from collections import namedtuple
+
     from pir_pipeline.config import DB_CONFIG
 
-    s3 = boto3.resource("s3")
-    files = [obj.key for obj in s3.Bucket("pir-data").objects.filter(Prefix="input")]
+    s3_location = namedtuple("S3Location", "bucket key")
 
+    s3 = boto3.resource("s3")
+
+    bucket = "pir-data-files"
+    files = [obj.key for obj in s3.Bucket(bucket).objects.filter(Prefix="scrap")]
+    files.pop(0)
+
+    os.environ["IN_AWS_LAMBDA"] = "true"
     overall_init_time = time.time()
     for file in files:
         year = re.search(r"\d{4}", file).group(0)
         year = int(year)
 
-        if year != 2008:
+        if year != 2023:
             continue
 
+        location = s3_location(bucket, file)
         try:
             init = time.time()
             PIRIngestor(
-                file,
-                SQLAlchemyUtils(**DB_CONFIG, database="pir"),
+                location,
+                SQLAlchemyUtils(**DB_CONFIG, database="pir_test"),
             ).ingest()
             fin = time.time()
             print(f"Time to process {year}: {(fin-init)/60} minutes")

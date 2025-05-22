@@ -5,7 +5,7 @@ from subprocess import run as srun
 from typing import Self
 
 import pandas as pd
-from sqlalchemy import URL, Engine, Select, Table, create_engine, text, update
+from sqlalchemy import URL, Engine, Select, Table, create_engine, func, text, update
 from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -22,7 +22,6 @@ from pir_pipeline.models.pir_sql_models import (
     uqid_changelog,
 )
 from pir_pipeline.utils.SQLUtils import SQLUtils
-from pir_pipeline.utils.utils import get_searchable_columns
 
 
 class SQLAlchemyUtils(SQLUtils):
@@ -225,27 +224,24 @@ class SQLAlchemyUtils(SQLUtils):
             """
 
             with self._engine.begin() as conn:
-                insert_statement = self.insert(self._tables[table])
+                table_object = self._tables[table]
+                insert_statement = self.insert(table_object)
 
                 if self._dialect == "mysql":
                     values = insert_statement.inserted
                 elif self._dialect == "postgresql":
-                    values = insert_statement.excluded
+                    values = insert_statement.excluded.values()
 
                 column_dict = {
-                    column.name: column
+                    column.name: func.coalesce(column, table_object.c[column.name])
                     for column in values
-                    if column.name in upsert_columns
+                    if column.name in upsert_columns and not column.primary_key
                 }
                 if self._dialect == "mysql":
                     upsert_statement = insert_statement.on_duplicate_key_update(
                         column_dict
                     )
                 elif self._dialect == "postgresql":
-                    index_elements = set(insert_statement.table.c.keys()) - set(
-                        upsert_columns
-                    )
-                    index_elements = list(index_elements)
                     upsert_statement = insert_statement.on_conflict_do_update(
                         constraint=f"pk_{table}",
                         set_=column_dict,
@@ -254,8 +250,7 @@ class SQLAlchemyUtils(SQLUtils):
                 conn.execute(upsert_statement, records)
 
         # Remove primary key columns for upserting
-        upsert_columns = get_searchable_columns(self.get_columns(table))
-        upsert_columns = [column.lower() for column in upsert_columns]
+        upsert_columns = self.get_columns(table)
 
         # If there are more than 20000 records, ingest in batches
         batch_size = 80000
@@ -328,7 +323,4 @@ class SQLAlchemyUtils(SQLUtils):
 
 
 if __name__ == "__main__":
-    SQLAlchemyUtils(
-        **DB_CONFIG,
-        database="pir",  # drivername="mysql+mysqlconnector"
-    ).create_db()
+    SQLAlchemyUtils(**DB_CONFIG, database="pir").create_db()
