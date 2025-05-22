@@ -768,15 +768,15 @@ if __name__ == "__main__":
     from collections import namedtuple
 
     from pir_pipeline.config import DB_CONFIG
-    
+
     s3_location = namedtuple("S3Location", "bucket key")
 
     s3 = boto3.resource("s3")
-    
+
     bucket = "pir-data-files"
     files = [obj.key for obj in s3.Bucket(bucket).objects.filter(Prefix="scrap")]
     files.pop(0)
-    
+
     os.environ["IN_AWS_LAMBDA"] = "true"
     overall_init_time = time.time()
     for file in files:

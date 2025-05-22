@@ -323,7 +323,4 @@ class SQLAlchemyUtils(SQLUtils):
 
 
 if __name__ == "__main__":
-    SQLAlchemyUtils(
-        **DB_CONFIG,
-        database="pir"
-    ).create_db()
+    SQLAlchemyUtils(**DB_CONFIG, database="pir").create_db()
