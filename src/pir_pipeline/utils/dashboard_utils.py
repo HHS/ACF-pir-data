@@ -161,7 +161,7 @@ def get_search_results(
 
                 header_row.update({"year": get_year_range(table, id_tuple, db)})
 
-                search_dict[ident] = [header_row]
+                search_dict[ident] = [header_row, result_dict]
 
     return search_dict
 
