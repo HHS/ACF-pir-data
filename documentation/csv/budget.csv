@@ -1,11 +1,11 @@
 field,"	type"
-reg,int
+region,int
 prg,varchar(2)
 type,varchar(10)
-state,varchar(10)
+program_state,varchar(10)
 afm,varchar(3)
 grant_number,varchar(20)
-recipient_name,varchar(255)
+program_name,varchar(255)
 year,int
 quarter,int
 metric,varchar(50)
