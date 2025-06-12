@@ -463,7 +463,6 @@ class PIRLinker:
 
         Args:
             row (pd.Series): A pandas series containing question data
-            uqid_dict (dict): A dictionary holding question_id: uqid pairs
 
         Returns:
             str | float: Unique question ID (uqid)
