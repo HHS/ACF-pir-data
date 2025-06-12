@@ -72,14 +72,11 @@ class TestPIRLinker:
             pir_linker._linked.shape[0] == pir_linker._question["question_id"].nunique()
         ), "Linked is the incorrect shape"
 
-    def test_prepare_for_insertion(self, pir_linker, question_columns):
+    def test_prepare_for_insertion(self, pir_linker):
         initial_record_count = pir_linker._data.shape[0]
         pir_linker.direct_link().prepare_for_insertion()
-        columns = set(pir_linker._data.columns)
         final_record_count = pir_linker._data.shape[0]
-        assert (
-            question_columns == columns
-        ), f"Incorrect columns: {question_columns.symmetric_difference(columns)}"
+
         assert (
             initial_record_count == final_record_count
         ), f"Record counts differ: Initial: {initial_record_count}; Final: {final_record_count}"
@@ -87,7 +84,7 @@ class TestPIRLinker:
 
     def test_gen_uqid(self, pir_linker):
         index_names = ["question_id", "linked_id", "uqid"]
-        uqid_dict = {"linked_id_3": "some_hash"}
+        pir_linker._uqid_dict = {"linked_id_3": "some_hash"}
         data = [
             (
                 pd.Series(
@@ -107,7 +104,7 @@ class TestPIRLinker:
             ),
         ]
         for input, output in data:
-            result = pir_linker.gen_uqid(input, uqid_dict)
+            result = pir_linker.gen_uqid(input)
             assert (output == result) or (
                 output is result
             ), f"Incorrect value: {output} != {result}"
@@ -124,6 +121,13 @@ class TestPIRLinker:
         unlinked = pir_linker._sql.get_records("SELECT * from unlinked")
         assert unlinked.empty, "Unlinked should be empty"
         linked.apply(check_uqid, axis=1)
+
+    def test_link(self, pir_linker, question_columns):
+        pir_linker.link()
+        columns = set(pir_linker._data.columns)
+        assert (
+            question_columns == columns
+        ), f"Incorrect columns: {question_columns.symmetric_difference(columns)}"
 
 
 if __name__ == "__main__":
