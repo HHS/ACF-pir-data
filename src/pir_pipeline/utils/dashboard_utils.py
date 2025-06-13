@@ -312,7 +312,7 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
 class QuestionLinker:
     """QuestionLinker class to handle linking and unlinking of questions"""
 
-    def __init__(self, data: dict, db: SQLAlchemyUtils):
+    def __init__(self, data: dict, db: SQLAlchemyUtils, log: bool = True):
         """QuestionLinker object to handle linking and unlinking of questions
 
         Args:
@@ -332,10 +332,12 @@ class QuestionLinker:
                     }
                 }
             db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+            log (bool): Boolean to determin whether to write to changelog. Defaults to True.
         """
 
         self._data = data
         self._db = db
+        self._log = log
         self._changes = namedtuple("Changes", ["base", "match"])
 
     def get_ids(self):
@@ -383,7 +385,7 @@ class QuestionLinker:
             },
         )
 
-        # Matching two questions with existing uqids (intermittent)
+        # Matching two questions with existing uqids
         if base_uqid and match_uqid:
             with self._db.engine.connect() as conn:
                 result = conn.execute(distinct_year_query, {"uqid": base_uqid})
@@ -418,7 +420,7 @@ class QuestionLinker:
                 [{"base_qid": base_qid, "match_uqid": match_uqid}],
             )
 
-        self._db.insert_records(changes, "uqid_changelog")
+        self.log(changes)
 
     def unlink(self):
         """Unlink two questions"""
@@ -426,7 +428,11 @@ class QuestionLinker:
         base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
 
         changes = self._changes(
-            {"question_id": base_qid, "original_uqid": base_uqid},
+            {
+                "question_id": base_qid,
+                "original_uqid": base_uqid,
+                "new_uqid": base_uqid,
+            },
             {
                 "question_id": match_qid,
                 "original_uqid": base_uqid,
@@ -513,7 +519,7 @@ class QuestionLinker:
             [{"uqid": match_uqid, "match_qid": match_qid}],
         )
 
-        self._db.insert_records(changes, "uqid_changelog")
+        self.log(changes)
 
     def confirm(self):
         """Mark a question as confirmed"""
@@ -524,7 +530,13 @@ class QuestionLinker:
             "new_uqid": match_uqid,
             "complete_series_flag": True,
         }
-        self._db.insert_records(changes, "uqid_changelog")
+        self.log(changes)
+
+    def log(self, changes: dict):
+        if self._log:
+            self._db.insert_records(changes, "uqid_changelog")
+
+        return self
 
     def update_links(self):
         """Update links
@@ -532,18 +544,22 @@ class QuestionLinker:
         Makes calles to QuestionLinker.link and QuestionLinker.unlink as needed
         """
         for key, value in self._data.items():
-            self._record = value
-            link_type = value["link_type"]
-            if link_type == "link":
-                self.link()
-            elif link_type == "unlink":
-                self.unlink()
-            elif link_type == "confirm":
-                self.confirm()
-            else:
-                raise AttributeError(
-                    "Link type should be either 'link', 'unlink', 'confirm'"
-                )
+            try:
+                self._record = value
+                link_type = value["link_type"]
+                if link_type == "link":
+                    self.link()
+                elif link_type == "unlink":
+                    self.unlink()
+                elif link_type == "confirm":
+                    self.confirm()
+                else:
+                    raise AttributeError(
+                        "Link type should be either 'link', 'unlink', 'confirm'"
+                    )
+            except Exception as e:
+                print(f"Error inserting {value}: {e}")
+                continue
 
 
 if __name__ == "__main__":
