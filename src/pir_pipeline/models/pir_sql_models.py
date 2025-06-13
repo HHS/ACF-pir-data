@@ -130,6 +130,7 @@ query = (
 confirmed = view("confirmed", sql_metadata, query)
 
 # Unconfirmed view
+confirmed_subquery = select(confirmed.c["uqid"])
 query = (
     select(question)
     .where(or_(question.c.uqid.not_in(confirmed_subquery), question.c.uqid == null()))
