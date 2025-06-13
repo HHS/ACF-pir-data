@@ -1,7 +1,10 @@
+import os
 from typing import MutableSequence
 
 from pandas import DataFrame
 from sqlalchemy import func, or_, select, text, Select, bindparam
+
+os.environ["RDS_CREDENTIALS"] = "True"
 
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.linking.PIRLinker import PIRLinker
