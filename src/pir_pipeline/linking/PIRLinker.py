@@ -145,16 +145,26 @@ class PIRLinker:
         """
         df = self._data
 
-        unique_columns = ["question_name", "question_text", "section", "question_type"]
+        columns = ["question_name", "question_text", "section", "question_type"]
 
+        # Extract records which only occur once in a given year
+        unique_records = (
+            self._question.groupby(columns + ["year"]).size() == 1
+        ).reset_index()
+        unique_records = unique_records.groupby(columns).min().reset_index()
+        unique_records = unique_records[unique_records[0] == True]
+        unique_records = unique_records[columns].groupby(columns).first().reset_index()
+
+        # Get the modal uqid
+        modal_uqid = df.merge(unique_records, "inner", columns)
         modal_uqid = (
-            df[df["uqid"].notna()]
-            .groupby(unique_columns)[["uqid"]]
+            modal_uqid[modal_uqid["uqid"].notna()]
+            .groupby(columns)[["uqid"]]
             .apply(lambda x: x.mode())
             .reset_index()
         )
-        modal_uqid = modal_uqid[~modal_uqid[unique_columns].duplicated()]
-        df = df.merge(modal_uqid, how="left", on=unique_columns, validate="many_to_one")
+        modal_uqid = modal_uqid[~modal_uqid[columns].duplicated()]
+        df = df.merge(modal_uqid, how="left", on=columns, validate="many_to_one")
 
         # Prefer the modal uqid, taking the existing uqid if there is not a modal uqid
         df["uqid"] = df["uqid_y"].combine_first(df["uqid_x"])
