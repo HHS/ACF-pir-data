@@ -14,6 +14,7 @@ from sqlalchemy import (
     null,
     or_,
     select,
+    UniqueConstraint,
 )
 
 from pir_pipeline.utils.sql_alchemy_view import view
@@ -67,6 +68,7 @@ question = Table(
     Column("question_type", String(255)),
     Column("section", String(255)),
     Column("subsection", String(255)),
+    UniqueConstraint("uqid", "year"),
 )
 
 response = Table(
