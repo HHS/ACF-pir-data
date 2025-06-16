@@ -1,51 +1,51 @@
-table, column, column_proper, description,,
-response, uid, Unique Program ID,"Uniquely identifies each program within a year. Hash of grant_number, program_number, and program_type.",,
-response, question_id, Question ID,"Uniquely identifies questions within a year. Hash of question_number, and question_name.",,
-response, year, Year, Year from which question is drawn.,,
-response, answer, Answer, Response to present question.,,
-question, question_id, Question ID,"Uniquely identifies questions within a year. Hash of question_number, and question_name.",,
-question, year, Year, Year from which question is drawn.,,
-question, uqid, Unique Question ID, Uniquely identifies a question across years.,,
-question, category, Category, Category of question.,,
-question, question_name, Question Name, Name of question.,,
-question, question_number, Question Number, Number of question.,,
-question, question_order, Question Order, Order question appears in survey.,,
-question, question_text, Question Text, Text of question.,,
-question, question_type, Question Type, Type of question.,,
-question, section, Section, Section in which question is found in survey.,,
-question, subsection, Subsection, Subsection in which question is found in survey.,,
-program, uid, Unique Program ID,"Uniquely identifies each program within a year. Hash of grant_number, program_number, and program_type. ",,
-program, year, Year, Survey year.,,
-program, grantee_name, Grantee Name, Name of grantee.,,
-program, grant_number, Grant Number, Grant number.,,
-program, program_address_line_1, Address Line 1, Line 1 of program address.,,
-program, program_address_line_2, Address Line 2, Line 2 of program address.,,
-program, program_agency_description, Agency Description, Description of agency/program.,,
-program, program_agency_type, Agency Type, Type of program/agency.,,
-program, program_city, City, City in which program is located.,,
-program, program_email, Email, Program email address.,,
-program, program_name, Name, Program name.,,
-program, program_number, Number, Program number. ,,
-program, program_phone, Phone Number, Program phone number.,,
-program, program_type, Type," Type of program (Early Head Start, Head Start etc.)",,
-program, program_state, State, State in which the program is located.,,
-program, program_zip1, Zip 5, Five-digit zip code.,,
-program, program_zip2, Zip 4, Additional four digits for nine-digit zip code.,,
-program, region, Region, Region in which the program is located.,,
-uqid_changelog, id, ID, Auto-incremented integer ID,,
-uqid_changelog, question_id, Question ID," ""Uniquely identifies questions within a year. Hash of question_number"," and question_name.""",
-uqid_changelog, original_uqid, Original Unique Question ID," ""Original UQID", if any," of the target question"""
-uqid_changelog, new_uqid, New Unique Question ID," ""New UQID", if any," of the target question"""
-uqid_changelog, timestamp, Timestamp, Auto-generated timestamp,,
-uqid_changelog, complete_series_flag, Complete Series Flag, Indicator for whether this question should be marked as complete/confirmed,,
-budget,region,Region,Region in which the program is located,,
-budget,prg,Program,,,
-budget,type,Type,,,
-budget,program_state,Program State,State in which the program is located,,
-budget,afm,,,,
-budget,grant_number,Grant Number,Grant number.,,
-budget,program_name,Program Name,Program name.,,
-budget,year,Year,Fiscal year.,,
-budget,quarter,Quarter,Fiscal quarter.,,
-budget,metric,Metric,Reported metric.,,
-budget,value,Value,Value of reported metric.,,
+table, column, column_proper, description
+response, uid, Unique Program ID,"Uniquely identifies each program within a year. Hash of grant_number, program_number, and program_type."
+response, question_id, Question ID,"Uniquely identifies questions within a year. Hash of question_number, and question_name."
+response, year, Year,Year from which question is drawn.
+response, answer, Answer,Response to present question.
+question, question_id, Question ID,"Uniquely identifies questions within a year. Hash of question_number, and question_name."
+question, year, Year,Year from which question is drawn.
+question, uqid, Unique Question ID,Uniquely identifies a question across years.
+question, category, Category, Category of question.
+question, question_name, Question Name, Name of question.
+question, question_number, Question Number, Number of question.
+question, question_order, Question Order, Order question appears in survey.
+question, question_text, Question Text, Text of question.
+question, question_type, Question Type, Type of question.
+question, section, Section, Section in which question is found in survey.
+question, subsection, Subsection, Subsection in which question is found in survey.
+program, uid, Unique Program ID,"Uniquely identifies each program within a year. Hash of grant_number, program_number, and program_type. "
+program, year, Year, Survey year.
+program, grantee_name, Grantee Name, Name of grantee.
+program, grant_number, Grant Number, Grant number.
+program, program_address_line_1, Address Line 1, Line 1 of program address.
+program, program_address_line_2, Address Line 2, Line 2 of program address.
+program, program_agency_description, Agency Description, Description of agency/program.
+program, program_agency_type, Agency Type, Type of program/agency.
+program, program_city, City, City in which program is located.
+program, program_email, Email, Program email address.
+program, program_name, Name, Program name.
+program, program_number, Number, Program number. 
+program, program_phone, Phone Number, Program phone number.
+program, program_type, Type," Type of program (Early Head Start, Head Start etc.)"
+program, program_state, State, State in which the program is located.
+program, program_zip1, Zip 5, Five-digit zip code.
+program, program_zip2, Zip 4, Additional four digits for nine-digit zip code.
+program, region, Region, Region in which the program is located.
+uqid_changelog, id, ID, Auto-incremented integer ID
+uqid_changelog, question_id, Question ID, Uniquely identifies questions within a year. Hash of question_number and question_name.
+uqid_changelog, original_uqid, Original Unique Question ID, Original UQID  if any  of the target question
+uqid_changelog, new_uqid, New Unique Question ID, New UQID if any of the target question
+uqid_changelog, timestamp, Timestamp, Auto-generated timestamp
+uqid_changelog, complete_series_flag, Complete Series Flag, Indicator for whether this question should be marked as complete/confirmed
+budget,region,Region,Region in which the program is located
+budget,prg,Program,
+budget,type,Type,
+budget,program_state,Program State,State in which the program is located
+budget,afm,Annual Funding Month, 
+budget,grant_number,Grant Number,Grant number.
+budget,program_name,Program Name,Program name.
+budget,year,Year,Fiscal year.
+budget,quarter,Quarter,Fiscal quarter.
+budget,metric,Metric,Reported metric.
+budget,value,Value,Value of reported metric.
