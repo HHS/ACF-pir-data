@@ -10,6 +10,13 @@ found in `workflow <https://hhs.github.io/ACF-pir-data/workflow.html>`__.
 Tables
 ------
 
+Budget
+~~~~~~
+
+.. csv-table::
+	:file: ../csv/budget.csv
+	:header-rows: 1
+
 Question
 ~~~~~~~~
 
