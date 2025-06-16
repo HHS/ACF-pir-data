@@ -309,7 +309,7 @@ class SQLAlchemyUtils(SQLUtils):
 
         return data
 
-    def get_scalar(self, query: str | Select, records: dict):
+    def get_scalar(self, query: Select, records: dict):
         """Return a scalar from a query
 
         Args:
