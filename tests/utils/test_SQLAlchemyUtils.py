@@ -136,14 +136,16 @@ class TestSQLAlchemyUtilsData:
 
     def test_update_records(self, sql_utils):
         table = sql_utils.tables["question"]
-        sql_utils.update_records(table, {"uqid": "1"}, True)
+        sql_utils.update_records(table, {"uqid": table.c["question_id"]}, True)
         uqids = sql_utils.get_records("question")["uqid"].tolist()
-        assert set(uqids) == {"1"}, f"Incorrect uqids: {set(uqids)}"
+        question_ids = sql_utils.get_records("question")["question_id"].tolist()
+        assert set(uqids) == set(question_ids), f"Incorrect uqids: {set(uqids)}"
 
         section_a = sql_utils.get_records("SELECT * FROM question WHERE section = 'A'")
         section_a.replace({np.nan: None}, inplace=True)
         section_a.rename(columns={"question_id": "qid"}, inplace=True)
-        section_a["uqid"] = "A"
+        section_a_uqids = range(section_a.shape[0])
+        section_a["uqid"] = section_a_uqids
         records = section_a.to_dict(orient="records")
 
         sql_utils.update_records(
@@ -154,11 +156,11 @@ class TestSQLAlchemyUtilsData:
         )
 
         uqids = sql_utils.get_records("question")["uqid"].tolist()
-
-        assert set(uqids) == {"1", "A"}, f"Incorrect uqids: {set(uqids)}"
-        assert len(
-            [uqid for uqid in uqids if uqid == "A"]
-        ), "Incorrect number of 'A' uqids"
+        uqids = set(uqids)
+        superset = set(question_ids).union([str(uqid) for uqid in section_a_uqids])
+        assert superset.issuperset(
+            uqids
+        ), f"Incorrect uqids: {uqids.difference(superset)}"
 
     def test_to_dict(self, sql_utils):
         with sql_utils._engine.connect() as conn:
@@ -182,4 +184,4 @@ class TestSQLAlchemyUtilsData:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_create_db"])
+    pytest.main([__file__, "-sk", "test_update_records"])

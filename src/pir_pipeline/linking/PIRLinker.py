@@ -25,6 +25,7 @@ class PIRLinker:
         """
 
         self._logger = get_logger(__name__)
+        self._uqid_dict = {}
 
         invalid_type = None
         if isinstance(records, pd.DataFrame):
@@ -84,6 +85,29 @@ class PIRLinker:
         except AttributeError:
             self.get_question_data()
 
+    def remove_duplicates(self):
+        def dedup(row: pd.Series):
+            if row["uqid"] in duplicate_uqids and row["source"] in ["fuzzy", "modal"]:
+                uqid = None
+            else:
+                uqid = row["uqid"]
+
+            return uqid
+
+        duplicates = self._data[["uqid", "year"]].dropna().duplicated()
+        if duplicates.any():
+            duplicate_uqids = (
+                self._data[["uqid", "year"]]
+                .dropna()[duplicates]["uqid"]
+                .unique()
+                .tolist()
+            )
+            self._data["uqid"] = self._data.apply(lambda row: dedup(row), axis=1)
+
+        assert not self._data[["uqid", "year"]].dropna().duplicated().any()
+
+        return self
+
     def link(self) -> Self:
         """Attempt to link records provided to records in the database.
 
@@ -107,6 +131,9 @@ class PIRLinker:
             self.fuzzy_link()
 
         self.prepare_for_insertion()
+        self.remove_duplicates()
+
+        self._data = self._data[self._question_columns]
 
         return self
 
@@ -118,24 +145,37 @@ class PIRLinker:
         """
         df = self._data
 
-        unique_columns = ["question_name", "question_text", "section", "question_type"]
+        columns = ["question_name", "question_text", "section", "question_type"]
 
+        # Extract records which only occur once in a given year
+        unique_records = (
+            self._question.groupby(columns + ["year"]).size() == 1
+        ).reset_index()
+        unique_records = unique_records.groupby(columns).min().reset_index()
+        unique_records = unique_records[unique_records[0] == True]
+        unique_records = unique_records[columns].groupby(columns).first().reset_index()
+
+        # Get the modal uqid
+        modal_uqid = df.merge(unique_records, "inner", columns)
         modal_uqid = (
-            df[df["uqid"].notna()]
-            .groupby(unique_columns)[["uqid"]]
+            modal_uqid[modal_uqid["uqid"].notna()]
+            .groupby(columns)[["uqid"]]
             .apply(lambda x: x.mode())
             .reset_index()
         )
-        modal_uqid = modal_uqid[~modal_uqid[unique_columns].duplicated()]
-        df = df.merge(modal_uqid, how="left", on=unique_columns, validate="many_to_one")
+        modal_uqid = modal_uqid[~modal_uqid[columns].duplicated()]
+        df = df.merge(modal_uqid, how="left", on=columns, validate="many_to_one")
 
         # Prefer the modal uqid, taking the existing uqid if there is not a modal uqid
         df["uqid"] = df["uqid_y"].combine_first(df["uqid_x"])
+        df["source"] = df[["uqid_x", "uqid", "source"]].apply(
+            lambda row: "modal" if row["uqid_x"] != row["uqid"] else row["source"],
+            axis=1,
+        )
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         df.replace({np.nan: None}, inplace=True)
         self._data = df
-        self._data = self._data[self._question_columns]
 
         return self
 
@@ -185,6 +225,7 @@ class PIRLinker:
         ), self._logger.error(
             "Unique question_ids in data - unique question_ids in linked != unique question_ids in unlinked"
         )
+        self._linked["source"] = "direct"
 
         self._logger.info("Made links on question_id.")
 
@@ -365,6 +406,7 @@ class PIRLinker:
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
 
         linked = df[df["_merge"] == "both"].drop(columns="_merge")
+        linked["source"] = "fuzzy"
         unlinked = df[df["_merge"] == "left_only"].drop(columns="_merge")
         assert not unlinked["uqid"].any(), "Some unlinked records have a uqid"
 
@@ -400,7 +442,7 @@ class PIRLinker:
 
         df = self._data
         df = df.merge(
-            self._linked[["question_id", "linked_id", "uqid"]],
+            self._linked[["question_id", "linked_id", "uqid", "source"]],
             how="left",
             on="question_id",
         )
@@ -417,8 +459,7 @@ class PIRLinker:
         del self._unlinked
 
         df["uqid"] = df["uqid_x"].combine_first(df["uqid_y"])
-        uqid_dict = {}
-        df["uqid"] = df.apply(lambda row: self.gen_uqid(row, uqid_dict), axis=1)
+        df["uqid"] = df.apply(lambda row: self.gen_uqid(row), axis=1)
         df.drop(columns=["uqid_x", "uqid_y"], inplace=True)
         self._data = df
         self.consolidate_uqids()
@@ -427,17 +468,16 @@ class PIRLinker:
 
         return self
 
-    def gen_uqid(self, row: pd.Series, uqid_dict: dict) -> str | float:
+    def gen_uqid(self, row: pd.Series) -> str | float:
         """Generate a uqid
 
         Args:
             row (pd.Series): A pandas series containing question data
-            uqid_dict (dict): A dictionary holding question_id: uqid pairs
 
         Returns:
             str | float: Unique question ID (uqid)
         """
-
+        uqid_dict = self._uqid_dict
         if isinstance(row["uqid"], str) and row["uqid"]:
             return row["uqid"]
 
@@ -487,7 +527,7 @@ class PIRLinker:
 
 
 if __name__ == "__main__":
-    sql_alchemy = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
+    sql_alchemy = SQLAlchemyUtils(**DB_CONFIG, database="pir")
     records = sql_alchemy.get_records("SELECT * FROM unlinked").to_dict(
         orient="records"
     )
