@@ -1,0 +1,38 @@
+name: Update Documentation
+run-name: ${{ github.actor }} has made or updated a pull request; updating documentation.
+on: pull_request
+
+jobs:
+  update-documentation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    steps:
+      - name: Check out repository code
+        id: checkout
+        uses: actions/checkout@v4
+      - name: Update documentation
+        id: update
+        run: bash code/create_sphinx_docs.sh
+      - name: Commit and push documentation
+        id: push
+        run: |
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git config user.name "${{ github.actor }}"
+          git add .
+          git commit -m "Update documentation"
+          git push
+        continue-on-error: true
+      - name: Setup Github pages
+        id: setup
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        id: upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "documentation/build/html"
+      - name: Deploy to GitHub pages
+        id: deployment
+        uses: actions/deploy-pages@v4

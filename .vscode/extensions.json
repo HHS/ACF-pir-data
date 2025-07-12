@@ -1,0 +1,20 @@
+{
+        "recommendations": [
+                "ms-python.black-formatter",
+                "phplasma.csv-to-table",
+                "ms-azuretools.vscode-docker",
+                "ms-python.isort",
+                "ms-toolsai.jupyter",
+                "ritwickdey.LiveServer",
+                "ms-python.python",
+                "donjayamanne.python-environment-manager",
+                "donjayamanne.python-extension-pack",
+                "littlefoxteam.vscode-python-test-adapter",
+                "charliermarsh.ruff",
+                "yzhang.markdown-all-in-one",
+                "streetsidesoftware.code-spell-checker",
+                "TakumiI.markdowntable",
+                "redhat.vscode-yaml",
+                "inferrinizzard.prettier-sql-vscode"
+        ],
+}

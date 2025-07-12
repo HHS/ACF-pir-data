@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block header %}
+    <h1 class="page-title">{% block title %}Home{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <h3>Overall Progress</h3>
+    <div class="card-body">
+        <cds-progress-bar helper-text="{{ confirmed_questions }}/{{ total_questions }} questions confirmed" value="{{ confirmed_questions }}" max="{{ total_questions }}" size="big" status="active" type="default">
+        </cds-progress-bar>
+    </div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Total</th>
+                    <th>Unconfirmed</th>
+                    <th>Confirmed</th>
+                </tr>
+            </thead>
+            {% for row in years.values() %}
+                <tr>
+                    <td>{{ row["year"] }}</td>
+                    <td>{{ row["count"] }}</td>
+                    <td>{{ row["unconfirmed"] }}</td>
+                    <td>{{ row["confirmed"] }}</td>
+                </tr>
+            {% endfor %}    
+        </table>
+        <div class="information">
+            <div class="information-block">
+                <h4>Unconfirmed questions</h4>
+                <p>Use the <a href="/review">QA page</a> to go through unconfirmed questions one-by-one and confirm if they are correctly linked. </p>
+            </div>
+            <div class="information-block">
+                <h4>Confirmed questions</h4>
+                <p>
+                    Confirmed questions have been manually checked using this QA tool. They are linked to questions from other years that should be considered the “same” for use in data analysis.
+                    Use the <a href="/search">Search page</a> to look up and modify previously confirmed questions.
+                </p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/progress-bar.min.js"></script>
+{% endblock %}

@@ -1,0 +1,7 @@
+field,	type
+id,	int
+question_id,	varchar(255)
+original_uqid,	varchar(255)
+new_uqid,	varchar(255)
+timestamp,	datetime
+complete_series_flag,	int
