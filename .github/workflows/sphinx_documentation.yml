@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Check out repository code
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
       - name: Update documentation
         id: update
         run: bash code/create_sphinx_docs.sh
@@ -27,12 +27,12 @@ jobs:
         continue-on-error: true
       - name: Setup Github pages
         id: setup
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
       - name: Upload artifact
         id: upload
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@0252fc4ba7626f0298f0cf00902a25c6afc77fa8
         with:
           path: "documentation/build/html"
       - name: Deploy to GitHub pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
