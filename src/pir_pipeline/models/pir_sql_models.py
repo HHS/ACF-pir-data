@@ -10,12 +10,13 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
     func,
     null,
     or_,
     select,
-    UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql.json import JSONB
 
 from pir_pipeline.utils.sql_alchemy_view import view
 
@@ -101,6 +102,14 @@ uqid_changelog = Table(
     Column("original_uqid", String(255), index=True),
     Column("new_uqid", String(255)),
     Column("complete_series_flag", Integer, default=0),
+)
+
+proposed_changes = Table(
+    "proposed_changes",
+    sql_metadata,
+    Column("id", String(255), primary_key=True),
+    Column("link_dict", JSONB),
+    Column("html", Text),
 )
 
 # Confirmed records should be excluded
