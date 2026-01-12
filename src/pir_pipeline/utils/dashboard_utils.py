@@ -248,7 +248,7 @@ def get_review_question(
     return (id_column, next_id)
 
 
-def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
+def search_matches(matches: dict, db: SQLAlchemyUtils) -> dict:
     """Iterate over matches to return all related rows
 
     Args:
@@ -261,6 +261,7 @@ def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     """
     output = {}
     for match in matches:
+        id_column = "uqid" if match.get("uqid") else "question_id"
         output.update(get_search_results(match[id_column], db, id_column))
 
     return output
@@ -565,9 +566,5 @@ class QuestionLinker:
 if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
-    db = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
-    print(
-        get_search_results("903863a832c884bdf311237ed570c44d", db)[
-            "695fed8b2a237b322fcc5bd7fa52384e"
-        ]
-    )
+    db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
+    get_search_results("child", db)
