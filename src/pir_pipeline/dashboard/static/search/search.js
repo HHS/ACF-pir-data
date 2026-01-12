@@ -81,7 +81,7 @@ function commitChanges(e) {
 
     // Commit changes to the database
     const payload = {
-        "action": "finalize",
+        "action": "store",
         "data": ""
     }
 
