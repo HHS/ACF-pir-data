@@ -1,4 +1,6 @@
+import json
 import os
+import time
 
 import pytest
 from selenium.webdriver.common.by import By
@@ -26,6 +28,11 @@ def test_review_ui(driver, sql_utils):
 
         return count
 
+    question_uqid_query = "SELECT question, uqid FROM question"
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(text(question_uqid_query))
+        question_uqid_pairs = result.fetchall()
+
     driver.get("http://127.0.0.1:5000/review")
 
     # Wait for the search results table and rows to appear
@@ -50,7 +57,7 @@ def test_review_ui(driver, sql_utils):
             By.CSS_SELECTOR,
             "tr#flashcard-matches-table-tr-10000 td[name='question_id']",
         ).get_attribute("textContent")
-        == "0e93c25d3a95604f40d3a64e2298093b4faed6f2"
+        == "d27e8217ba30000a78e5d92ea54f4d9a2e69cb54"
     )
 
     # Click the storeLink button in the first row
@@ -117,12 +124,14 @@ def test_review_ui(driver, sql_utils):
     next_button.click()
 
     # Click the 'Previous' button
+    time.sleep(1)
     prev_button = driver.find_element(
         By.CSS_SELECTOR, 'form#flashcard-buttons button[value="previous"]'
     )
     prev_button.click()
 
     # Extract the Question ID
+    time.sleep(1)
     question_id_element = driver.find_element(
         By.CSS_SELECTOR, '#flashcard-question-table td[name="question_id"]'
     )
@@ -131,19 +140,37 @@ def test_review_ui(driver, sql_utils):
 
     assert (
         init_question_id == question_id
-    ), "Previous and Next buttons are not working fine"
+    ), f"Previous and Next buttons malfunctioning: initial question: {init_question_id}, current question: {question_id}"
 
     # Check the confirm changes button
     confirm_button = driver.find_element(By.ID, "confirm-button")
     confirm_button.click()
 
     with sql_utils.engine.connect() as conn:
-        result = conn.execute(text("SELECT question_id FROM confirmed"))
-        question_ids = result.scalars()
+        # Confirm there is a record in proposed_changes
+        result = conn.execute(text("SELECT link_dict FROM proposed_changes"))
+        link_dict = result.scalar()
+        link_dict = json.loads(link_dict)
+        question_ids = []
+        for link in link_dict.values():
+            for qid in ["base_question_id", "match_question_id"]:
+                question_ids.append(link[qid])
 
-    assert (
-        question_id in question_ids
-    ), f"{question_id} is not in confirmed IDs: {question_ids}"
+        assert (
+            question_id in question_ids
+        ), f"{question_id} is not in IDs proposed for linkage: {question_ids}"
+
+        # Confirm no uqids changed
+        result = conn.execute(text(question_uqid_query))
+        records = result.fetchall()
+        sorted_records = sorted(records)
+        different_pairs = set(sorted_records).difference(set(question_uqid_pairs))
+        assert not different_pairs, "question_id/uqid pairs have changed: {}"
+
+        # Confirm no records in uqid_changelog
+        result = conn.execute(text("SELECT * FROM uqid_changelog"))
+        records = result.fetchall()
+        assert not records, f"Some records in uqid_changelog: {records}"
 
 
 if __name__ == "__main__":

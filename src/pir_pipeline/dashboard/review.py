@@ -46,7 +46,7 @@ def get_flashcard_question(
 
     if matches and len(matches) > 1:
         matches.pop(0)
-        output["matches"] = search_matches(matches, id_column, db)
+        output["matches"] = search_matches(matches, db)
     elif matches and len(matches) == 1:
         output["matches"] = {"columns": output["question"]["columns"]}
     else:
@@ -131,7 +131,6 @@ def link():
     """Handle storage of link/unlink actions"""
     payload = request.get_json()
     action = payload["action"]
-
     # Add a link/unlink entry to session
     if action == "build":
         data = payload["data"]
@@ -149,6 +148,21 @@ def link():
             link_dict = OrderedDict({dict_id: data})
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
+    elif action == "store":
+        db = get_db()
+        link_dict = session["link_dict"]
+        proposed_id = sha1("".join(link_dict.keys()).encode()).hexdigest()
+        db.insert_records(
+            [
+                {
+                    "id": proposed_id,
+                    "link_dict": json.dumps(link_dict),
+                    "html": payload["action"],
+                }
+            ],
+            "proposed_changes",
+        )
+        del session["link_dict"]
 
     # Execute all linking actions
     elif action == "finalize":
