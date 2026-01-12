@@ -284,7 +284,6 @@ class PIRLinker:
             )["year"].tolist()
             self._cross = df[df["year_y"].map(lambda x: x not in years)]
             self._cross = self._cross[self._cross["uqid_x"] != self._cross["uqid_y"]]
-
         # Remove cases where unique_question_id combination is duplicated
         if len(unique_ids) == 1:
             for ident in ["question_id", "uqid"]:
@@ -321,11 +320,6 @@ class PIRLinker:
             return sum(scores) >= 2
 
         self.question_data_check()
-
-        try:
-            self._question
-        except AttributeError:
-            self.get_question_data()
 
         try:
             self._cross
