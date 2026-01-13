@@ -73,7 +73,8 @@ async function flashcardAction(e) {
 
         // Perform all linking actions to this points
         payload = {
-            "action": "store"
+            "action": "store",
+            "html": questionTable.outerHTML
         }
 
         await fetch("/review/link", {
