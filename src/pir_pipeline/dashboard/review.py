@@ -151,13 +151,20 @@ def link():
     elif action == "store":
         db = get_db()
         link_dict = session["link_dict"]
-        proposed_id = sha1("".join(link_dict.keys()).encode()).hexdigest()
+
+        ids = [
+            record["base_question_id"] + record["match_question_id"]
+            for record in link_dict.items()
+        ]
+        ids.sort()
+
+        proposed_id = sha1("".join(ids).encode()).hexdigest()
         db.insert_records(
             [
                 {
                     "id": proposed_id,
                     "link_dict": json.dumps(link_dict),
-                    "html": payload["action"],
+                    "html": payload["html"],
                 }
             ],
             "proposed_changes",
