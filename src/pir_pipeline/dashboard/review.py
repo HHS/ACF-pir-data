@@ -153,8 +153,10 @@ def link():
         link_dict = session["link_dict"]
 
         ids = [
-            record["base_question_id"] + record["match_question_id"]
-            for record in link_dict.items()
+            record.get("base_question_id", "")
+            or "" + record.get("match_question_id")
+            or ""
+            for record in link_dict.values()
         ]
         ids.sort()
 
@@ -163,14 +165,14 @@ def link():
             [
                 {
                     "id": proposed_id,
-                    "link_dict": json.dumps(link_dict),
+                    "link_dict": list(link_dict.values()),
                     "html": payload["html"],
                 }
             ],
             "proposed_changes",
         )
         del session["link_dict"]
-
+        message = f"Record {link_dict} written to proposed changes."
     # Execute all linking actions
     elif action == "finalize":
         db = get_db()
