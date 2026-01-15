@@ -35,7 +35,7 @@ def get_flashcard_question(
         dict: Dictionary containing data for header question and matching questions.
     """
 
-    id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
+    id_column, record = get_review_question("flashcard", offset, "uqid", db)
 
     if not record[id_column]:
         id_column = "question_id"

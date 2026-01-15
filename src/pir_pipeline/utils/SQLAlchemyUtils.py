@@ -12,6 +12,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.models.pir_sql_models import (
     confirmed,
+    flashcard,
     linked,
     program,
     proposed_changes,
@@ -73,6 +74,7 @@ class SQLAlchemyUtils(SQLUtils):
             "unlinked": unlinked,
             "uqid_changelog": uqid_changelog,
             "confirmed": confirmed,
+            "flashcard": flashcard,
             "unconfirmed": unconfirmed,
         }
         self._database = database

@@ -11,7 +11,10 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    and_,
+    distinct,
     func,
+    literal_column,
     null,
     or_,
     select,
@@ -112,6 +115,32 @@ proposed_changes = Table(
     Column("html", Text),
 )
 
+# Here to proposed_ids definition written with GPT
+dictionaries = (
+    func.jsonb_array_elements(proposed_changes.c.link_dict)
+    .table_valued("value")
+    .alias("dictionaries")
+)
+
+link_dicts = (
+    select(dictionaries.c.value.label("value"))
+    .select_from(proposed_changes)
+    .join(dictionaries, literal_column("true"))  # CROSS JOIN LATERAL
+    .subquery("link_dicts")
+)
+
+dict_values = (
+    func.jsonb_each_text(link_dicts.c.value).table_valued("key", "value").alias("lvl2")
+)
+
+proposed_ids = (
+    select(distinct(dict_values.c.value))
+    .select_from(link_dicts)
+    .join(dict_values, literal_column("true"))  # CROSS JOIN LATERAL
+    .where(dict_values.c.key == "base_question_id")
+    .scalar_subquery()
+)
+
 # Confirmed records should be excluded
 confirmed_subquery = (
     select(uqid_changelog.c["original_uqid"])
@@ -148,3 +177,21 @@ query = (
 )
 
 unconfirmed = view("unconfirmed", sql_metadata, query)
+
+# Flashcard view
+query = (
+    select(question)
+    .where(
+        or_(
+            and_(
+                question.c.uqid.not_in(confirmed_subquery),
+                question.c.question_id.not_in(proposed_ids),
+            ),
+            question.c.uqid == null(),
+        )
+    )
+    .distinct()
+    .order_by(question.c.year, question.c.question_number)
+)
+
+flashcard = view("flashcard", sql_metadata, query)
