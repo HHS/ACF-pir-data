@@ -23,3 +23,29 @@ button {
 #keyword-search {
 	margin-top: 3em;
 }
+
+.table-box {
+	margin-bottom: 2em;
+}
+
+.finalize-table-div {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 1em;
+}
+
+.primary-button {
+	align-self: flex-end;
+}
+
+.deny-button {
+    background-color: #C41E3A;
+	margin: 0em 1em 0em 1em;
+}
+.deny-button:hover {
+    background-color: #880808; /* Darker blue for hover */
+}
+
+.button-container {
+	align-self: flex-end;
+}

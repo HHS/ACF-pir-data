@@ -27,12 +27,47 @@ function insertFinalizeTables(data) {
 
     // https://stackoverflow.com/questions/494143/creating-a-new-dom-element-from-an-html-string-using-built-in-dom-methods-or-pro/35385518#35385518
     for (let key in data) {
+        // Extract HTML
+        const tableDiv = document.createElement("div");
+        tableDiv.className = "finalize-table-div";
+
         const record = data[key];
         const template = document.createElement("template");
         template.innerHTML = record["html"];
         const tableHTML = template.content.firstChild;
+        tableHTML.innerHTML = tableHTML.innerHTML.replace("flashcard-question-table", record["id"])
         tableHTML.id = record["id"];
-        tableBox.appendChild(tableHTML);
+
+        // Remove store buttons
+        const storeButtons = tableHTML.querySelectorAll("button[onclick='storeLink(event)']")
+        storeButtons.forEach(element => element.remove())
+
+        // Add confirm button
+        const confirmButton = document.createElement("button");
+        confirmButton.classList.add(...["wrapper-button", "primary-button"]);
+        confirmButton.innerHTML = "Confirm";
+        confirmButton.setAttribute("onclick", "commitLink(event)");
+        confirmButton.name = "confirm";
+        confirmButton.value = record["id"];
+
+        // Add deny button
+        const denyButton = document.createElement("button");
+        denyButton.classList.add(...["wrapper-button", "primary-button", "deny-button"]);
+        denyButton.innerHTML = "Deny";
+        denyButton.setAttribute("onclick", "commitLink(event)");
+        denyButton.name = "deny";
+        denyButton.value = record["id"];
+
+        // Create button container
+        const buttonContainer = document.createElement("div");
+        buttonContainer.className = "button-container";
+        buttonContainer.appendChild(denyButton);
+        buttonContainer.appendChild(confirmButton);
+
+        // Render the content
+        tableDiv.appendChild(tableHTML);
+        tableDiv.appendChild(buttonContainer);
+        tableBox.appendChild(tableDiv);
     };
 }
 
