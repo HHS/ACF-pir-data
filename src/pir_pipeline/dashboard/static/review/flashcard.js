@@ -86,7 +86,7 @@ async function flashcardAction(e) {
         })
 
         // Move to the next question
-        value = "next";
+        value = "proposed";
     }
 
     // Get the data for the next (previous) question and update the tables
