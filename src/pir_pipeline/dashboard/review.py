@@ -5,7 +5,7 @@ from collections import OrderedDict
 from hashlib import sha1
 
 from flask import Blueprint, render_template, request, session
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -97,6 +97,10 @@ def flashcard():
 
             output = get_flashcard_question(offset, db, session)
 
+        elif action == "proposed":
+            offset = session.get("current_question")
+            output = get_flashcard_question(offset, db, session)
+
         return json.dumps(output)
 
     return render_template("review/flashcard.html")
@@ -129,6 +133,7 @@ def data():
 @bp.route("/link", methods=["POST"])
 def link():
     """Handle storage of link/unlink actions"""
+    db = get_db()
     payload = request.get_json()
     action = payload["action"]
     # Add a link/unlink entry to session
@@ -149,7 +154,6 @@ def link():
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
     elif action == "store":
-        db = get_db()
         link_dict = session["link_dict"]
 
         ids = [
@@ -174,11 +178,23 @@ def link():
         del session["link_dict"]
         message = f"Record {link_dict} written to proposed changes."
     # Execute all linking actions
-    elif action == "finalize":
-        db = get_db()
-        link_dict = session["link_dict"]
-        QuestionLinker(link_dict, db).update_links()
+    elif action == "confirm":
+        proposed_changes = db.tables["proposed_changes"]
+        link_dict = db.get_scalar(
+            select(proposed_changes.c["link_dict"]), {"id": payload["id"]}
+        )
+        print(link_dict)
+        # QuestionLinker(link_dict, db).update_links()
         message = "Links Updated!"
-        del session["link_dict"]
+    elif action == "deny":
+        proposed_changes = db.tables["proposed_changes"]
+        delete_query = delete(proposed_changes).where(
+            proposed_changes.c["id"] == payload["id"]
+        )
+
+        with db.engine.begin() as conn:
+            conn.execute(delete_query)
+
+        message = f"Removed link associated with id: {payload["id"]}"
 
     return {"message": message}

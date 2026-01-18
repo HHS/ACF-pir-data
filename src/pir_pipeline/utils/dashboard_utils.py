@@ -313,14 +313,14 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
 class QuestionLinker:
     """QuestionLinker class to handle linking and unlinking of questions"""
 
-    def __init__(self, data: dict, db: SQLAlchemyUtils, log: bool = True):
+    def __init__(self, data: list[dict], db: SQLAlchemyUtils, log: bool = True):
         """QuestionLinker object to handle linking and unlinking of questions
 
         Args:
             data (dict): A series of instructions for linking/unlinking questions.
                 Should be of the form:
-                {
-                    record_id_1: {
+                [
+                    {
                         "link_type": link or unlink,
                         "base_question_id": qid_1,
                         "base_uqid": uqid_1,
@@ -328,10 +328,10 @@ class QuestionLinker:
                         "match_uqid": uqid_2
                     },
                     ...
-                    record_id_n: {
+                    {
                         ...
                     }
-                }
+                ]
             db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
             log (bool): Boolean to determin whether to write to changelog. Defaults to True.
         """
@@ -544,7 +544,7 @@ class QuestionLinker:
 
         Makes calles to QuestionLinker.link and QuestionLinker.unlink as needed
         """
-        for key, value in self._data.items():
+        for value in self._data:
             try:
                 self._record = value
                 link_type = value["link_type"]

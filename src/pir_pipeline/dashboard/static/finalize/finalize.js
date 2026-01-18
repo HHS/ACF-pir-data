@@ -95,5 +95,32 @@ function paginate(e) {
         .then(data => insertFinalizeTables(data));
 }
 
+function commitLink(e) {
+    e.preventDefault();
+
+    let button = e.target;
+
+    const body = {
+        "action": button.name,
+        "id": button.value
+    }
+
+    const payload = {
+        "method": "POST",
+        "headers": {
+            "Content-type": "application/json"
+        },
+        "body": JSON.stringify(body)
+    };
+
+    fetch("/review/link", payload)
+        .then(response => { 
+            const tableBox = document.querySelector(".table-box");
+            tableBox.innerHTML = "";
+            buildPage();
+        })
+}
+
 document.expandContractRow = expandContractRow;
 document.paginate = paginate;
+document.commitLink = commitLink;
