@@ -10,9 +10,11 @@ from pir_pipeline.dashboard.db import get_db
 
 bp = Blueprint("finalize", __name__, url_prefix="/finalize")
 
+DEFAULT_DISPLAYED = 10
+
 
 class WrappedList(Sequence):
-    def __init__(self, iterable: Optional[Iterable]):
+    def __init__(self, iterable: Optional[Iterable], loc: int = 0):
         if isinstance(iterable, str):
             self.collection = json.loads(iterable)
         elif iterable:
@@ -20,7 +22,7 @@ class WrappedList(Sequence):
         else:
             self.collection = tuple()
 
-        self.loc = 0
+        self.loc = loc
         self.max_index = self.__len__() - 1
 
     def __getitem__(self, key):
@@ -42,7 +44,8 @@ class WrappedList(Sequence):
         return self[self.loc]
 
     def to_json(self):
-        return json.dumps(self.collection)
+        js = [self.collection, self.loc]
+        return json.dumps(js)
 
 
 def get_page():
@@ -51,7 +54,9 @@ def get_page():
         record_count = connection.execute(
             text("SELECT COUNT(*) FROM proposed_changes")
         ).scalar_one()
-        session["max_page"] = ceil(record_count / 10)
+        session["max_page"] = ceil(
+            record_count / session.get("number_displayed", DEFAULT_DISPLAYED)
+        )
 
     return WrappedList(list(range(session["max_page"]))).to_json()
 
@@ -59,7 +64,7 @@ def get_page():
 @bp.route("/", methods=["GET"])
 def index():
     session["finalize_page"] = 0
-    session["number_displayed"] = 10
+    session["number_displayed"] = session.get("number_displayed", DEFAULT_DISPLAYED)
     session["page"] = get_page()
 
     return render_template("finalize/finalize.html")
@@ -69,8 +74,9 @@ def index():
 def data():
     db = get_db()
 
-    number_displayed = session.get("number_displayed")
-    page: WrappedList = WrappedList(session.get("page", get_page()))
+    number_displayed: int = session.get("number_displayed", DEFAULT_DISPLAYED)
+    page_tuple = json.loads(session.get("page", get_page()))
+    page: WrappedList = WrappedList(*page_tuple)
 
     response = request.get_json()
     direction = response.get("direction")

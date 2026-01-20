@@ -179,15 +179,23 @@ query = (
 unconfirmed = view("unconfirmed", sql_metadata, query)
 
 # Flashcard view
+proposed_uqid_query = (
+    select(question.c.uqid)
+    .where(and_(question.c.question_id.in_(proposed_ids), question.c.uqid != null()))
+    .distinct()
+    .subquery()
+)
+
 query = (
     select(question)
     .where(
-        or_(
-            and_(
+        and_(
+            or_(
                 question.c.uqid.not_in(confirmed_subquery),
-                question.c.question_id.not_in(proposed_ids),
+                question.c.uqid == null(),
             ),
-            question.c.uqid == null(),
+            question.c.question_id.not_in(proposed_ids),
+            question.c.uqid.not_in(proposed_uqid_query),
         )
     )
     .distinct()
