@@ -152,7 +152,7 @@ class PIRLinker:
             self._question.groupby(columns + ["year"]).size() == 1
         ).reset_index()
         unique_records = unique_records.groupby(columns).min().reset_index()
-        unique_records = unique_records[unique_records[0] == True]
+        unique_records = unique_records[unique_records[0] is True]
         unique_records = unique_records[columns].groupby(columns).first().reset_index()
 
         # Get the modal uqid
