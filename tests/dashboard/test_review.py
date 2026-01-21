@@ -75,7 +75,7 @@ class TestReviewRoutes:
             "Incorrect question_name", expected_name, actual_name
         )
 
-    def test_post_link(self, client):
+    def test_post_link(self, client, sql_utils, error_message_constructor):
         with client:
             client.post(
                 "/review/link",
@@ -85,6 +85,90 @@ class TestReviewRoutes:
                 "base_question_id": "B"
             }
 
+        input_records = [
+            {
+                "0": {
+                    "link_type": "confirm",
+                    "base_question_id": "B",
+                    "match_question_id": "",
+                }
+            },
+            {
+                "1": {
+                    "link_type": "confirm",
+                    "base_question_id": "A",
+                    "match_question_id": "",
+                }
+            },
+        ]
+        for record in input_records:
+            with client.session_transaction() as sess:
+                sess["link_dict"] = record
+
+            client.post(
+                "/review/link",
+                json={
+                    "action": "store",
+                    "html": "",
+                },
+            )
+
+        with sql_utils.engine.connect() as conn:
+            result = conn.execute(select(sql_utils.tables["proposed_changes"]))
+            records = result.all()
+
+        expected = 2
+        got = len(records)
+        assert expected == got, error_message_constructor(
+            "Incorrect number of records", expected, got
+        )
+
+        expected = [input_records[0]["0"]]
+        got = records[0][1]
+        assert expected == got, error_message_constructor(
+            "Incorrect link dict", expected, got
+        )
+
+        deny_id = records[0][0]
+        client.post("/review/link", json={"action": "deny", "id": deny_id})
+
+        with sql_utils.engine.connect() as conn:
+            result = conn.execute(select(sql_utils.tables["proposed_changes"]))
+            records = result.all()
+
+        expected = 1
+        got = len(records)
+        assert expected == got, error_message_constructor(
+            "Incorrect number of records", expected, got
+        )
+
+        confirm_id = records[0][0]
+        client.post("/review/link", json={"action": "confirm", "id": confirm_id})
+
+        with sql_utils.engine.connect() as conn:
+            result = conn.execute(select(sql_utils.tables["proposed_changes"]))
+            proposed_records = result.all()
+            result = conn.execute(select(sql_utils.tables["uqid_changelog"]))
+            confirmed_records = result.all()
+
+        expected = 0
+        got = len(proposed_records)
+        assert expected == got, error_message_constructor(
+            "Incorrect number of records", expected, got
+        )
+
+        expected = 1
+        got = len(confirmed_records)
+        assert expected == got, error_message_constructor(
+            "Incorrect number of records", expected, got
+        )
+
+        expected = input_records[1]["1"]["base_question_id"]
+        got = confirmed_records[0][2]
+        assert expected == got, error_message_constructor(
+            "Incorrect record in db", expected, got
+        )
+
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_post_finalize"])
+    pytest.main([__file__, "-sk", "test_post_link"])

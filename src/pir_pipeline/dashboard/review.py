@@ -183,8 +183,13 @@ def link():
         link_dict = db.get_scalar(
             select(proposed_changes.c["link_dict"]), {"id": payload["id"]}
         )
-        print(link_dict)
-        # QuestionLinker(link_dict, db).update_links()
+        QuestionLinker(link_dict, db).update_links()
+        delete_query = delete(proposed_changes).where(
+            proposed_changes.c["id"] == payload["id"]
+        )
+        with db.engine.begin() as conn:
+            conn.execute(delete_query)
+
         message = "Links Updated!"
     elif action == "deny":
         proposed_changes = db.tables["proposed_changes"]
