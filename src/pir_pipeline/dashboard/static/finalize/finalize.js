@@ -75,8 +75,13 @@ function paginate(e) {
     e.preventDefault();
 
     // Get the form data
-    const name = e.submitter.name;
-    let value = e.submitter.value;
+    try {
+        var name = e.submitter.name;
+        var value = e.submitter.value;
+    } catch {
+        var name = e.target.name;
+        var value = e.target.value;
+    }
 
     const body = {
         "direction": value

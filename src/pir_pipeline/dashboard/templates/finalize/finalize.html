@@ -19,6 +19,17 @@
             </li>
         </ul>
     </div>
+    <div class="number-displayed">
+        <label for="number-displayed">
+            Number of Records to Display:
+        </label>
+        <select name="number-displayed" id="number-displayed" onchange="paginate(event)">
+            <option value=5>5</option>
+            <option value=10 selected="selected">10</option>
+            <option value=25>25</option>
+            <option value=50>50</option>
+        </select>
+    </div>
     <div class="table-box">
     </div>
 {% endblock %}

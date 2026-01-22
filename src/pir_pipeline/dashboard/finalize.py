@@ -79,10 +79,15 @@ def data():
     page: WrappedList = WrappedList(*page_tuple)
 
     response = request.get_json()
-    direction = response.get("direction")
+    direction: str = response.get("direction")
 
     if direction is None:
         pass
+    elif direction.isdigit():
+        number_displayed = int(direction)
+        session["number_displayed"] = number_displayed
+        page_tuple = json.loads(get_page())
+        page = WrappedList(*page_tuple)
     elif direction == "next":
         page.next()
     else:
