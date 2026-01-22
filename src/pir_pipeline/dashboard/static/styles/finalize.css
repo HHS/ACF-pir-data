@@ -49,3 +49,7 @@ button {
 .button-container {
 	align-self: flex-end;
 }
+
+.number-displayed {
+	margin-bottom: 1em;
+}
