@@ -14,7 +14,7 @@ DEFAULT_DISPLAYED = 10
 
 
 class WrappedList(Sequence):
-    def __init__(self, iterable: Optional[Iterable], loc: int = 0):
+    def __init__(self, iterable: Optional[Iterable | str], loc: int = 0):
         if isinstance(iterable, str):
             self.collection = json.loads(iterable)
         elif iterable:
@@ -30,6 +30,10 @@ class WrappedList(Sequence):
 
     def __len__(self):
         return self.collection.__len__()
+
+    def __repr__(self):
+        string = f"""Pages: {self.collection};\nCurrent Page: {self.loc}"""
+        return string
 
     @property
     def current(self):
@@ -48,24 +52,38 @@ class WrappedList(Sequence):
         return json.dumps(js)
 
 
-def get_page():
-    db = get_db()
-    with db.engine.connect() as connection:
-        record_count = connection.execute(
-            text("SELECT COUNT(*) FROM proposed_changes")
-        ).scalar_one()
-        session["max_page"] = ceil(
-            record_count / session.get("number_displayed", DEFAULT_DISPLAYED)
+def get_page(number_displayed: Optional[int] = None) -> WrappedList:
+    if session.get("page") and not number_displayed:
+        page_tuple = json.loads(session.get("page"))
+        page_wrapped = WrappedList(*page_tuple)
+    else:
+        db = get_db()
+        denominator = number_displayed or session.get(
+            "number_displayed", DEFAULT_DISPLAYED
         )
+        loc = 0
+        with db.engine.connect() as connection:
+            record_count = connection.execute(
+                text("SELECT COUNT(*) FROM proposed_changes")
+            ).scalar_one()
+            session["max_page"] = ceil(record_count / denominator)
+        if session.get("page") and number_displayed:
+            previous_page = json.loads(session.get("page"))[1]
+            offset = previous_page * session.get("number_displayed", DEFAULT_DISPLAYED)
+            loc = offset // number_displayed
 
-    return WrappedList(list(range(session["max_page"]))).to_json()
+        page_range = range(session["max_page"])
+        page_list = list(page_range)
+        page_wrapped = WrappedList(page_list, loc)
+
+    return page_wrapped
 
 
 @bp.route("/", methods=["GET"])
 def index():
     session["finalize_page"] = 0
     session["number_displayed"] = session.get("number_displayed", DEFAULT_DISPLAYED)
-    session["page"] = get_page()
+    session["page"] = get_page().to_json()
 
     return render_template("finalize/finalize.html")
 
@@ -75,8 +93,7 @@ def data():
     db = get_db()
 
     number_displayed: int = session.get("number_displayed", DEFAULT_DISPLAYED)
-    page_tuple = json.loads(session.get("page", get_page()))
-    page: WrappedList = WrappedList(*page_tuple)
+    page: WrappedList = get_page()
 
     response = request.get_json()
     direction: str = response.get("direction")
@@ -85,9 +102,8 @@ def data():
         pass
     elif direction.isdigit():
         number_displayed = int(direction)
+        page = get_page(number_displayed)
         session["number_displayed"] = number_displayed
-        page_tuple = json.loads(get_page())
-        page = WrappedList(*page_tuple)
     elif direction == "next":
         page.next()
     else:

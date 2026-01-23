@@ -23,11 +23,12 @@
         <label for="number-displayed">
             Number of Records to Display:
         </label>
+        <!-- Written with GPT -->
         <select name="number-displayed" id="number-displayed" onchange="paginate(event)">
-            <option value=5>5</option>
-            <option value=10 selected="selected">10</option>
-            <option value=25>25</option>
-            <option value=50>50</option>
+            <option value="5"  {% if session["number_displayed"] == 5 %}selected{% endif %}>5</option>
+            <option value="10" {% if session["number_displayed"] == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if session["number_displayed"] == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if session["number_displayed"] == 50 %}selected{% endif %}>50</option>
         </select>
     </div>
     <div class="table-box">

@@ -110,4 +110,4 @@ class TestFinalizeUI:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_action_buttons"])
+    pytest.main([__file__, "-sk", "test_pagination"])
