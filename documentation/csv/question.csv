@@ -1,12 +1,12 @@
-field,	type
-question_id,	varchar(255)
-year,	year
-uqid,	varchar(255)
-category,	varchar(255)
-question_name,	text
-question_number,	varchar(255)
-question_order,	float
-question_text,	text
-question_type,	varchar(255)
-section,	varchar(255)
-subsection,	varchar(255)
+field,"	type"
+question_id,"	varchar(255)"
+year,int
+uqid,"	varchar(255)"
+category,"	varchar(255)"
+question_name,"	text"
+question_number,"	varchar(255)"
+question_order,numeric
+question_text,"	text"
+question_type,"	varchar(255)"
+section,"	varchar(255)"
+subsection,"	varchar(255)"
