@@ -155,13 +155,11 @@ def post_correction_checks(
 
 
 def add_unique_constraint():
-    constraint_query = text(
-        """
+    constraint_query = text("""
         ALTER TABLE question
         ADD CONSTRAINT uq_question_uqid
         UNIQUE (uqid, year)
-        """
-    )
+        """)
     with SQL_UTILS.engine.begin() as conn:
         conn.execute(constraint_query)
 
@@ -175,15 +173,13 @@ def revert_or_drop_temp_table(revert: bool = False):
         for column in QUESTION.c:
             if not column.primary_key:
                 update_string.append(f"{column.name} = EXCLUDED.{column.name}")
-        query = text(
-            f"""
+        query = text(f"""
             INSERT INTO question 
             SELECT * 
             FROM question_temp
             ON CONFLICT ON CONSTRAINT pk_question DO UPDATE
             SET {', '.join(update_string)}
-            """
-        )
+            """)
         queries.insert(0, query)
 
         # Remove unique constraint.
