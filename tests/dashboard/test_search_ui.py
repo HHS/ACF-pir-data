@@ -1,4 +1,5 @@
 import os
+import time
 
 import pytest
 from selenium.common.exceptions import TimeoutException
@@ -65,8 +66,8 @@ def test_search_ui(driver, sql_utils):
     edit_button = wait.until(
         EC.element_to_be_clickable(
             (
-                By.XPATH,
-                '//table[@id="search-results-table"]//button[@onclick="getFlashcardData(event)"]',
+                By.CSS_SELECTOR,
+                "tr[id='search-results-table-tr-10002'] button[onclick='getFlashcardData(event)']",
             )
         )
     )
@@ -163,5 +164,4 @@ def test_search_ui(driver, sql_utils):
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_search_ui"])
     pytest.main([__file__, "-sk", "test_search_ui"])
