@@ -13,7 +13,6 @@ def index():
     """Return the Home page"""
 
     db = get_db()
-    db.create_db()
 
     # Count of questions by year
     question = db.tables["question"]
