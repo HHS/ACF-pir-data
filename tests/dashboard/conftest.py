@@ -50,7 +50,7 @@ def runner(app):
 @pytest.fixture
 def driver():
     options = Options()
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
 
     yield driver
