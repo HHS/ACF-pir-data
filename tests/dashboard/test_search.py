@@ -75,4 +75,4 @@ class TestSearchRoutes:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-sk", "test_post_data"])
+    pytest.main([__file__, "-s", "-vv", "-k", "test_post_data"])

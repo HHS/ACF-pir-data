@@ -67,8 +67,8 @@ def test_search_ui(driver, sql_utils):
     edit_button = wait.until(
         EC.element_to_be_clickable(
             (
-                By.XPATH,
-                '//table[@id="search-results-table"]//tr[@id="search-results-table-tr-10001"]//button[@onclick="getFlashcardData(event)"]',
+                By.CSS_SELECTOR,
+                "tr[id='search-results-table-tr-10002'] button[onclick='getFlashcardData(event)']",
             )
         )
     )
