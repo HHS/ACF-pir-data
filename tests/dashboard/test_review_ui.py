@@ -50,7 +50,7 @@ def test_review_ui(driver, sql_utils):
             By.CSS_SELECTOR,
             "tr#flashcard-matches-table-tr-10000 td[name='question_id']",
         ).get_attribute("textContent")
-        == "0e93c25d3a95604f40d3a64e2298093b4faed6f2"
+        == "d27e8217ba30000a78e5d92ea54f4d9a2e69cb54"
     )
 
     # Click the storeLink button in the first row

@@ -165,13 +165,11 @@ class SQLAlchemyUtils(SQLUtils):
             elif self._dialect == "postgresql":
                 table_schema = "table_catalog"
 
-            query = text(
-                f"""
+            query = text(f"""
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_name = :table AND {table_schema} = :schema {where}
-                """
-            )
+                """)
             with self._engine.connect() as conn:
                 result = conn.execute(
                     query, {"table": table, "schema": self._database, "where": where}
