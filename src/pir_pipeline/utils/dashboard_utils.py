@@ -409,10 +409,19 @@ class QuestionLinker:
             )
 
         # Matching two questions with one or no uqid
-        elif not base_uqid:
-            if not match_uqid:
+        else:
+            if not match_uqid and not base_uqid:
                 qids_encoded = (base_qid + match_qid).encode("utf-8")
                 match_uqid = sha1(qids_encoded).hexdigest()
+            elif base_uqid or match_uqid:
+                if match_uqid:
+                    pass
+                elif base_uqid:
+                    match_uqid = base_uqid
+                    base_qid = match_qid
+
+            changes.base["new_uqid"] = match_uqid
+            changes.match["new_uqid"] = match_uqid
 
             self._db.update_records(
                 question,
