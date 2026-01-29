@@ -248,7 +248,7 @@ def get_review_question(
     return (id_column, next_id)
 
 
-def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
+def search_matches(matches: dict, db: SQLAlchemyUtils) -> dict:
     """Iterate over matches to return all related rows
 
     Args:
@@ -261,6 +261,7 @@ def search_matches(matches: dict, id_column: str, db: SQLAlchemyUtils) -> dict:
     """
     output = {}
     for match in matches:
+        id_column = "uqid" if match.get("uqid") else "question_id"
         output.update(get_search_results(match[id_column], db, id_column))
 
     return output
@@ -312,14 +313,14 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
 class QuestionLinker:
     """QuestionLinker class to handle linking and unlinking of questions"""
 
-    def __init__(self, data: dict, db: SQLAlchemyUtils, log: bool = True):
+    def __init__(self, data: list[dict], db: SQLAlchemyUtils, log: bool = True):
         """QuestionLinker object to handle linking and unlinking of questions
 
         Args:
             data (dict): A series of instructions for linking/unlinking questions.
                 Should be of the form:
-                {
-                    record_id_1: {
+                [
+                    {
                         "link_type": link or unlink,
                         "base_question_id": qid_1,
                         "base_uqid": uqid_1,
@@ -327,10 +328,10 @@ class QuestionLinker:
                         "match_uqid": uqid_2
                     },
                     ...
-                    record_id_n: {
+                    {
                         ...
                     }
-                }
+                ]
             db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
             log (bool): Boolean to determin whether to write to changelog. Defaults to True.
         """
@@ -408,10 +409,19 @@ class QuestionLinker:
             )
 
         # Matching two questions with one or no uqid
-        elif not base_uqid:
-            if not match_uqid:
+        else:
+            if not match_uqid and not base_uqid:
                 qids_encoded = (base_qid + match_qid).encode("utf-8")
                 match_uqid = sha1(qids_encoded).hexdigest()
+            elif base_uqid or match_uqid:
+                if match_uqid:
+                    pass
+                elif base_uqid:
+                    match_uqid = base_uqid
+                    base_qid = match_qid
+
+            changes.base["new_uqid"] = match_uqid
+            changes.match["new_uqid"] = match_uqid
 
             self._db.update_records(
                 question,
@@ -543,7 +553,7 @@ class QuestionLinker:
 
         Makes calles to QuestionLinker.link and QuestionLinker.unlink as needed
         """
-        for key, value in self._data.items():
+        for value in self._data:
             try:
                 self._record = value
                 link_type = value["link_type"]
@@ -565,9 +575,5 @@ class QuestionLinker:
 if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
-    db = SQLAlchemyUtils(**DB_CONFIG, database="pir_test")
-    print(
-        get_search_results("903863a832c884bdf311237ed570c44d", db)[
-            "695fed8b2a237b322fcc5bd7fa52384e"
-        ]
-    )
+    db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
+    get_search_results("child", db)

@@ -1,4 +1,5 @@
 import os
+import time
 
 import pytest
 from selenium.webdriver.common.by import By
@@ -25,6 +26,11 @@ def test_review_ui(driver, sql_utils):
             )
 
         return count
+
+    question_uqid_query = "SELECT question, uqid FROM question"
+    with sql_utils.engine.connect() as conn:
+        result = conn.execute(text(question_uqid_query))
+        question_uqid_pairs = result.fetchall()
 
     driver.get("http://127.0.0.1:5000/review")
 
@@ -117,12 +123,14 @@ def test_review_ui(driver, sql_utils):
     next_button.click()
 
     # Click the 'Previous' button
+    time.sleep(1)
     prev_button = driver.find_element(
         By.CSS_SELECTOR, 'form#flashcard-buttons button[value="previous"]'
     )
     prev_button.click()
 
     # Extract the Question ID
+    time.sleep(1)
     question_id_element = driver.find_element(
         By.CSS_SELECTOR, '#flashcard-question-table td[name="question_id"]'
     )
@@ -131,19 +139,36 @@ def test_review_ui(driver, sql_utils):
 
     assert (
         init_question_id == question_id
-    ), "Previous and Next buttons are not working fine"
+    ), f"Previous and Next buttons malfunctioning: initial question: {init_question_id}, current question: {question_id}"
 
     # Check the confirm changes button
     confirm_button = driver.find_element(By.ID, "confirm-button")
     confirm_button.click()
 
     with sql_utils.engine.connect() as conn:
-        result = conn.execute(text("SELECT question_id FROM confirmed"))
-        question_ids = result.scalars()
+        # Confirm there is a record in proposed_changes
+        result = conn.execute(text("SELECT link_dict FROM proposed_changes"))
+        link_dict = result.scalar()
+        question_ids = []
+        for link in link_dict:
+            for qid in ["base_question_id", "match_question_id"]:
+                question_ids.append(link[qid])
 
-    assert (
-        question_id in question_ids
-    ), f"{question_id} is not in confirmed IDs: {question_ids}"
+        assert (
+            question_id in question_ids
+        ), f"{question_id} is not in IDs proposed for linkage: {question_ids}"
+
+        # Confirm no uqids changed
+        result = conn.execute(text(question_uqid_query))
+        records = result.fetchall()
+        sorted_records = sorted(records)
+        different_pairs = set(sorted_records).difference(set(question_uqid_pairs))
+        assert not different_pairs, "question_id/uqid pairs have changed: {}"
+
+        # Confirm no records in uqid_changelog
+        result = conn.execute(text("SELECT * FROM uqid_changelog"))
+        records = result.fetchall()
+        assert not records, f"Some records in uqid_changelog: {records}"
 
 
 if __name__ == "__main__":

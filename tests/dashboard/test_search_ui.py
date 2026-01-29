@@ -87,8 +87,11 @@ def test_search_ui(driver, sql_utils):
     assert modal_visible, "Edit modal did not appear after clicking Edit button."
 
     # Click the storeLink button in the first row
+    time.sleep(1)
+
     question_rows_init = count_modal_rows("question")
     match_rows_init = count_modal_rows("matches")
+
     storelink_button = wait.until(
         EC.element_to_be_clickable(
             (
@@ -142,25 +145,44 @@ def test_search_ui(driver, sql_utils):
         )
     )
     storelink_button.click()
-    init_question_ids = driver.find_elements(
+
+    question_id_element = driver.find_element(
         By.CSS_SELECTOR, '#flashcard-question-table td[name="question_id"]'
     )
-    init_question_ids = set(
-        [question.get_attribute("textContent") for question in init_question_ids]
-    )
+    question_id = question_id_element.get_attribute("textContent").strip()
 
     confirm_button = driver.find_element(value="confirm-button")
     confirm_button.click()
 
+    question_uqid_query = "SELECT question, uqid FROM question"
     with sql_utils.engine.connect() as conn:
-        result = conn.execute(text("SELECT question_id FROM uqid_changelog"))
-        question_ids = result.scalars()
+        result = conn.execute(text(question_uqid_query))
+        question_uqid_pairs = result.fetchall()
 
-    question_ids = set(question_ids)
+    with sql_utils.engine.connect() as conn:
+        # Confirm there is a record in proposed_changes
+        result = conn.execute(text("SELECT link_dict FROM proposed_changes"))
+        link_dict = result.scalar()
+        question_ids = []
+        for link in link_dict:
+            for qid in ["base_question_id", "match_question_id"]:
+                question_ids.append(link[qid])
 
-    assert question_ids.issuperset(
-        init_question_ids
-    ), f"question_id set is not a superset of init_question_id set {question_ids.symmetric_difference(init_question_ids)}"
+        assert (
+            question_id in question_ids
+        ), f"{question_id} is not in IDs proposed for linkage: {question_ids}"
+
+        # Confirm no uqids changed
+        result = conn.execute(text(question_uqid_query))
+        records = result.fetchall()
+        sorted_records = sorted(records)
+        different_pairs = set(sorted_records).difference(set(question_uqid_pairs))
+        assert not different_pairs, "question_id/uqid pairs have changed: {}"
+
+        # Confirm no records in uqid_changelog
+        result = conn.execute(text("SELECT * FROM uqid_changelog"))
+        records = result.fetchall()
+        assert not records, f"Some records in uqid_changelog: {records}"
 
 
 if __name__ == "__main__":

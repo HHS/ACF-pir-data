@@ -35,7 +35,7 @@ def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtil
 
     if matches and len(matches) > 1:
         matches.pop(0)
-        output["matches"] = search_matches(matches, id_column, db)
+        output["matches"] = search_matches(matches, db)
     elif matches and len(matches) == 1:
         output["matches"] = {"columns": output["question"]["columns"]}
     else:

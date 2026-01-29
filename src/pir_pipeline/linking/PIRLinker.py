@@ -152,7 +152,7 @@ class PIRLinker:
             self._question.groupby(columns + ["year"]).size() == 1
         ).reset_index()
         unique_records = unique_records.groupby(columns).min().reset_index()
-        unique_records = unique_records[unique_records[0] == True]
+        unique_records = unique_records[unique_records[0] == True]  # noqa: E712
         unique_records = unique_records[columns].groupby(columns).first().reset_index()
 
         # Get the modal uqid
@@ -284,7 +284,6 @@ class PIRLinker:
             )["year"].tolist()
             self._cross = df[df["year_y"].map(lambda x: x not in years)]
             self._cross = self._cross[self._cross["uqid_x"] != self._cross["uqid_y"]]
-
         # Remove cases where unique_question_id combination is duplicated
         if len(unique_ids) == 1:
             for ident in ["question_id", "uqid"]:
@@ -321,11 +320,6 @@ class PIRLinker:
             return sum(scores) >= 2
 
         self.question_data_check()
-
-        try:
-            self._question
-        except AttributeError:
-            self.get_question_data()
 
         try:
             self._cross

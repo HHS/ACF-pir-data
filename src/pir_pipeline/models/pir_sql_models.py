@@ -10,12 +10,16 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
+    and_,
+    distinct,
     func,
+    literal_column,
     null,
     or_,
     select,
-    UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql.json import JSONB
 
 from pir_pipeline.utils.sql_alchemy_view import view
 
@@ -103,6 +107,40 @@ uqid_changelog = Table(
     Column("complete_series_flag", Integer, default=0),
 )
 
+proposed_changes = Table(
+    "proposed_changes",
+    sql_metadata,
+    Column("id", String(255), primary_key=True),
+    Column("link_dict", JSONB),
+    Column("html", Text),
+)
+
+# Here to proposed_ids definition written with GPT
+dictionaries = (
+    func.jsonb_array_elements(proposed_changes.c.link_dict)
+    .table_valued("value")
+    .alias("dictionaries")
+)
+
+link_dicts = (
+    select(dictionaries.c.value.label("value"))
+    .select_from(proposed_changes)
+    .join(dictionaries, literal_column("true"))  # CROSS JOIN LATERAL
+    .subquery("link_dicts")
+)
+
+dict_values = (
+    func.jsonb_each_text(link_dicts.c.value).table_valued("key", "value").alias("lvl2")
+)
+
+proposed_ids = (
+    select(distinct(dict_values.c.value))
+    .select_from(link_dicts)
+    .join(dict_values, literal_column("true"))  # CROSS JOIN LATERAL
+    .where(dict_values.c.key == "base_question_id")
+    .scalar_subquery()
+)
+
 # Confirmed records should be excluded
 confirmed_subquery = (
     select(uqid_changelog.c["original_uqid"])
@@ -139,3 +177,29 @@ query = (
 )
 
 unconfirmed = view("unconfirmed", sql_metadata, query)
+
+# Flashcard view
+proposed_uqid_query = (
+    select(question.c.uqid)
+    .where(and_(question.c.question_id.in_(proposed_ids), question.c.uqid != null()))
+    .distinct()
+    .subquery()
+)
+
+query = (
+    select(question)
+    .where(
+        and_(
+            or_(
+                question.c.uqid.not_in(confirmed_subquery),
+                question.c.uqid == null(),
+            ),
+            question.c.question_id.not_in(proposed_ids),
+            question.c.uqid.not_in(proposed_uqid_query),
+        )
+    )
+    .distinct()
+    .order_by(question.c.year, question.c.question_number)
+)
+
+flashcard = view("flashcard", sql_metadata, query)

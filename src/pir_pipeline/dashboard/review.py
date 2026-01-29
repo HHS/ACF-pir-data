@@ -5,7 +5,7 @@ from collections import OrderedDict
 from hashlib import sha1
 
 from flask import Blueprint, render_template, request, session
-from sqlalchemy import func, select
+from sqlalchemy import bindparam, delete, func, select
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -35,7 +35,7 @@ def get_flashcard_question(
         dict: Dictionary containing data for header question and matching questions.
     """
 
-    id_column, record = get_review_question("unconfirmed", offset, "uqid", db)
+    id_column, record = get_review_question("flashcard", offset, "uqid", db)
 
     if not record[id_column]:
         id_column = "question_id"
@@ -46,7 +46,7 @@ def get_flashcard_question(
 
     if matches and len(matches) > 1:
         matches.pop(0)
-        output["matches"] = search_matches(matches, id_column, db)
+        output["matches"] = search_matches(matches, db)
     elif matches and len(matches) == 1:
         output["matches"] = {"columns": output["question"]["columns"]}
     else:
@@ -97,6 +97,10 @@ def flashcard():
 
             output = get_flashcard_question(offset, db, session)
 
+        elif action == "proposed":
+            offset = session.get("current_question")
+            output = get_flashcard_question(offset, db, session)
+
         return json.dumps(output)
 
     return render_template("review/flashcard.html")
@@ -129,9 +133,9 @@ def data():
 @bp.route("/link", methods=["POST"])
 def link():
     """Handle storage of link/unlink actions"""
+    db = get_db()
     payload = request.get_json()
     action = payload["action"]
-
     # Add a link/unlink entry to session
     if action == "build":
         data = payload["data"]
@@ -149,13 +153,54 @@ def link():
             link_dict = OrderedDict({dict_id: data})
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
-
-    # Execute all linking actions
-    elif action == "finalize":
-        db = get_db()
+    elif action == "store":
         link_dict = session["link_dict"]
-        QuestionLinker(link_dict, db).update_links()
-        message = "Links Updated!"
+
+        ids = [
+            record.get("base_question_id", "")
+            or "" + record.get("match_question_id")
+            or ""
+            for record in link_dict.values()
+        ]
+        ids.sort()
+
+        proposed_id = sha1("".join(ids).encode()).hexdigest()
+        db.insert_records(
+            [
+                {
+                    "id": proposed_id,
+                    "link_dict": list(link_dict.values()),
+                    "html": payload["html"],
+                }
+            ],
+            "proposed_changes",
+        )
         del session["link_dict"]
+        message = f"Record {link_dict} written to proposed changes."
+    # Execute all linking actions
+    elif action == "confirm":
+        proposed_changes = db.tables["proposed_changes"]
+        link_dict_query = select(proposed_changes.c["link_dict"]).where(
+            proposed_changes.c["id"] == bindparam("id")
+        )
+        link_dict = db.get_scalar(link_dict_query, {"id": payload["id"]})
+        QuestionLinker(link_dict, db).update_links()
+        delete_query = delete(proposed_changes).where(
+            proposed_changes.c["id"] == payload["id"]
+        )
+        with db.engine.begin() as conn:
+            conn.execute(delete_query)
+
+        message = "Links Updated!"
+    elif action == "deny":
+        proposed_changes = db.tables["proposed_changes"]
+        delete_query = delete(proposed_changes).where(
+            proposed_changes.c["id"] == payload["id"]
+        )
+
+        with db.engine.begin() as conn:
+            conn.execute(delete_query)
+
+        message = f"Removed link associated with id: {payload["id"]}"
 
     return {"message": message}
