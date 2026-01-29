@@ -1,4 +1,3 @@
-import json
 import os
 import time
 
@@ -164,9 +163,8 @@ def test_search_ui(driver, sql_utils):
         # Confirm there is a record in proposed_changes
         result = conn.execute(text("SELECT link_dict FROM proposed_changes"))
         link_dict = result.scalar()
-        link_dict = json.loads(link_dict)
         question_ids = []
-        for link in link_dict.values():
+        for link in link_dict:
             for qid in ["base_question_id", "match_question_id"]:
                 question_ids.append(link[qid])
 

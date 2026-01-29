@@ -120,7 +120,7 @@ class TestQuestionLinker:
         # In case 1, both uqids should be totally removed from the database
         with sql_utils.engine.connect() as conn:
             base_qid, base_uqid, match_qid, match_uqid = get_ids(
-                question_linker_payload["1"]
+                question_linker_payload[0]
             )
             result = conn.execute(
                 select(question_table).where(question_table.c["uqid"] == base_uqid)
@@ -162,7 +162,7 @@ class TestQuestionLinker:
         # In case 2, uqid for match_qid should remain the same, uqid for base_qid should change
         with sql_utils.engine.connect() as conn:
             base_qid, base_uqid, match_qid, match_uqid = get_ids(
-                question_linker_payload["2"]
+                question_linker_payload[1]
             )
             result = conn.execute(
                 select(question_table.c["uqid"])
@@ -200,7 +200,7 @@ class TestQuestionLinker:
         # In case 3, base uqid should be kept the other should be removed
         with sql_utils.engine.connect() as conn:
             base_qid, base_uqid, match_qid, match_uqid = get_ids(
-                question_linker_payload["3"]
+                question_linker_payload[2]
             )
             # Base question has base uqid
             result = conn.execute(
@@ -254,7 +254,7 @@ class TestQuestionLinker:
         # In case 4 match keeps uqid, base gets match uqid
         with sql_utils.engine.connect() as conn:
             base_qid, base_uqid, match_qid, match_uqid = get_ids(
-                question_linker_payload["4"]
+                question_linker_payload[3]
             )
 
             # Base question has match uqid
@@ -300,7 +300,7 @@ class TestQuestionLinker:
         # In case 5 record should appear as confirmed in the changelog
         with sql_utils.engine.connect() as conn:
             base_qid, base_uqid, match_qid, match_uqid = get_ids(
-                question_linker_payload["5"]
+                question_linker_payload[4]
             )
 
             result = conn.execute(
