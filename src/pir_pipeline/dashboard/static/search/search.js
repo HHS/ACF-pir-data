@@ -79,10 +79,12 @@ function getFlashcardData(e) {
 function commitChanges(e) {
     e.preventDefault();
 
+    const questionTable = document.getElementById("flashcard-question-table");
+
     // Commit changes to the database
     const payload = {
         "action": "store",
-        "data": ""
+        "html": questionTable.outerHTML
     }
 
     fetch("/review/link", {
