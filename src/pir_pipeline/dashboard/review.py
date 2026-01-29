@@ -5,7 +5,7 @@ from collections import OrderedDict
 from hashlib import sha1
 
 from flask import Blueprint, render_template, request, session
-from sqlalchemy import delete, func, select
+from sqlalchemy import bindparam, delete, func, select
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -180,9 +180,10 @@ def link():
     # Execute all linking actions
     elif action == "confirm":
         proposed_changes = db.tables["proposed_changes"]
-        link_dict = db.get_scalar(
-            select(proposed_changes.c["link_dict"]), {"id": payload["id"]}
+        link_dict_query = select(proposed_changes.c["link_dict"]).where(
+            proposed_changes.c["id"] == bindparam("id")
         )
+        link_dict = db.get_scalar(link_dict_query, {"id": payload["id"]})
         QuestionLinker(link_dict, db).update_links()
         delete_query = delete(proposed_changes).where(
             proposed_changes.c["id"] == payload["id"]
