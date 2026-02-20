@@ -28,8 +28,8 @@ def upgrade() -> None:
         sa.Column("user", sa.String(255), nullable=False),
         sa.Column("link_dict", JSONB),
         sa.Column("link_timestamp", sa.DateTime(timezone=True), default=sa.func.now()),
-        sa.Column("confirmed", sa.Boolean),
-        sa.Column("confirmed_timestamp", sa.DateTime(timezone=True)),
+        sa.Column("decision", sa.Boolean),
+        sa.Column("decision_timestamp", sa.DateTime(timezone=True)),
     )
 
 

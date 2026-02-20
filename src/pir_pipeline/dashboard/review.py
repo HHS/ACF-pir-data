@@ -2,12 +2,15 @@
 
 import json
 from collections import OrderedDict
+from datetime import datetime
+from getpass import getuser
 from hashlib import sha1
 
 from flask import Blueprint, render_template, request, session
 from sqlalchemy import bindparam, delete, func, select
 
 from pir_pipeline.dashboard.db import get_db
+from pir_pipeline.models.pir_sql_models import link_history
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     get_matches,
@@ -175,31 +178,75 @@ def link():
             ],
             "proposed_changes",
         )
+        db.insert_records(
+            [
+                {
+                    "link_id": proposed_id,
+                    "user": getuser(),
+                    "link_dict": list(link_dict.values()),
+                }
+            ],
+            "link_history",
+        )
         del session["link_dict"]
         message = f"Record {link_dict} written to proposed changes."
     # Execute all linking actions
     elif action == "confirm":
+        link_id = payload["id"]
         proposed_changes = db.tables["proposed_changes"]
         link_dict_query = select(proposed_changes.c["link_dict"]).where(
             proposed_changes.c["id"] == bindparam("id")
         )
-        link_dict = db.get_scalar(link_dict_query, {"id": payload["id"]})
+        link_dict = db.get_scalar(link_dict_query, {"id": link_id})
         QuestionLinker(link_dict, db).update_links()
         delete_query = delete(proposed_changes).where(
-            proposed_changes.c["id"] == payload["id"]
+            proposed_changes.c["id"] == link_id
         )
         with db.engine.begin() as conn:
             conn.execute(delete_query)
+
+        db.update_records(
+            link_history,
+            {
+                "decision": bindparam("decision"),
+                "decision_timestamp": bindparam("decision_timestamp"),
+            },
+            link_history.c["link_id"] == bindparam("b_link_id"),
+            [
+                {
+                    "b_link_id": link_id,
+                    "decision": True,
+                    "decision_timestamp": datetime.now(),
+                }
+            ],
+        )
 
         message = "Links Updated!"
     elif action == "deny":
+        link_id = payload["id"]
         proposed_changes = db.tables["proposed_changes"]
         delete_query = delete(proposed_changes).where(
-            proposed_changes.c["id"] == payload["id"]
+            proposed_changes.c["id"] == link_id
         )
 
         with db.engine.begin() as conn:
             conn.execute(delete_query)
+
+        db.update_records(
+            link_history,
+            {
+                "decision": bindparam("decision"),
+                "decision_timestamp": bindparam("decision_timestamp"),
+            },
+            link_history.c["link_id"] == bindparam("b_link_id"),
+            [
+                {
+                    "b_link_id": link_id,
+                    "decision": False,
+                    "decision_timestamp": datetime.now(),
+                }
+            ],
+        )
 
         message = f"Removed link associated with id: {payload["id"]}"
 
