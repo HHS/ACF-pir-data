@@ -13,11 +13,14 @@ classifiers = [
     "PRIVATE :: Do Not Upload"
 ]
 dependencies = [
-    "mysql-connector-python", "sphinx", "pandas", "python-dotenv",
-    "fuzzywuzzy", "python-Levenshtein", "pytest", "openpyxl", "xlrd",
-    "pydantic", "Flask", "SQLAlchemy", "sqlalchemy-utils", "psycopg[binary]",
-    "requests", "selenium", "coverage", "boto3", "waitress", "alembic"
+    "pandas", "python-dotenv", "fuzzywuzzy", "python-Levenshtein", 
+    "pytest", "openpyxl", "xlrd", "pydantic", "Flask",
+    "SQLAlchemy", "sqlalchemy-utils", "psycopg[binary]",
+    "requests", "selenium", "coverage", "boto3", "waitress"
 ]
+
+[project.optional-dependencies]
+development = ["alembic", "mysql-connector-python", "sphinx",]
 
 [build-system]
 requires = ["setuptools>=61.0"]
