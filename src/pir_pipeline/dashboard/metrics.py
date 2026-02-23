@@ -21,3 +21,9 @@ def index():
     )
 
     return render_template("metrics/metrics.html", approval_by_user=approval_by_user)
+
+
+@bp.route("/progress")
+@administrator
+def progress():
+    return render_template("metrics/progress.html")
