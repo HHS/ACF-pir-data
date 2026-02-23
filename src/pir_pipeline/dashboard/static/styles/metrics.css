@@ -1,0 +1,16 @@
+section.content {
+    display: flex;
+}
+
+section {
+    margin: 0;
+}
+
+section.nav-panel {
+    align-self: start;
+    width: 10%;
+}
+
+section.main-panel {
+    width: 100%;
+}

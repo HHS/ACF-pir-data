@@ -1,0 +1,30 @@
+{% extends "metrics/base.html" %}
+
+{% block header %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/metrics.css') }}">
+    <h1 class="page-title">{% block title %}Metrics{% endblock %}</h1>
+{% endblock %}
+
+{% block main_panel %}
+    <h3>Approval Rating By User</h3>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Percent Approved</th>
+                </tr>
+            </thead>
+            {% for row in approval_by_user.values() %}
+                <tr>
+                    <td>{{ row["user"] }}</td>
+                    <td>{{ row["percent_approved"] }}</td>
+                </tr>
+            {% endfor %}    
+        </table>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/progress-bar.min.js"></script>
+{% endblock %}
