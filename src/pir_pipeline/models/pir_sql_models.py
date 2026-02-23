@@ -195,7 +195,6 @@ proposed_uqid_query = (
     select(question.c.uqid)
     .where(and_(question.c.question_id.in_(proposed_ids), question.c.uqid != null()))
     .distinct()
-    .subquery()
 )
 
 query = (
