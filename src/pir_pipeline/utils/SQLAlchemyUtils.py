@@ -66,7 +66,7 @@ class SQLAlchemyUtils(SQLUtils):
 
         self.insert = insert
         self._dialect = self._engine.name
-        self._tables: dict[Table] = {
+        self._tables: dict[str, Table] = {
             "response": response,
             "question": question,
             "program": program,
