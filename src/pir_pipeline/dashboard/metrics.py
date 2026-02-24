@@ -1,5 +1,8 @@
 """Routes and logic for the home page"""
 
+import json
+import os
+
 from flask import Blueprint, render_template
 
 from pir_pipeline.dashboard.db import get_db
@@ -27,17 +30,15 @@ def index():
 @bp.route("/progress")
 @administrator
 def progress():
-    db = get_db()
-    df = db.get_records("SELECT * FROM link_history")
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "static/data/daily_confirmed_count.json"
+        ),
+        "r",
+    ) as f:
+        confirmed = json.load(f)
 
-    df["date"] = df["decision_timestamp"].map(lambda stamp: stamp.date())
-    # TODO: Filter to only approved
-    approved = (
-        df.groupby("date")
-        .size()
-        .reset_index()
-        .rename(columns={0: "approved"})
-        .to_dict(orient="index")
-    )
+    confirmed = list(confirmed.items())
+    confirmed.reverse()
 
-    return render_template("metrics/progress.html", approved=approved)
+    return render_template("metrics/progress.html", confirmed=confirmed)

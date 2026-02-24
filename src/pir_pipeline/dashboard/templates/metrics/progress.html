@@ -9,10 +9,10 @@
                     <th>Number Approved</th>
                 </tr>
             </thead>
-            {% for row in approved.values() %}
+            {% for key, value in confirmed %}
                 <tr>
-                    <td>{{ row["date"] }}</td>
-                    <td>{{ row["approved"] }}</td>
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
                 </tr>
             {% endfor %}    
         </table>
