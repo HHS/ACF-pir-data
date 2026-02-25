@@ -15,3 +15,123 @@ section.nav-panel {
 section.main-panel {
     width: 100%;
 }
+
+div#yearly-average-tables {
+    display: flex;
+}
+
+div.projections {
+    flex-direction: column;
+}
+
+/* Adapted from Claude */
+/* Floating Navigation Panel */
+.floating-nav {
+    background-color: var(--primary);
+    border-radius: 0.5em;
+    box-shadow: 0 4px 12px rgba(23, 44, 60, 0.2);
+    padding: 1em;
+    transition: all 0.3s ease;
+    margin-top: 1em;
+}
+
+/* .floating-nav.collapsed {
+    right: -160px;
+} */
+
+.floating-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid var(--secondary);
+}
+
+.floating-nav-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--light);
+    margin: 0;
+}
+
+.floating-nav-toggle {
+    background: none;
+    border: none;
+    color: var(--light);
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+}
+
+.floating-nav-toggle:hover {
+    color: var(--info);
+}
+
+.floating-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.floating-nav-item {
+    margin-bottom: 0.5rem;
+}
+
+.floating-nav-link {
+    display: block;
+    color: var(--light);
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.floating-nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--info);
+    border-left-color: var(--info);
+    padding-left: 1rem;
+}
+
+.floating-nav-link.active {
+    background-color: var(--secondary);
+    color: var(--light);
+    border-left-color: var(--light);
+    font-weight: 600;
+}
+
+.floating-nav-divider {
+    height: 1px;
+    background-color: var(--secondary);
+    margin: 0.75rem 0;
+    opacity: 0.5;
+}
+
+/* Floating Nav Icon/Badge */
+.floating-nav-badge {
+    display: inline-block;
+    background-color: var(--accent);
+    color: var(--dark);
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .floating-nav {
+        right: 1em;
+        min-width: 180px;
+    }
+    
+    .floating-nav.left {
+        left: 1em;
+    }
+}
