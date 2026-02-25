@@ -1,0 +1,74 @@
+{% extends "metrics/base.html" %}
+
+{% block main_panel %}
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Rate</th>
+                    <th>Average</th>
+                    <th>Remaining Days</th>
+                    <th>Projected Links</th>
+                    <th>Shortfall</th>
+                </tr>
+            </thead>
+            {% for key, value in overall_projection.items() %}
+                <tr>
+                    <td>{{ key }}</td>
+                    <td>{{ value.get("average") }}</td>
+                    <td>{{ value.get("remaining_days") }}</td>
+                    <td>{{ value.get("year_end") }}</td>
+                    <td>{{ value.get("shortfall") }}</td>
+                </tr>
+            {% endfor %}    
+        </table>
+    </div>
+    <div id="yearly-average-tables">
+        <div class="card-body projections">
+            <h3>Weekly</h3>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Average</th>
+                        <th>Projected Links</th>
+                        <th>Shortfall</th>
+                    </tr>
+                </thead>
+                {% for row in weekly_by_year.values() %}
+                    <tr>
+                        <td>{{ row['year'] }}</td>
+                        <td>{{ row['average'] }}</td>
+                        <td>{{ row['year_end'] }}</td>
+                        <td>{{ row['shortfall'] }}</td>
+                    </tr>
+                {% endfor %}    
+            </table>
+        </div>
+        <div class="card-body projections">
+            <h3>Overall</h3>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Average</th>
+                        <th>Projected Links</th>
+                        <th>Shortfall</th>
+                    </tr>
+                </thead>
+                {% for row in overall_by_year.values() %}
+                    <tr>
+                        <td>{{ row['year'] }}</td>
+                        <td>{{ row['average'] }}</td>
+                        <td>{{ row['year_end'] }}</td>
+                        <td>{{ row['shortfall'] }}</td>
+                    </tr>
+                {% endfor %}    
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/progress-bar.min.js"></script>
+{% endblock %}
