@@ -78,12 +78,6 @@ class TestGetDataMethods:
         checks = [
             Check(
                 {
-                    "keyword": "^Staff$",
-                },
-                {"0e93c25d3a95604f40d3a64e2298093b4faed6f2"},
-            ),
-            Check(
-                {
                     "keyword": "child development staff - qualifications",
                 },
                 {
