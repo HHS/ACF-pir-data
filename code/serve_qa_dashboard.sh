@@ -3,9 +3,14 @@ source ./application/.venv/bin/activate
 USER_NUMBER=$(id -u)
 USER_NAME=$(id -un)
 USER_PORT=$((5000 + $USER_NUMBER % 1000))
+
 export DB_ENV="production"
 
 if [ $USER_NAME == "reggie.gilliard" ]; then
+    export DB_PROFILE="approver"
+elif [ $USER_NAME == "emily.kowall" ]; then
+    export DB_PROFILE="approver"
+elif [ $USER_NAME == "alecsandra.velez" ]; then
     export DB_PROFILE="approver"
 else
     export DB_PROFILE="reviewer"
