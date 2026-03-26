@@ -157,7 +157,7 @@ def link():
         session["link_dict"] = link_dict
         message = f"Data {data} queued for linking"
     elif action == "store":
-        link_dict = session["link_dict"]
+        link_dict = session.get("link_dict")
 
         ids = [
             record.get("base_question_id", "")
