@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, request, session
 from sqlalchemy import select, text
 
 from pir_pipeline.dashboard.db import get_db
+from pir_pipeline.dashboard.utils import administrator
 
 bp = Blueprint("finalize", __name__, url_prefix="/finalize")
 
@@ -80,6 +81,7 @@ def get_page(number_displayed: Optional[int] = None) -> WrappedList:
 
 
 @bp.route("/", methods=["GET"])
+@administrator
 def index():
     session["finalize_page"] = 0
     session["number_displayed"] = session.get("number_displayed", DEFAULT_DISPLAYED)

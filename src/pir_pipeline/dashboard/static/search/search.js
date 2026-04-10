@@ -76,13 +76,35 @@ function getFlashcardData(e) {
  * 
  * @param {*} e The event that triggered comitting the changes
  */
-function commitChanges(e) {
+async function commitChanges(e) {
     e.preventDefault();
 
+    let value = e.srcElement.getAttribute("value");
     const questionTable = document.getElementById("flashcard-question-table");
+    let baseRecord = rowToJSON(questionTable.getElementsByTagName("tr")[1]);
+
+    const linkDetails = {
+        "link_type": value,
+        "base_question_id": baseRecord.question_id,
+        "match_question_id": null
+    }
+
+    let payload = {
+        "action": "build",
+        "data": linkDetails
+    }
+
+    // Add the confirm action to the dictionary of linking actions
+    await fetch("/review/link", {
+        "method": "POST",
+        "headers": {
+            "Content-type": "application/json"
+        },
+        "body": JSON.stringify(payload)
+    })
 
     // Commit changes to the database
-    const payload = {
+    payload = {
         "action": "store",
         "html": questionTable.outerHTML
     }

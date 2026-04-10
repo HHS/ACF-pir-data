@@ -48,7 +48,7 @@ def create_app(test_config: dict = None, **kwargs) -> Flask:
 
     db.init_app(app)
 
-    from pir_pipeline.dashboard import finalize, index, review, search
+    from pir_pipeline.dashboard import finalize, index, metrics, review, search
 
     app.register_blueprint(index.bp)
     app.add_url_rule("/", endpoint="index")
@@ -56,5 +56,6 @@ def create_app(test_config: dict = None, **kwargs) -> Flask:
     app.register_blueprint(search.bp)
     app.register_blueprint(review.bp)
     app.register_blueprint(finalize.bp)
+    app.register_blueprint(metrics.bp)
 
     return app

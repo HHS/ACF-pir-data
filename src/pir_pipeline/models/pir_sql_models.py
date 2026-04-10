@@ -1,6 +1,7 @@
 """SQLAlchemy models for creating and interacting with the PIR database"""
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     Float,
@@ -115,6 +116,17 @@ proposed_changes = Table(
     Column("html", Text),
 )
 
+link_history = Table(
+    "link_history",
+    sql_metadata,
+    Column("link_id", String(255), nullable=False, primary_key=True),
+    Column("user", String(255), nullable=False),
+    Column("link_dict", JSONB),
+    Column("link_timestamp", DateTime(timezone=True), default=func.now()),
+    Column("decision", Boolean),
+    Column("decision_timestamp", DateTime(timezone=True)),
+)
+
 # Here to proposed_ids definition written with GPT
 dictionaries = (
     func.jsonb_array_elements(proposed_changes.c.link_dict)
@@ -183,7 +195,6 @@ proposed_uqid_query = (
     select(question.c.uqid)
     .where(and_(question.c.question_id.in_(proposed_ids), question.c.uqid != null()))
     .distinct()
-    .subquery()
 )
 
 query = (

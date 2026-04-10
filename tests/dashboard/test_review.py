@@ -136,10 +136,21 @@ class TestReviewRoutes:
             result = conn.execute(select(sql_utils.tables["proposed_changes"]))
             records = result.all()
 
+            result = conn.execute(
+                select(sql_utils.tables["link_history"]).where(
+                    sql_utils.tables["link_history"].c["link_id"] == deny_id
+                )
+            )
+            decision = result.one()[-2]
+
         expected = 1
         got = len(records)
         assert expected == got, error_message_constructor(
             "Incorrect number of records", expected, got
+        )
+
+        assert decision is False, error_message_constructor(
+            "Decision should be false", expected, got
         )
 
         confirm_id = records[0][0]
@@ -148,8 +159,16 @@ class TestReviewRoutes:
         with sql_utils.engine.connect() as conn:
             result = conn.execute(select(sql_utils.tables["proposed_changes"]))
             proposed_records = result.all()
+
             result = conn.execute(select(sql_utils.tables["uqid_changelog"]))
             confirmed_records = result.all()
+
+            result = conn.execute(
+                select(sql_utils.tables["link_history"]).where(
+                    sql_utils.tables["link_history"].c["link_id"] == confirm_id
+                )
+            )
+            decision = result.one()[-2]
 
         expected = 0
         got = len(proposed_records)
@@ -167,6 +186,10 @@ class TestReviewRoutes:
         got = confirmed_records[0][2]
         assert expected == got, error_message_constructor(
             "Incorrect record in db", expected, got
+        )
+
+        assert decision is True, error_message_constructor(
+            "Decision should be true", expected, got
         )
 
 
