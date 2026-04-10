@@ -35,7 +35,7 @@ function insertFinalizeTables(data) {
         const template = document.createElement("template");
         template.innerHTML = record["html"];
         const tableHTML = template.content.firstChild;
-        tableHTML.innerHTML = tableHTML.innerHTML.replace("flashcard-question-table", record["id"])
+        tableHTML.innerHTML = tableHTML.innerHTML.replaceAll("flashcard-question-table", record["id"]);
         tableHTML.id = record["id"];
 
         // Remove store buttons
@@ -45,7 +45,7 @@ function insertFinalizeTables(data) {
         // Get reviewer name
         const reviewerSpan = document.createElement("span");
         // Adapted from Gemini
-        reviewerSpan.innerHTML = record["user"].split('.')
+        reviewerSpan.innerHTML = (record["user"] ? record["user"] : "").split('.')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
 
