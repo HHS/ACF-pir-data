@@ -39,8 +39,15 @@ function insertFinalizeTables(data) {
         tableHTML.id = record["id"];
 
         // Remove store buttons
-        const storeButtons = tableHTML.querySelectorAll("button[onclick='storeLink(event)']")
-        storeButtons.forEach(element => element.remove())
+        const storeButtons = tableHTML.querySelectorAll("button[onclick='storeLink(event)']");
+        storeButtons.forEach(element => element.remove());
+
+        // Get reviewer name
+        const reviewerSpan = document.createElement("span");
+        // Adapted from Gemini
+        reviewerSpan.innerHTML = record["user"].split('.')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
 
         // Add confirm button
         const confirmButton = document.createElement("button");
@@ -65,6 +72,7 @@ function insertFinalizeTables(data) {
         buttonContainer.appendChild(confirmButton);
 
         // Render the content
+        tableDiv.appendChild(reviewerSpan)
         tableDiv.appendChild(tableHTML);
         tableDiv.appendChild(buttonContainer);
         tableBox.appendChild(tableDiv);
@@ -119,7 +127,7 @@ function commitLink(e) {
     };
 
     fetch("/review/link", payload)
-        .then(response => { 
+        .then(response => {
             const tableBox = document.querySelector(".table-box");
             tableBox.innerHTML = "";
             buildPage();

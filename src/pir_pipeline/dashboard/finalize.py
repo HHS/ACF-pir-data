@@ -114,11 +114,16 @@ def data():
     session["page"] = page.to_json()
 
     proposed_changes = db.tables["proposed_changes"]
+    link_history = db.tables["link_history"]
     query = (
-        select(proposed_changes)
+        select(proposed_changes, link_history.c.user)
         .limit(number_displayed)
         .offset(page.current * number_displayed)
+        .join(
+            link_history, link_history.c.link_id == proposed_changes.c.id, isouter=True
+        )
     )
+
     records = db.get_records(query)
 
     return records.to_dict(orient="index")
