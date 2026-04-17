@@ -65,6 +65,7 @@ def search():
             keyword = request.form["keyword-search"]
 
             results = get_search_results(keyword, db)
+            results.update({"keyword": keyword})
 
             return json.dumps(results)
 

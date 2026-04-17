@@ -83,7 +83,6 @@ function rowToJSON(row) {
  * @returns An HTML table element
  */
 function buildTable(data, table = document.createElement("table")) {
-    console.log(data);
     // Constant buttons
     const expandButtonBase = document.createElement("button");
     expandButtonBase.className = "accordion-button collapsed";
@@ -135,7 +134,7 @@ function buildTable(data, table = document.createElement("table")) {
     let record_num = 0;
 
     for (let key in data) {
-        if (["columns", "proposed"].includes(key)) {
+        if (["columns", "proposed", "keyword"].includes(key)) {
             continue
         }
 
@@ -180,7 +179,6 @@ function buildTable(data, table = document.createElement("table")) {
             // Otherwise, it is the header-row
             else {
                 row.setAttribute("onclick", "expandContractRow(event)");
-
                 if (row_data["year"].match(",|-")) {
                     accordionDiv.appendChild(expandButton);
                 }
@@ -194,12 +192,18 @@ function buildTable(data, table = document.createElement("table")) {
             // Add cells for each value in a record
             for (let key in row_data) {
                 const cell = document.createElement("td");
-                cell.innerHTML = row_data[key];
+                let value = row_data[key];
+                cell.innerHTML = value;
                 cell.setAttribute("name", key);
                 if (["question_id", "uqid"].includes(key)) {
                     cell.setAttribute("hidden", "true");
-                    if ((data["proposed"] ? data["proposed"] : []).includes(row_data[key])) {
+                    if ((data["proposed"] ? data["proposed"] : []).includes(value)) {
                         row.setAttribute("value", "pending");
+                    }
+                }
+                if (data["keyword"]) {
+                    if (`${value}`.includes(data["keyword"])) {
+                        cell.innerHTML = cell.innerHTML.replace(data["keyword"], `<b>${data["keyword"]}</b>`);
                     }
                 }
                 row.appendChild(cell);
