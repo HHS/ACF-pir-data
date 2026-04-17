@@ -9,6 +9,7 @@ from pir_pipeline.utils.dashboard_utils import (
     get_matches,
     get_review_question,
     get_search_results,
+    pending,
     search_matches,
 )
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -78,5 +79,7 @@ def data():
     response = request.get_json()
     id_column = "uqid" if response["uqid"] else "question_id"
     output = get_flashcard_question(response[id_column], id_column, db)
+    output.get("question").update({"proposed": pending(db)})
+    output.get("matches").update({"proposed": pending(db)})
 
     return json.dumps(output)

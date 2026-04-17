@@ -16,6 +16,7 @@ from pir_pipeline.utils.dashboard_utils import (
     get_matches,
     get_review_question,
     get_search_results,
+    pending,
     search_matches,
 )
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
@@ -129,6 +130,9 @@ def data():
         output.update({"current_question": offset, "max_questions": max_questions})
         session["current_question"] = offset
         session["max_questions"] = max_questions
+
+    output.get("question").update({"proposed": pending(db)})
+    output.get("matches").update({"proposed": pending(db)})
 
     return json.dumps(output)
 

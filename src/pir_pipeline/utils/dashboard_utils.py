@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    union,
 )
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
@@ -596,6 +597,43 @@ class QuestionLinker:
             except Exception as e:
                 print(f"Error inserting {value}: {e}")
                 continue
+
+
+def pending(db: SQLAlchemyUtils):
+    question = db.tables["question"]
+    proposed_changes = db.tables["proposed_changes"]
+    # First subquery
+    subquery1 = select(
+        (
+            func.jsonb_array_elements(proposed_changes.c.link_dict).op("->")(
+                "base_question_id"
+            )
+        ).label("question_id")
+    )
+
+    # Second subquery
+    subquery2 = select(
+        (
+            func.jsonb_array_elements(proposed_changes.c.link_dict).op("->")(
+                "match_question_id"
+            )
+        ).label("question_id")
+    )
+
+    # Union them together
+    query = union(subquery1, subquery2)
+    with db.engine.connect() as conn:
+        result = conn.execute(query)
+        proposed_ids = result.scalars().fetchall()
+
+    query = select(question.c["uqid"]).where(
+        question.c["question_id"].in_(proposed_ids)
+    )
+    with db.engine.connect() as conn:
+        result = conn.execute(query)
+        proposed_ids.extend(result.scalars().fetchall())
+
+    return list(set(proposed_ids))
 
 
 if __name__ == "__main__":

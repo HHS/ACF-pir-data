@@ -83,6 +83,7 @@ function rowToJSON(row) {
  * @returns An HTML table element
  */
 function buildTable(data, table = document.createElement("table")) {
+    console.log(data);
     // Constant buttons
     const expandButtonBase = document.createElement("button");
     expandButtonBase.className = "accordion-button collapsed";
@@ -134,7 +135,7 @@ function buildTable(data, table = document.createElement("table")) {
     let record_num = 0;
 
     for (let key in data) {
-        if (key == "columns") {
+        if (["columns", "proposed"].includes(key)) {
             continue
         }
 
@@ -145,6 +146,7 @@ function buildTable(data, table = document.createElement("table")) {
 
         // Get all records associated with this question_id/uqid
         const records = data[key];
+
         let record_num_str = `${record_num + 10000}`
 
         // Loop through each record
@@ -196,6 +198,9 @@ function buildTable(data, table = document.createElement("table")) {
                 cell.setAttribute("name", key);
                 if (["question_id", "uqid"].includes(key)) {
                     cell.setAttribute("hidden", "true");
+                    if ((data["proposed"] ? data["proposed"] : []).includes(row_data[key])) {
+                        row.setAttribute("value", "pending");
+                    }
                 }
                 row.appendChild(cell);
             }

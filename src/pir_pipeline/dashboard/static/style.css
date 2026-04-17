@@ -241,6 +241,10 @@ tr[class *= "collapsible-row"]>td {
     background: #F9F9F9;
 }
 
+tr[value = "pending"]>td {
+    color:#C41E3A
+}
+
 /* Card styling */
 .card {
     width: 50%;
