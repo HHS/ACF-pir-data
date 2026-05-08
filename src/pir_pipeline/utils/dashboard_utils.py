@@ -22,7 +22,7 @@ from sqlalchemy import (
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-from pir_pipeline.utils.utils import clean_name
+from pir_pipeline.utils.utils import clean_name, nan_or_none
 
 
 def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
@@ -149,7 +149,9 @@ def get_search_results(
         # Convert results to dictionary
         for res in result.all():
             result_dict = db.to_dict([res], columns)[0]
-            id_column = "uqid" if result_dict.get("uqid") else "question_id"
+            id_column = (
+                "uqid" if not nan_or_none(result_dict.get("uqid")) else "question_id"
+            )
             ident = result_dict[id_column]
 
             # Get the maximum year
@@ -288,7 +290,7 @@ def search_matches(matches: dict, db: SQLAlchemyUtils) -> dict:
     """
     output = {}
     for match in matches:
-        id_column = "uqid" if match.get("uqid") else "question_id"
+        id_column = "uqid" if not nan_or_none(match.get("uqid")) else "question_id"
         output.update(get_search_results(match[id_column], db, id_column))
 
     return output

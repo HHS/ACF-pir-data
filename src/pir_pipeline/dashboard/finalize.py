@@ -4,7 +4,7 @@ from math import ceil
 from typing import Iterable, Optional
 
 from flask import Blueprint, render_template, request, session
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.dashboard.utils import administrator
@@ -83,11 +83,15 @@ def get_page(number_displayed: Optional[int] = None) -> WrappedList:
 @bp.route("/", methods=["GET"])
 @administrator
 def index():
+    db = get_db()
     session["finalize_page"] = 0
     session["number_displayed"] = session.get("number_displayed", DEFAULT_DISPLAYED)
     session["page"] = get_page().to_json()
+    pending = db.get_scalar(
+        select(func.count()).select_from(db.tables["proposed_changes"]), {}
+    )
 
-    return render_template("finalize/finalize.html")
+    return render_template("finalize/finalize.html", pending=pending)
 
 
 @bp.route("/data", methods=["POST"])
