@@ -117,7 +117,7 @@ def data():
 
     session["page"] = page.to_json()
 
-    proposed_changes = db.tables["proposed_changes"]
+    proposed_changes = db.tables["finalize"]
     link_history = db.tables["link_history"]
     query = (
         select(proposed_changes, link_history.c.user)
