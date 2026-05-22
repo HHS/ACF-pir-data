@@ -638,6 +638,23 @@ def pending(db: SQLAlchemyUtils):
     return list(set(proposed_ids))
 
 
+def confirmed(db: SQLAlchemyUtils):
+    confirmed = db.get_records("SELECT DISTINCT question_id FROM confirmed")
+    return confirmed["question_id"].unique().tolist()
+
+
+def all_years(db: SQLAlchemyUtils):
+    question = db.tables["question"]
+    years = db.get_scalar(select(func.count(question.c.year.distinct())), {})
+    all_years = db.get_records(
+        select(question.c.uqid.distinct().label("uqid"))
+        .group_by(question.c.uqid)
+        .having(func.count(question.c.uqid) == years)
+    )
+
+    return all_years["uqid"].unique().tolist()
+
+
 if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 

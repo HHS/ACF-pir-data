@@ -6,6 +6,8 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
+    all_years,
+    confirmed,
     get_matches,
     get_review_question,
     get_search_results,
@@ -66,6 +68,20 @@ def search():
 
             results = get_search_results(keyword, db)
             results.update({"keyword": keyword})
+            results.update(
+                {
+                    "proposed": pending(db),
+                    "confirmed": confirmed(db),
+                    "all_years": all_years(db),
+                }
+            )
+            results.update(
+                {
+                    "proposed": pending(db),
+                    "confirmed": confirmed(db),
+                    "all_years": all_years(db),
+                }
+            )
 
             return json.dumps(results)
 
@@ -80,7 +96,19 @@ def data():
     response = request.get_json()
     id_column = "uqid" if response["uqid"] else "question_id"
     output = get_flashcard_question(response[id_column], id_column, db)
-    output.get("question").update({"proposed": pending(db)})
-    output.get("matches").update({"proposed": pending(db)})
+    output.get("question").update(
+        {
+            "proposed": pending(db),
+            "confirmed": confirmed(db),
+            "all_years": all_years(db),
+        }
+    )
+    output.get("matches").update(
+        {
+            "proposed": pending(db),
+            "confirmed": confirmed(db),
+            "all_years": all_years(db),
+        }
+    )
 
     return json.dumps(output)
