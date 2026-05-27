@@ -134,7 +134,7 @@ function buildTable(data, table = document.createElement("table")) {
     let record_num = 0;
 
     for (let key in data) {
-        if (key == "columns") {
+        if (["columns", "proposed", "keyword", "all_years", "confirmed"].includes(key)) {
             continue
         }
 
@@ -145,6 +145,7 @@ function buildTable(data, table = document.createElement("table")) {
 
         // Get all records associated with this question_id/uqid
         const records = data[key];
+
         let record_num_str = `${record_num + 10000}`
 
         // Loop through each record
@@ -178,7 +179,6 @@ function buildTable(data, table = document.createElement("table")) {
             // Otherwise, it is the header-row
             else {
                 row.setAttribute("onclick", "expandContractRow(event)");
-
                 if (row_data["year"].match(",|-")) {
                     accordionDiv.appendChild(expandButton);
                 }
@@ -192,10 +192,28 @@ function buildTable(data, table = document.createElement("table")) {
             // Add cells for each value in a record
             for (let key in row_data) {
                 const cell = document.createElement("td");
-                cell.innerHTML = row_data[key];
+                let value = row_data[key];
+                cell.innerHTML = value;
                 cell.setAttribute("name", key);
                 if (["question_id", "uqid"].includes(key)) {
                     cell.setAttribute("hidden", "true");
+                    if ((data["proposed"] ? data["proposed"] : []).includes(value)) {
+                        let row_value = row.getAttribute("value");
+                        row.setAttribute("value", row_value + " pending");
+                    }
+                    if ((data["confirmed"] ? data["confirmed"] : []).includes(value)) {
+                        let row_value = row.getAttribute("value");
+                        row.setAttribute("value", row_value + " confirmed");
+                    }
+                    if ((data["all_years"] ? data["all_years"] : []).includes(value)) {
+                        let row_value = row.getAttribute("value");
+                        row.setAttribute("value", row_value + " all_years");
+                    }
+                }
+                if (data["keyword"]) {
+                    if (`${value}`.includes(data["keyword"]) && !["question_id", "uqid"].includes(key)) {
+                        cell.innerHTML = cell.innerHTML.replace(data["keyword"], `<b>${data["keyword"]}</b>`);
+                    }
                 }
                 row.appendChild(cell);
             }
@@ -228,6 +246,20 @@ function buildTable(data, table = document.createElement("table")) {
     }
 
     table.appendChild(body);
+
+    table.querySelectorAll("tr[value*='pending']").forEach(function(item) {
+        let question_number = item.querySelector("td[name='question_number']");
+        question_number.innerHTML = question_number.innerHTML + "<sup>P</sup>";
+    })
+    table.querySelectorAll("tr[value*='confirmed']").forEach(function(item) {
+        let question_number = item.querySelector("td[name='question_number']");
+        question_number.innerHTML = question_number.innerHTML + "<sup>C</sup>";
+    })
+    table.querySelectorAll("tr[value*='all_years']").forEach(function(item) {
+        let question_number = item.querySelector("td[name='question_number']");
+        question_number.innerHTML = question_number.innerHTML + "<sup>A</sup>";
+    })
+
     return table
 }
 

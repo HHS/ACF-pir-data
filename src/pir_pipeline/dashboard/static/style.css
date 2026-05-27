@@ -241,6 +241,16 @@ tr[class *= "collapsible-row"]>td {
     background: #F9F9F9;
 }
 
+sup {
+    color:#C41E3A
+}
+
+div.information-block ul {
+    list-style-type: none;
+    font-size: 12px;
+    text-align: start;
+}
+
 /* Card styling */
 .card {
     width: 50%;

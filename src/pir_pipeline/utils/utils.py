@@ -5,6 +5,9 @@ __all__ = ["get_searchable_columns", "clean_name", "get_logger"]
 import logging
 import re
 import sys
+from typing import Any
+
+import numpy as np
 
 
 def error_thrower(logger: logging.Logger, message: str, error_type: Exception):
@@ -94,3 +97,10 @@ def close_logger(logger: logging.Logger):
     for handler in logger.handlers:
         handler.close()
         logger.removeHandler(handler)
+
+
+def nan_or_none(value: Any) -> bool:
+    if value is None or value is np.nan or value == "":
+        return True
+    else:
+        return False

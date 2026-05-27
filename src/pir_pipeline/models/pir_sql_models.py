@@ -214,3 +214,29 @@ query = (
 )
 
 flashcard = view("flashcard", sql_metadata, query)
+
+# Finalize view
+# CTE: proposed
+proposed = (
+    select(
+        proposed_changes,
+        proposed_changes.c.link_dict[0]["base_question_id"].astext.label("question_id"),
+    )
+).cte("proposed")
+
+# CTE: q (gives us question_number to order by, then we can drop it)
+q = (
+    select(
+        question.c.question_id,
+        question.c.question_number,
+    ).distinct()
+).cte("q")
+
+# Final query
+query = (
+    select(proposed)
+    .join(q, proposed.c.question_id == q.c.question_id)
+    .order_by(q.c.question_number)
+)
+
+finalize = view("finalize", sql_metadata, query)
