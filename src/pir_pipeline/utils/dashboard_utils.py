@@ -68,6 +68,7 @@ def get_search_results(
     keyword: str,
     db: SQLAlchemyUtils,
     id_column: str = "question_id",
+    years: list[int] = [],
 ) -> dict:
     """Return results for the search page
 
@@ -116,6 +117,8 @@ def get_search_results(
     keyword_query = keyword_query.where(or_(*conditions)).order_by(
         table.c["uqid"], table.c["year"].desc()
     )
+    if years:
+        keyword_query = keyword_query.where(and_(table.c["year"].in_(years)))
 
     # Put column headers in search results dictionary
     search_dict = {}
