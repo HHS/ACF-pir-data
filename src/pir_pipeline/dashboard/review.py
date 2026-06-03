@@ -72,10 +72,9 @@ def index():
 @bp.route("/flashcard", methods=["GET", "POST"])
 def flashcard():
     """Handle building flashcard page for reviewing questions chronologically"""
+    db = get_db()
 
     if request.method == "POST":
-        db = get_db()
-
         form = request.form
         action = form["action"]
 
@@ -109,7 +108,10 @@ def flashcard():
 
         return json.dumps(output)
 
-    return render_template("review/flashcard.html")
+    year_df = db.get_records(select(db.tables["question"].c["year"]).distinct())
+    years = year_df["year"].tolist()
+
+    return render_template("review/flashcard.html", years=years)
 
 
 @bp.route("/data", methods=["POST"])
