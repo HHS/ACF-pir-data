@@ -434,11 +434,28 @@ function expandContractRow(event) {
     };
 }
 
+function freezeQuestionTable(e) {
+    e.preventDefault();
+    if (e.target.tagName == "TH") {
+        var div = e.target;
+        while (div.tagName != "DIV") {
+            div = div.parentElement;
+        }
+        if ((div.getAttribute("style") ? div.getAttribute("style") : "") != "") {
+            div.setAttribute("style", "");
+        } else {
+            div.setAttribute("style", "position: sticky; top: 0;");
+        }
+    }
+
+}
+
 export {
     buildTable,
     updateTable,
     rowToJSON,
     updateFlashcardTables,
     storeLink,
-    expandContractRow
+    expandContractRow,
+    freezeQuestionTable
 }

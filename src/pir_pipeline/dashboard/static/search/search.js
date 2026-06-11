@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow, freezeQuestionTable } from "../utilities.js";
 
 // Constant forms and modals
 const searchForm = document.getElementById("search-form");
@@ -143,3 +143,4 @@ document.getFlashcardData = getFlashcardData;
 document.storeLink = storeLink;
 document.commitChanges = commitChanges;
 document.expandContractRow = expandContractRow;
+document.freezeQuestionTable = freezeQuestionTable;
