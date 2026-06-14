@@ -7,7 +7,7 @@ from flask import Flask
 from flask.sessions import SecureCookieSessionInterface
 from itsdangerous import URLSafeTimedSerializer
 
-from pir_pipeline.query import db, helpers
+from pir_pipeline.query import core, db
 
 
 # Adapted from GPT 4.0
@@ -48,6 +48,6 @@ def create_app(test_config: dict = None, **kwargs) -> Flask:
 
     db.init_app(app)
 
-    app.register_blueprint(helpers.bp)
+    app.register_blueprint(core.bp)
 
     return app
