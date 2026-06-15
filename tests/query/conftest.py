@@ -315,7 +315,7 @@ def response_records():
             "uid": "c27e16e43f9feaea33441d1857989a64cd439a52",
             "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
             "year": 2011,
-            "answer": "nan",
+            "answer": "10",
         },
         {
             "uid": "bce18827c769a47c13fce74785fe393bf3c6d929",

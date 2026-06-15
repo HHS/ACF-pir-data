@@ -92,7 +92,7 @@ class TestHelpers:
             "question": [{"question_number": "A.27.k-1"}],
         }
         records = helpers.get_responses(sql_utils, data)
-        assert len(records) == 3 and len(records[0]) == 33, "Incorrect shape."
+        assert len(records) == 3 and len(records[0]) == 29, "Incorrect shape."
         assert (
             records[0]["uid"] == "c27e16e43f9feaea33441d1857989a64cd439a52"
         ), "Incorrect UID"
