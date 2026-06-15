@@ -74,15 +74,15 @@ class TestHelpers:
         ), "Incorrect Question IDs"
 
     def test_program_cte(self, sql_utils):
-        data = {"program_type": ["HS"], "year": [2011]}
+        data = {"program": {"program_type": ["HS"], "year": [2011]}}
         query = helpers.program_cte(sql_utils, data)
-        df = pd.read_sql(select(query), sql_utils._engine, params=data)
+        df = pd.read_sql(select(query), sql_utils._engine, params=data["program"])
 
         assert df.shape[0] == 6, "Incorrect number of records."
 
-        data = {"program_type": ["HS"]}
+        data = {"program": {"program_type": ["HS"]}}
         query = helpers.program_cte(sql_utils, data)
-        df = pd.read_sql(select(query), sql_utils._engine, params=data)
+        df = pd.read_sql(select(query), sql_utils._engine, params=data["program"])
 
         assert df.shape[0] == 7, "Incorrect number of records."
 
