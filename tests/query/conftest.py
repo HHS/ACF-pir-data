@@ -245,23 +245,125 @@ def program_records():
 @pytest.fixture(scope="module")
 def response_records():
     return [
-        # {
-        #     "uid": "c27e16e43f9feaea33441d1857989a64cd439a52",
-        #     "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
-        #     "year": 2011,
-        #     "answer": None,
-        # },
-        # {
-        #     "uid": "c27e16e43f9feaea33441d1857989a64cd439a52",
-        #     "question_id": "8927c779743d6ace9cccf4f8c9cf1b68f6fc1a6b",
-        #     "year": 2012,
-        #     "answer": None,
-        # },
+        {
+            "uid": "bce18827c769a47c13fce74785fe393bf3c6d929",
+            "question_id": "dd089009542dfd51e45f2f23826dbc7a6f6a912e",
+            "year": 2009,
+            "answer": "Bosnian",
+        },
+        {
+            "uid": "bce18827c769a47c13fce74785fe393bf3c6d929",
+            "question_id": "66e92dd434dc3cccc5e14e3ad4ce710be8c7fb9d",
+            "year": 2009,
+            "answer": "0",
+        },
         {
             "uid": "c27e16e43f9feaea33441d1857989a64cd439a52",
             "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
             "year": 2011,
-            "answer": None,
+            "answer": "nan",
+        },
+        {
+            "uid": "bce18827c769a47c13fce74785fe393bf3c6d929",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "not known",
+        },
+        {
+            "uid": "7d5581c2713050b2b48e99014bf6f7d4743416f3",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "1744959b69d05cea9ed7fb54020a8978d1561dbc",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "046cb2f15b888f03467224fe0a7cbec0cbf8f487",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "0f10477d8ea7a32365431004172f735bd5874b42",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "f3d6a04c8f8b4c72a88f526f743d01cb320279b9",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "5c7e255a576f38368e980f8a3daed95e872dc8fc",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "daa8bd5072a7016b361fe6213dda6a8553366a38",
+            "question_id": "b5c2dd4e8fe4523405cfcd2753da583d669db2af",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "c27e16e43f9feaea33441d1857989a64cd439a52",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "bce18827c769a47c13fce74785fe393bf3c6d929",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "0",
+        },
+        {
+            "uid": "7d5581c2713050b2b48e99014bf6f7d4743416f3",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "0",
+        },
+        {
+            "uid": "1744959b69d05cea9ed7fb54020a8978d1561dbc",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "0",
+        },
+        {
+            "uid": "046cb2f15b888f03467224fe0a7cbec0cbf8f487",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "0",
+        },
+        {
+            "uid": "0f10477d8ea7a32365431004172f735bd5874b42",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "nan",
+        },
+        {
+            "uid": "f3d6a04c8f8b4c72a88f526f743d01cb320279b9",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "0",
+        },
+        {
+            "uid": "5c7e255a576f38368e980f8a3daed95e872dc8fc",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "0",
+        },
+        {
+            "uid": "daa8bd5072a7016b361fe6213dda6a8553366a38",
+            "question_id": "0e93c25d3a95604f40d3a64e2298093b4faed6f2",
+            "year": 2011,
+            "answer": "nan",
         },
     ]
 
