@@ -56,8 +56,18 @@ def get_responses(db: SQLAlchemyUtils, data: dict[str, dict]) -> list[dict]:
     response_table = db.tables["response"]
     program = program_cte(db, data)
     question = question_cte(db, data)
+    program_vars = tuple(
+        [var.name for var in program.c if var.name not in ["year", "uid"]]
+    )
+    question_vars = tuple(
+        [var.name for var in question.c if var.name not in ["year", "question_id"]]
+    )
     query = (
-        select(response_table, program, question)
+        select(
+            response_table,
+            program.c[program_vars],
+            question.c[question_vars],
+        )
         .join(
             program,
             and_(
