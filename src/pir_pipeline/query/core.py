@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from flask import Blueprint, request
 
-from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.query import helpers
+from pir_pipeline.query.db import get_db
 
 bp = Blueprint("index", __name__, url_prefix="/")
 

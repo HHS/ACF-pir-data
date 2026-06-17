@@ -112,3 +112,30 @@ dmypy.json
 # General
 *scrap.py
 scripts/
+
+**/.build/
+
+# Terraform
+.env
+*.tfvars
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+
+# Exclude all .tfvars files, which are likely to contain sensitive data
+*.tfvars
+*.tfvars.json
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Include the lock file (overriding the .terraform/ ignore if necessary)
+!.terraform.lock.hcl

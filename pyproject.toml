@@ -16,7 +16,8 @@ dependencies = [
     "pandas", "python-dotenv", "fuzzywuzzy", "python-Levenshtein", 
     "pytest", "openpyxl", "xlrd", "pydantic", "Flask",
     "SQLAlchemy", "sqlalchemy-utils", "psycopg[binary]",
-    "requests", "selenium", "coverage", "boto3", "waitress"
+    "requests", "selenium", "coverage", "boto3", "waitress",
+    "aws-wsgi"
 ]
 
 [project.optional-dependencies]
