@@ -369,6 +369,16 @@ def response_records():
 
 
 @pytest.fixture(scope="module")
+def agency_id_records():
+    return [
+        {"grant_number": "01CH0116", "agency_id": 787},
+        {"grant_number": "01CH0157", "agency_id": 151},
+        {"grant_number": "01CH0117", "agency_id": 1829},
+        {"grant_number": "01CH0002", "agency_id": 744},
+    ]
+
+
+@pytest.fixture(scope="module")
 def insert_program_records(sql_utils, program_records):
     sql_utils.insert_records(program_records, "program")
 
@@ -376,3 +386,8 @@ def insert_program_records(sql_utils, program_records):
 @pytest.fixture(scope="module")
 def insert_response_records(sql_utils, response_records):
     sql_utils.insert_records(response_records, "response")
+
+
+@pytest.fixture(scope="module")
+def insert_agency_id_records(sql_utils, agency_id_records):
+    sql_utils.insert_records(agency_id_records, "agency_id")

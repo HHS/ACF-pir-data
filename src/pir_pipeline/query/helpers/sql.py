@@ -54,6 +54,7 @@ def program_cte(db: SQLAlchemyUtils, data: dict[str, dict[str, list]]) -> CTE:
 
 def get_responses(db: SQLAlchemyUtils, data: dict[str, dict]) -> list[dict]:
     response_table = db.tables["response"]
+    agency_id = db.tables["agency_id"]
     program = program_cte(db, data)
     question = question_cte(db, data)
     program_vars = tuple(
@@ -67,6 +68,7 @@ def get_responses(db: SQLAlchemyUtils, data: dict[str, dict]) -> list[dict]:
             response_table,
             program.c[program_vars],
             question.c[question_vars],
+            agency_id.c.agency_id,
         )
         .join(
             program,
@@ -82,6 +84,7 @@ def get_responses(db: SQLAlchemyUtils, data: dict[str, dict]) -> list[dict]:
                 response_table.c.year == question.c.year,
             ),
         )
+        .outerjoin(agency_id, program.c.grant_number == agency_id.c.grant_number)
     )
 
     params = {key: value for item in data.values() for key, value in item.items()}

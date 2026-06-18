@@ -11,6 +11,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.models.pir_sql_models import (
+    agency_id,
     confirmed,
     finalize,
     flashcard,
@@ -74,6 +75,7 @@ class SQLAlchemyUtils(SQLUtils):
             "proposed_changes": proposed_changes,
             "linked": linked,
             "link_history": link_history,
+            "agency_id": agency_id,
             "unlinked": unlinked,
             "uqid_changelog": uqid_changelog,
             "confirmed": confirmed,

@@ -10,6 +10,7 @@ from pir_pipeline.query import helpers
     "insert_question_records",
     "insert_program_records",
     "insert_response_records",
+    "insert_agency_id_records",
 )
 class TestHelpers:
     def test_get_qids(self, sql_utils):
@@ -92,7 +93,7 @@ class TestHelpers:
             "question": [{"question_number": "A.27.k-1"}],
         }
         records = helpers.get_responses(sql_utils, data)
-        assert len(records) == 3 and len(records[0]) == 29, "Incorrect shape."
+        assert len(records) == 3 and len(records[0]) == 30, "Incorrect shape."
         assert (
             records[0]["uid"] == "c27e16e43f9feaea33441d1857989a64cd439a52"
         ), "Incorrect UID"

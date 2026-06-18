@@ -127,6 +127,13 @@ link_history = Table(
     Column("decision_timestamp", DateTime(timezone=True)),
 )
 
+agency_id = Table(
+    "agency_id",
+    sql_metadata,
+    Column("grant_number", String(255), nullable=False, primary_key=True),
+    Column("agency_id", Integer),
+)
+
 # Here to proposed_ids definition written with GPT
 dictionaries = (
     func.jsonb_array_elements(proposed_changes.c.link_dict)
@@ -233,7 +240,7 @@ q = (
 ).cte("q")
 
 # Final query
-query = (
+finalize_query = (
     select(proposed)
     .join(q, proposed.c.question_id == q.c.question_id)
     .order_by(q.c.question_number)
