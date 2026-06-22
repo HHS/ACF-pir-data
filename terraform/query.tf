@@ -36,14 +36,7 @@ resource "null_resource" "build_layer" {
         --python-version ${replace(local.python_ver, "python", "")} \
         --only-binary=:all: \
         --target "${local.build_dir}/python" \
-        $(python3 -c "
-import tomllib, sys
-with open('../pyproject.toml', 'rb') as f:
-    data = tomllib.load(f)
-deps = data.get('project', {}).get('dependencies', [])
-# Strip version markers to get bare package names for pip
-print(' '.join(deps))
-        ")
+        --requirement "${path.module}/../src/pir_pipeline/query/requirements.txt"
     EOT
     working_dir = path.module
   }
@@ -75,8 +68,8 @@ resource "aws_s3_object" "pir_query_layer" {
 # ------------------------------------------------------------------
 resource "aws_lambda_layer_version" "this" {
   layer_name          = local.layer_name
-  s3_bucket = var.pir_s3_name
-  s3_key = aws_s3_object.pir_query_layer.key
+  s3_bucket           = var.pir_s3_name
+  s3_key              = aws_s3_object.pir_query_layer.key
   compatible_runtimes = [local.python_ver]
 
   description = "Python dependencies from pyproject.toml (hash: ${local.deps_hash})"
@@ -136,11 +129,12 @@ resource "aws_lambda_function" "pir_query" {
   handler          = "pir_query.lambda_handler"
   source_code_hash = data.archive_file.lambda_pir_query.output_base64sha256
   role             = aws_iam_role.lambda_exec.arn
-  layers = [aws_lambda_layer_version.this.arn]
-  depends_on = [aws_s3_object.pir_query_code]
+  layers           = [aws_lambda_layer_version.this.arn]
+  depends_on       = [aws_s3_object.pir_query_code]
 }
 
 resource "aws_cloudwatch_log_group" "pir_query" {
+  provider          = aws.infra
   name              = "/aws/lambda/${aws_lambda_function.pir_query.function_name}"
   retention_in_days = 7
 }
@@ -176,7 +170,7 @@ resource "aws_iam_policy" "pir_rds_policy" {
 
 data "aws_iam_policy_document" "pir_s3_policy" {
   statement {
-    actions = ["s3:ListBucket", "s3:ListObjects"]
+    actions   = ["s3:ListBucket", "s3:ListObjects"]
     effect    = "Allow"
     resources = [var.pir_s3_arn]
   }
@@ -216,66 +210,94 @@ resource "aws_iam_role_policy_attachment" "lambda_policy" {
 # Create API Gateway
 # ------------------------------------------------------------------
 
-resource "aws_apigatewayv2_api" "lambda" {
+resource "aws_api_gateway_rest_api" "lambda" {
   provider = aws.infra
-  name          = "serverless_lambda_gw"
-  protocol_type = "HTTP"
+  name     = "pir_query_lambda_gw"
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+  body = jsonencode({
+    openapi = "3.0.1"
+    info = {
+      title   = "PirQuery"
+      version = "1.0"
+    }
+  })
 }
 
-resource "aws_apigatewayv2_stage" "lambda" {
-  provider = aws.infra
-  api_id      = aws_apigatewayv2_api.lambda.id
-  name        = "serverless_lambda_stage"
-  auto_deploy = true
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gw.arn
-
-    format = jsonencode({
-      requestId               = "$context.requestId"
-      sourceIp                = "$context.identity.sourceIp"
-      requestTime             = "$context.requestTime"
-      protocol                = "$context.protocol"
-      httpMethod              = "$context.httpMethod"
-      resourcePath            = "$context.resourcePath"
-      routeKey                = "$context.routeKey"
-      status                  = "$context.status"
-      responseLength          = "$context.responseLength"
-      integrationErrorMessage = "$context.integrationErrorMessage"
-    })
+resource "aws_api_gateway_deployment" "pir_query" {
+  provider    = aws.infra
+  rest_api_id = aws_api_gateway_rest_api.lambda.id
+  triggers = {
+    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.lambda.body))
+  }
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
-resource "aws_apigatewayv2_integration" "pir_query" {
-  provider = aws.infra
-  api_id             = aws_apigatewayv2_api.lambda.id
-  integration_uri    = aws_lambda_function.pir_query.invoke_arn
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  payload_format_version = "1.0"
+resource "aws_api_gateway_stage" "lambda" {
+  provider      = aws.infra
+  rest_api_id   = aws_api_gateway_rest_api.lambda.id
+  stage_name    = "pir_query_lambda_stage"
+  deployment_id = aws_api_gateway_deployment.pir_query.id
+
+  # access_log_settings {
+  #   destination_arn = aws_cloudwatch_log_group.api_gw.arn
+
+  #   format = jsonencode({
+  #     requestId               = "$context.requestId"
+  #     sourceIp                = "$context.identity.sourceIp"
+  #     requestTime             = "$context.requestTime"
+  #     protocol                = "$context.protocol"
+  #     httpMethod              = "$context.httpMethod"
+  #     resourcePath            = "$context.resourcePath"
+  #     routeKey                = "$context.routeKey"
+  #     status                  = "$context.status"
+  #     responseLength          = "$context.responseLength"
+  #     integrationErrorMessage = "$context.integrationErrorMessage"
+  #   })
+  # }
 }
 
-resource "aws_apigatewayv2_route" "pir_query" {
-  provider = aws.infra
-  api_id = aws_apigatewayv2_api.lambda.id
+resource "aws_api_gateway_resource" "pir_query" {
+  provider    = aws.infra
+  parent_id   = aws_api_gateway_rest_api.lambda.root_resource_id
+  path_part   = "pir_query"
+  rest_api_id = aws_api_gateway_rest_api.lambda.id
+}
 
-  route_key = "POST /query"
-  target    = "integrations/${aws_apigatewayv2_integration.pir_query.id}"
+
+resource "aws_api_gateway_method" "pir_query" {
+  provider      = aws.infra
+  rest_api_id   = aws_api_gateway_rest_api.lambda.id
+  resource_id   = aws_api_gateway_resource.pir_query.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "pir_query" {
+  provider                = aws.infra
+  http_method             = aws_api_gateway_method.pir_query.http_method
+  resource_id             = aws_api_gateway_resource.pir_query.id
+  rest_api_id             = aws_api_gateway_rest_api.lambda.id
+  type                    = "AWS_PROXY"
+  integration_http_method = "POST"
+  uri                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/${aws_lambda_function.pir_query.arn}/invocations"
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
-  provider = aws.infra
-  name              = "/aws/api_gw/${aws_apigatewayv2_api.lambda.name}"
+  provider          = aws.infra
+  name              = "/aws/api_gw/${aws_api_gateway_rest_api.lambda.name}"
   retention_in_days = 7
 }
 
 resource "aws_lambda_permission" "api_gw" {
-  provider = aws.infra
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.pir_query.function_name
   principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${aws_apigatewayv2_api.lambda.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.lambda.execution_arn}/*/*"
 }
 
 # ------------------------------------------------------------------
@@ -283,7 +305,7 @@ resource "aws_lambda_permission" "api_gw" {
 # ------------------------------------------------------------------
 
 resource "aws_wafv2_ip_set" "allowed" {
-  provider = aws.infra
+  provider           = aws.infra
   name               = "pir-query-allowed-ips"
   scope              = "REGIONAL"
   ip_address_version = "IPV4"
@@ -293,8 +315,8 @@ resource "aws_wafv2_ip_set" "allowed" {
 
 resource "aws_wafv2_web_acl" "pir_query_acl" {
   provider = aws.infra
-  name  = "pir-query-acl"
-  scope = "REGIONAL"
+  name     = "pir-query-acl"
+  scope    = "REGIONAL"
   default_action {
     block {}
   }
@@ -324,8 +346,8 @@ resource "aws_wafv2_web_acl" "pir_query_acl" {
 }
 
 resource "aws_wafv2_web_acl_association" "api_gw" {
-  provider = aws.infra
-  # resource_arn = "arn:aws:apigateway:us-east-1:${var.account_id}:/apis/${aws_apigatewayv2_api.lambda.id}/stages/${aws_apigatewayv2_stage.lambda.name}"
-  resource_arn = aws_apigatewayv2_stage.lambda.arn
+  provider     = aws.infra
+  resource_arn = "arn:aws:apigateway:us-east-1::/restapis/${aws_api_gateway_rest_api.lambda.id}/stages/${aws_api_gateway_stage.lambda.stage_name}"
   web_acl_arn  = aws_wafv2_web_acl.pir_query_acl.arn
+  depends_on = [aws_api_gateway_stage.lambda]
 }
