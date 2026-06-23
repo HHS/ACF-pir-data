@@ -4,3 +4,4 @@ SQLAlchemy
 sqlalchemy-utils
 psycopg[binary]
 pandas
+mysql-connector-python

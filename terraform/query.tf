@@ -8,7 +8,7 @@ locals {
   query_zip  = "${path.module}/.build/query.zip"
   zip_path   = "${path.module}/.build/layer.zip"
   # Hash pyproject.toml so the layer rebuilds only when deps change
-  deps_hash = filemd5("${path.module}/../pyproject.toml")
+  deps_hash = filemd5("${path.module}/../src/pir_pipeline/query/requirements.txt")
   code_hash = sha1(join("", [
     for f in sort(fileset("${path.module}/../src/pir_pipeline", "**/*")) :
     filemd5("${path.module}/../src/pir_pipeline/${f}")
@@ -131,6 +131,13 @@ resource "aws_lambda_function" "pir_query" {
   role             = aws_iam_role.lambda_exec.arn
   layers           = [aws_lambda_layer_version.this.arn]
   depends_on       = [aws_s3_object.pir_query_code]
+  timeout          = 120
+  memory_size      = 1024
+  environment {
+    variables = {
+      IN_AWS_LAMBDA = "True"
+    }
+  }
 }
 
 resource "aws_cloudwatch_log_group" "pir_query" {
@@ -199,9 +206,27 @@ resource "aws_iam_policy" "pir_ec2_policy" {
   policy = data.aws_iam_policy_document.pir_ec2_policy.json
 }
 
+data "aws_iam_policy_document" "pir_secrets_policy" {
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    effect    = "Allow"
+    resources = ["arn:aws:secretsmanager:us-east-1:${var.account_id}:secret:pir/query/config*"]
+  }
+  statement {
+    actions   = ["kms:Decrypt"]
+    effect    = "Allow"
+    resources = ["arn:aws:kms:us-east-1:${var.account_id}:key/*"]
+  }
+}
+
+resource "aws_iam_policy" "pir_secrets_policy" {
+  name   = "pir-secrets-policy"
+  policy = data.aws_iam_policy_document.pir_secrets_policy.json
+}
+
 
 resource "aws_iam_role_policy_attachment" "lambda_policy" {
-  for_each   = tomap({ "lambda" = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", "rds" = aws_iam_policy.pir_rds_policy.arn, "s3" = aws_iam_policy.pir_s3_policy.arn, "ec2" = aws_iam_policy.pir_ec2_policy.arn })
+  for_each   = tomap({ "lambda" = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole", "rds" = aws_iam_policy.pir_rds_policy.arn, "s3" = aws_iam_policy.pir_s3_policy.arn, "ec2" = aws_iam_policy.pir_ec2_policy.arn, "secrets" = aws_iam_policy.pir_secrets_policy.arn })
   role       = aws_iam_role.lambda_exec.name
   policy_arn = each.value
 }
@@ -260,26 +285,26 @@ resource "aws_api_gateway_stage" "lambda" {
   # }
 }
 
-resource "aws_api_gateway_resource" "pir_query" {
+resource "aws_api_gateway_resource" "query" {
   provider    = aws.infra
   parent_id   = aws_api_gateway_rest_api.lambda.root_resource_id
-  path_part   = "pir_query"
+  path_part   = "query"
   rest_api_id = aws_api_gateway_rest_api.lambda.id
 }
 
 
-resource "aws_api_gateway_method" "pir_query" {
+resource "aws_api_gateway_method" "query" {
   provider      = aws.infra
   rest_api_id   = aws_api_gateway_rest_api.lambda.id
-  resource_id   = aws_api_gateway_resource.pir_query.id
+  resource_id   = aws_api_gateway_resource.query.id
   http_method   = "POST"
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "pir_query" {
+resource "aws_api_gateway_integration" "query" {
   provider                = aws.infra
-  http_method             = aws_api_gateway_method.pir_query.http_method
-  resource_id             = aws_api_gateway_resource.pir_query.id
+  http_method             = aws_api_gateway_method.query.http_method
+  resource_id             = aws_api_gateway_resource.query.id
   rest_api_id             = aws_api_gateway_rest_api.lambda.id
   type                    = "AWS_PROXY"
   integration_http_method = "POST"
@@ -349,5 +374,5 @@ resource "aws_wafv2_web_acl_association" "api_gw" {
   provider     = aws.infra
   resource_arn = "arn:aws:apigateway:us-east-1::/restapis/${aws_api_gateway_rest_api.lambda.id}/stages/${aws_api_gateway_stage.lambda.stage_name}"
   web_acl_arn  = aws_wafv2_web_acl.pir_query_acl.arn
-  depends_on = [aws_api_gateway_stage.lambda]
+  depends_on   = [aws_api_gateway_stage.lambda]
 }

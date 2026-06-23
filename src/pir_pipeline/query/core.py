@@ -6,6 +6,9 @@ from flask import Blueprint, request
 
 from pir_pipeline.query import helpers
 from pir_pipeline.query.db import get_db
+from pir_pipeline.utils.utils import get_logger
+
+LOGGER = get_logger(__name__)
 
 bp = Blueprint("index", __name__, url_prefix="/")
 
@@ -20,12 +23,17 @@ def get_records(data: dict[str, dict]):
 @bp.route("/query", methods=["POST"])
 def query():
     """Return the Home page"""
+
     response: dict = request.json
     aggregate_by: list[str] = response.pop("aggregate_by")
+
+    LOGGER.info("Acquiring records.")
     records = get_records(response)
     AGG = helpers.AGG_DEFAULTS
     pop_keys = set()
+    LOGGER.info("Successfully acquired records.")
 
+    LOGGER.info("Beginning aggregation.")
     df = pd.DataFrame.from_records(records).replace("nan", np.nan)
 
     if not aggregate_by:
@@ -80,5 +88,8 @@ def query():
     df["uqid"] = df["uqid"].combine_first(df["question_id"])
     df = df.groupby(aggregate_by).agg(**AGG).reset_index().drop(columns=["uqid"])
     records = df.to_dict(orient="records")
+
+    LOGGER.info("Successfuly aggregated records.")
+    LOGGER.info("Successfully completed PIR extract query.")
 
     return records
