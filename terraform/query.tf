@@ -138,6 +138,10 @@ resource "aws_lambda_function" "pir_query" {
       IN_AWS_LAMBDA = "True"
     }
   }
+  vpc_config {
+    subnet_ids         = var.rds_subnet_ids
+    security_group_ids = var.rds_security_groups
+  }
 }
 
 resource "aws_cloudwatch_log_group" "pir_query" {
@@ -254,8 +258,18 @@ resource "aws_api_gateway_deployment" "pir_query" {
   provider    = aws.infra
   rest_api_id = aws_api_gateway_rest_api.lambda.id
   triggers = {
-    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.lambda.body))
+    redeployment = sha1(
+      jsonencode([
+        aws_api_gateway_resource.query.id,
+        aws_api_gateway_method.query.id,
+        aws_api_gateway_integration.query.id
+        ])
+    )
   }
+  depends_on = [
+    aws_api_gateway_method.query,
+    aws_api_gateway_integration.query,
+  ]
   lifecycle {
     create_before_destroy = true
   }
