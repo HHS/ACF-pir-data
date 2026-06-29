@@ -313,6 +313,7 @@ resource "aws_api_gateway_method" "query" {
   resource_id   = aws_api_gateway_resource.query.id
   http_method   = "POST"
   authorization = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "query" {
@@ -323,6 +324,34 @@ resource "aws_api_gateway_integration" "query" {
   type                    = "AWS_PROXY"
   integration_http_method = "POST"
   uri                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/${aws_lambda_function.pir_query.arn}/invocations"
+}
+
+resource "aws_api_gateway_api_key" "general" {
+  provider = aws.infra
+  name     = "pir-query-general"
+}
+
+resource "aws_api_gateway_usage_plan" "pir_query" {
+  provider = aws.infra
+  name     = "pir-query-usage-plan"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.lambda.id
+    stage  = aws_api_gateway_stage.lambda.stage_name
+  }
+
+  # Optional but recommended
+  throttle_settings {
+    rate_limit  = 10
+    burst_limit = 20
+  }
+}
+
+resource "aws_api_gateway_usage_plan_key" "pir_query" {
+  provider      = aws.infra
+  key_id        = aws_api_gateway_api_key.general.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.pir_query.id
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
@@ -356,23 +385,29 @@ resource "aws_wafv2_web_acl" "pir_query_acl" {
   provider = aws.infra
   name     = "pir-query-acl"
   scope    = "REGIONAL"
+
   default_action {
-    block {}
+    allow {}  # ← allow by default, block unknown IPs via rule below
   }
+
   rule {
-    name     = "allow-acf-ips"
+    name     = "block-unknown-ips"
     priority = 1
     action {
-      allow {}
+      block {}
     }
     statement {
-      ip_set_reference_statement {
-        arn = aws_wafv2_ip_set.allowed.arn
+      not_statement {
+        statement {
+          ip_set_reference_statement {
+            arn = aws_wafv2_ip_set.allowed.arn
+          }
+        }
       }
     }
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "AllowKnownIPs"
+      metric_name                = "BlockUnknownIPs"
       sampled_requests_enabled   = true
     }
   }
