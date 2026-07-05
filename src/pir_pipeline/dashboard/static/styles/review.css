@@ -23,3 +23,10 @@ button {
 #keyword-search {
 	margin-top: 3em;
 }
+#year-filter {
+	margin-top: 3em;
+}
+
+cds-multi-select, cds-multi-select-item {
+    background: #F4F4F4;
+}

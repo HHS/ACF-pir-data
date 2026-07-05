@@ -3,6 +3,7 @@
 import json
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from sqlalchemy import select
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.utils.dashboard_utils import (
@@ -51,9 +52,10 @@ def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtil
 def search():
     """Handle rendering/data acquisition for the search page"""
 
+    db = get_db()
+
     # Execute a search
     if request.method == "POST":
-        db = get_db()
         # Change the columns displayed in the column dropdown
         if request.headers["Content-Type"] == "application/json":
             response = request.get_json()
@@ -65,8 +67,12 @@ def search():
         # Return search results
         else:
             keyword = request.form["keyword-search"]
+            years = request.form["year-filter"]
+            if years:
+                years = years.strip().strip(",")
+                years = [int(year) for year in years.split(",")]
 
-            results = get_search_results(keyword, db)
+            results = get_search_results(keyword, db, years=years)
             results.update({"keyword": keyword})
             results.update(
                 {
@@ -85,7 +91,10 @@ def search():
 
             return json.dumps(results)
 
-    return render_template("search/search.html")
+    year_df = db.get_records(select(db.tables["question"].c["year"]).distinct())
+    years = year_df["year"].tolist()
+
+    return render_template("search/search.html", years=years)
 
 
 @bp.route("/data", methods=["POST"])

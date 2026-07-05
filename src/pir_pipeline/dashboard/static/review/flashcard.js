@@ -1,4 +1,4 @@
-import { updateFlashcardTables, rowToJSON, storeLink, buildTable, expandContractRow } from "../utilities.js";
+import { updateFlashcardTables, rowToJSON, storeLink, buildTable, expandContractRow, freezeQuestionTable } from "../utilities.js";
 
 // Run buildFlashcardPage when the page is loaded
 document.addEventListener("DOMContentLoaded", buildFlashcardPage())
@@ -122,3 +122,4 @@ searchForm.addEventListener("submit", async (e) => {
 document.storeLink = storeLink;
 document.flashcardAction = flashcardAction;
 document.expandContractRow = expandContractRow;
+document.freezeQuestionTable = freezeQuestionTable;

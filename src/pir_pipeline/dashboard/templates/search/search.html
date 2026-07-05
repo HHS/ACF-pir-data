@@ -15,7 +15,13 @@
         </ul>
     </div>
     <form id="search-form">
-        <div class="form-group">
+        <div class="form-group">    
+            <cds-multi-select direction="bottom" select-all label="Filter by Year" id="year-filter" name="year-filter">
+                <cds-multi-select-item is-select-all>All</cds-multi-select-item>
+                {% for year in years %}
+                    <cds-multi-select-item value={{ year }}>{{ year }}</cds-multi-select-item>
+                {% endfor %}
+            </cds-multi-select>
             <input type="text" class="form-control" placeholder="Search By Keyword..." id="keyword-search" name="keyword-search">
         </div>
         <div class="form-group">
@@ -35,16 +41,22 @@
             </cds-modal-header>
             <cds-modal-body>                
                 <div class="modal-table-box">
-                    <table id="flashcard-question-table" class="table table-hover">
+                    <table id="flashcard-question-table" class="table table-hover" onclick="freezeQuestionTable(event)">
                     </table>
                 </div>
                 <div class = "modal-box">
                     <form id="modal-search-form">
-                        <div class="form-group">
-                            <input type="text" class="form-control" placeholder="Search by Keyword..." id="modal-keyword-search" name="keyword-search">
+                        <div class="form-group">    
+                            <cds-multi-select direction="bottom" select-all label="Filter by Year" id="modal-year-filter" name="year-filter">
+                                <cds-multi-select-item is-select-all>All</cds-multi-select-item>
+                                {% for year in years %}
+                                    <cds-multi-select-item value={{ year }}>{{ year }}</cds-multi-select-item>
+                                {% endfor %}
+                            </cds-multi-select>
+                            <input type="text" class="form-control" placeholder="Search By Keyword..." id="modal-keyword-search" name="keyword-search">
                         </div>
                         <div class="form-group">
-                            <button type="submit" class="btn btn-primary" id="modal-search-button" hidden>Search</button>
+                            <button type="submit" class="btn btn-primary" id="search-button" hidden>Search</button>
                         </div>
                     </form>
                 </div>
@@ -69,4 +81,5 @@
 {% block scripts %}
     <script type="module" src="{{ url_for('static', filename='search/search.js') }}"></script>
     <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/modal.min.js"></script>
+    <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/multi-select.min.js"></script>
 {% endblock %}
