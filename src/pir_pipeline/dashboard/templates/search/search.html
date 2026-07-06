@@ -15,6 +15,10 @@
         </ul>
     </div>
     <form id="search-form">
+        <div class="form-group">
+            <cds-toggle label-b="No" label-a="Yes" label-text="Include pending questions?" size="" toggled id="pending-filter" name="pending-filter">
+            </cds-toggle>
+        </div>
         <div class="form-group">    
             <cds-multi-select direction="bottom" select-all label="Filter by Year" id="year-filter" name="year-filter">
                 <cds-multi-select-item is-select-all>All</cds-multi-select-item>
@@ -82,4 +86,5 @@
     <script type="module" src="{{ url_for('static', filename='search/search.js') }}"></script>
     <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/modal.min.js"></script>
     <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/tag/v2/latest/multi-select.min.js"></script>
+    <script type="module" src="https://1.www.s81c.com/common/carbon/web-components/version/v2.58.0/toggle.min.js"></script>
 {% endblock %}

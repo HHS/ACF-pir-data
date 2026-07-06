@@ -68,22 +68,27 @@ def search():
         else:
             keyword = request.form["keyword-search"]
             years = request.form["year-filter"]
+            pending_filter = request.form.get("pending-filter")
             if years:
                 years = years.strip().strip(",")
                 years = [int(year) for year in years.split(",")]
 
             results = get_search_results(keyword, db, years=years)
             results.update({"keyword": keyword})
+            pending_qids = pending(db)
+            if not pending_filter:
+                drop_due_to_pending = []
+                for key, value in results.items():
+                    if isinstance(value, list) and isinstance(value[0], dict):
+                        if any([v["question_id"] in pending_qids for v in value]):
+                            drop_due_to_pending.append(key)
+
+                for key in drop_due_to_pending:
+                    results.pop(key)
+
             results.update(
                 {
-                    "proposed": pending(db),
-                    "confirmed": confirmed(db),
-                    "all_years": all_years(db),
-                }
-            )
-            results.update(
-                {
-                    "proposed": pending(db),
+                    "proposed": pending_qids,
                     "confirmed": confirmed(db),
                     "all_years": all_years(db),
                 }

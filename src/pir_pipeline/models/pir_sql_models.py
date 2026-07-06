@@ -246,4 +246,4 @@ finalize_query = (
     .order_by(q.c.question_number)
 )
 
-finalize = view("finalize", sql_metadata, query)
+finalize = view("finalize", sql_metadata, finalize_query)

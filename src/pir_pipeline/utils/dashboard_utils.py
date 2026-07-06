@@ -650,9 +650,7 @@ def all_years(db: SQLAlchemyUtils):
     question = db.tables["question"]
     years = db.get_scalar(select(func.count(question.c.year.distinct())), {})
     all_years = db.get_records(
-        select(question.c.uqid.distinct().label("uqid"))
-        .group_by(question.c.uqid)
-        .having(func.count(question.c.uqid) == years)
+        f"SELECT DISTINCT uqid FROM question GROUP BY uqid HAVING COUNT(uqid) = {years}"
     )
 
     return all_years["uqid"].unique().tolist()
