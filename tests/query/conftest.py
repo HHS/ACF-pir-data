@@ -16,7 +16,7 @@ def app():
         "SECRET_KEY": "dev",
     }
     app = create_app(
-        test_config=test_config,
+        config=test_config,
         template_folder=os.path.join(
             os.path.dirname(__file__),
             "..",
