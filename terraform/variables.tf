@@ -28,6 +28,11 @@ variable "pir_vpc" {
   description = "VPC ID for PIR resources"
 }
 
+# variable "pir_vpc_route_table_ids" {
+#   type = list(string)
+#   description = "VPC Route IDs for PIR resources"
+# }
+
 variable "app_name" {
   type    = string
   default = "pir-qa-dashboard"

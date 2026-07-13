@@ -136,6 +136,7 @@ resource "aws_lambda_function" "pir_query" {
   environment {
     variables = {
       IN_AWS_LAMBDA = "True"
+      PIR_EXTRACT_BUCKET = aws_s3_bucket.extracts.bucket
     }
   }
   vpc_config {
@@ -183,13 +184,14 @@ data "aws_iam_policy_document" "pir_s3_policy" {
   statement {
     actions   = ["s3:ListBucket", "s3:ListObjects"]
     effect    = "Allow"
-    resources = [var.pir_s3_arn]
+    resources = [var.pir_s3_arn, aws_s3_bucket.extracts.arn]
   }
   statement {
     actions   = ["s3:GetObject", "s3:PutObject", "s3:CopyObject", "s3:DeleteObject"]
     effect    = "Allow"
-    resources = ["${var.pir_s3_arn}/*"]
+    resources = ["${var.pir_s3_arn}/*", "${aws_s3_bucket.extracts.arn}/*"]
   }
+  depends_on = [aws_s3_bucket.extracts]
 }
 
 resource "aws_iam_policy" "pir_s3_policy" {
@@ -263,7 +265,7 @@ resource "aws_api_gateway_deployment" "pir_query" {
         aws_api_gateway_resource.query.id,
         aws_api_gateway_method.query.id,
         aws_api_gateway_integration.query.id
-        ])
+      ])
     )
   }
   depends_on = [
@@ -308,11 +310,11 @@ resource "aws_api_gateway_resource" "query" {
 
 
 resource "aws_api_gateway_method" "query" {
-  provider      = aws.infra
-  rest_api_id   = aws_api_gateway_rest_api.lambda.id
-  resource_id   = aws_api_gateway_resource.query.id
-  http_method   = "POST"
-  authorization = "NONE"
+  provider         = aws.infra
+  rest_api_id      = aws_api_gateway_rest_api.lambda.id
+  resource_id      = aws_api_gateway_resource.query.id
+  http_method      = "POST"
+  authorization    = "NONE"
   api_key_required = true
 }
 
@@ -387,7 +389,7 @@ resource "aws_wafv2_web_acl" "pir_query_acl" {
   scope    = "REGIONAL"
 
   default_action {
-    allow {}  # ← allow by default, block unknown IPs via rule below
+    allow {} # ← allow by default, block unknown IPs via rule below
   }
 
   rule {
@@ -424,4 +426,67 @@ resource "aws_wafv2_web_acl_association" "api_gw" {
   resource_arn = "arn:aws:apigateway:us-east-1::/restapis/${aws_api_gateway_rest_api.lambda.id}/stages/${aws_api_gateway_stage.lambda.stage_name}"
   web_acl_arn  = aws_wafv2_web_acl.pir_query_acl.arn
   depends_on   = [aws_api_gateway_stage.lambda]
+}
+
+# ------------------------------------------------------------------
+# Extract S3 Bucket
+# ------------------------------------------------------------------
+
+resource "aws_s3_bucket" "extracts" {
+  provider = aws.infra
+  bucket_prefix   = "pir-extracts-"
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "extracts" {
+  provider = aws.infra
+  bucket   = aws_s3_bucket.extracts.bucket
+  rule {
+    id = "pir-extract-expiry"
+    expiration {
+      days = 1
+    }
+    status = "Enabled"
+  }
+}
+
+# resource "aws_vpc_endpoint" "extracts" {
+#   provider          = aws.infra
+#   vpc_id            = var.pir_vpc # the VPC containing rds_subnet_ids
+#   service_name      = "com.amazonaws.us-east-1.s3"
+#   vpc_endpoint_type = "Gateway"
+#   route_table_ids   = var.pir_vpc_route_table_ids
+# }
+
+# resource "aws_s3_bucket_policy" "restrict_query_results" {
+#   provider = aws.infra
+#   bucket   = aws_s3_bucket.extracts.bucket
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Sid       = "DenyUnlessVpnOrVpc"
+#         Effect    = "Deny"
+#         Principal = "*"
+#         Action    = "s3:GetObject"
+#         Resource  = "${aws_s3_bucket.extracts.arn}/*"
+#         Condition = {
+#           NotIpAddress = {
+#             "aws:SourceIp" = [for ip in var.acf_vpn_ips : "${ip}/32"]
+#           }
+#           # StringNotEquals = {
+#           #   "aws:SourceVpce" = aws_vpc_endpoint.extracts.id
+#           # }
+#         }
+#       }
+#     ]
+#   })
+# }
+
+resource "aws_s3_bucket_public_access_block" "extracts" {
+  provider                = aws.infra
+  bucket                  = aws_s3_bucket.extracts.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }

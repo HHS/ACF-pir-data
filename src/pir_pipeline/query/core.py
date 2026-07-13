@@ -1,6 +1,8 @@
 """Routes and logic for the home page"""
 
 import json
+import os
+import uuid
 
 import boto3
 import numpy as np
@@ -116,12 +118,13 @@ def query():
         LOGGER.info("Successfuly aggregated records.")
         LOGGER.info("Successfully completed PIR extract query.")
 
-    write_to_s3(s3, records, Bucket="pir-data-files", Key="extracts/temp.json")
+    uu = uuid.uuid1().hex
+    write_to_s3(s3, records, Bucket=os.getenv("PIR_EXTRACT_BUCKET"), Key=f"{uu}.json")
 
     url = gen_presigned_url(
         s3,
-        Params={"Bucket": "pir-data-files", "Key": "extracts/temp.json"},
-        ExpiresIn=120,
+        Params={"Bucket": os.getenv("PIR_EXTRACT_BUCKET"), "Key": f"{uu}.json"},
+        ExpiresIn=10,
     )
 
     return url
