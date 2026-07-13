@@ -282,23 +282,6 @@ resource "aws_api_gateway_stage" "lambda" {
   rest_api_id   = aws_api_gateway_rest_api.lambda.id
   stage_name    = "pir_query_lambda_stage"
   deployment_id = aws_api_gateway_deployment.pir_query.id
-
-  # access_log_settings {
-  #   destination_arn = aws_cloudwatch_log_group.api_gw.arn
-
-  #   format = jsonencode({
-  #     requestId               = "$context.requestId"
-  #     sourceIp                = "$context.identity.sourceIp"
-  #     requestTime             = "$context.requestTime"
-  #     protocol                = "$context.protocol"
-  #     httpMethod              = "$context.httpMethod"
-  #     resourcePath            = "$context.resourcePath"
-  #     routeKey                = "$context.routeKey"
-  #     status                  = "$context.status"
-  #     responseLength          = "$context.responseLength"
-  #     integrationErrorMessage = "$context.integrationErrorMessage"
-  #   })
-  # }
 }
 
 resource "aws_api_gateway_resource" "query" {
@@ -448,39 +431,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "extracts" {
     status = "Enabled"
   }
 }
-
-# resource "aws_vpc_endpoint" "extracts" {
-#   provider          = aws.infra
-#   vpc_id            = var.pir_vpc # the VPC containing rds_subnet_ids
-#   service_name      = "com.amazonaws.us-east-1.s3"
-#   vpc_endpoint_type = "Gateway"
-#   route_table_ids   = var.pir_vpc_route_table_ids
-# }
-
-# resource "aws_s3_bucket_policy" "restrict_query_results" {
-#   provider = aws.infra
-#   bucket   = aws_s3_bucket.extracts.bucket
-#   policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [
-#       {
-#         Sid       = "DenyUnlessVpnOrVpc"
-#         Effect    = "Deny"
-#         Principal = "*"
-#         Action    = "s3:GetObject"
-#         Resource  = "${aws_s3_bucket.extracts.arn}/*"
-#         Condition = {
-#           NotIpAddress = {
-#             "aws:SourceIp" = [for ip in var.acf_vpn_ips : "${ip}/32"]
-#           }
-#           # StringNotEquals = {
-#           #   "aws:SourceVpce" = aws_vpc_endpoint.extracts.id
-#           # }
-#         }
-#       }
-#     ]
-#   })
-# }
 
 resource "aws_s3_bucket_public_access_block" "extracts" {
   provider                = aws.infra
