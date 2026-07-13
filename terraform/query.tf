@@ -311,9 +311,22 @@ resource "aws_api_gateway_integration" "query" {
   uri                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/${aws_lambda_function.pir_query.arn}/invocations"
 }
 
-resource "aws_api_gateway_api_key" "general" {
+
+resource "aws_api_gateway_api_key" "pir_query" {
+  for_each = var.pir_query_api_consumers
   provider = aws.infra
-  name     = "pir-query-general"
+
+  name        = "pir-query-${each.key}"
+  description = each.value.description
+}
+
+resource "aws_api_gateway_usage_plan_key" "pir_query" {
+  for_each = var.pir_query_api_consumers
+  provider = aws.infra
+
+  key_id        = aws_api_gateway_api_key.pir_query[each.key].id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.pir_query.id
 }
 
 resource "aws_api_gateway_usage_plan" "pir_query" {
@@ -330,13 +343,6 @@ resource "aws_api_gateway_usage_plan" "pir_query" {
     rate_limit  = 10
     burst_limit = 20
   }
-}
-
-resource "aws_api_gateway_usage_plan_key" "pir_query" {
-  provider      = aws.infra
-  key_id        = aws_api_gateway_api_key.general.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.pir_query.id
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {

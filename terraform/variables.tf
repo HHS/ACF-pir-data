@@ -52,3 +52,18 @@ variable "pir_s3_name" {
   type    = string
   default = "pir-data-files"
 }
+
+variable "pir_query_api_consumers" {
+  description = "Map of API key consumers for the PirQuery usage plan"
+  type = map(object({
+    description = optional(string, "")
+  }))
+  default = {
+    "general" = {
+      description = "Default/general access key"
+    }
+    "ek" = {
+      description = "Key for EK"
+    }
+  }
+}
