@@ -47,7 +47,11 @@ def query():
     """Return the Home page"""
 
     response: dict = request.json
-    aggregate_by: list[str] = response.pop("aggregate_by")
+    aggregate_by: list[str]
+    try:
+        aggregate_by = response.pop("aggregate_by")
+    except KeyError:
+        aggregate_by = []
     s3 = boto3.client(
         "s3",
         config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
@@ -55,7 +59,7 @@ def query():
 
     LOGGER.info("Acquiring records.")
     records = get_records(response)
-    AGG = helpers.AGG_DEFAULTS
+    AGG = helpers.AGG_DEFAULTS.copy()
     pop_keys = set()
     LOGGER.info("Successfully acquired records.")
 
@@ -78,7 +82,7 @@ def query():
 
         df["answer"] = df["answer"].astype("float64")
 
-        if "grant_number" not in aggregate_by:
+        if all([var not in aggregate_by for var in ["grant_number", "agency_id"]]):
             for key in AGG:
                 if key.startswith("grant"):
                     pop_keys.add(key)
