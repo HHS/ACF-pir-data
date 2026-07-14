@@ -1,7 +1,14 @@
 """Routes and logic for the home page"""
 
+import json
+import os
+import uuid
+
+import boto3
 import numpy as np
 import pandas as pd
+from botocore.config import Config
+from botocore.exceptions import ClientError
 from flask import Blueprint, request
 
 from pir_pipeline.query import helpers
@@ -20,16 +27,39 @@ def get_records(data: dict[str, dict]):
     return records
 
 
+def write_to_s3(client, records, **kwargs):
+    jsonb = json.dumps(records).encode()
+    client.put_object(Body=jsonb, **kwargs)
+
+
+def gen_presigned_url(client, **kwargs):
+    try:
+        response = client.generate_presigned_url("get_object", **kwargs)
+    except ClientError as e:
+        LOGGER.error(e)
+        raise
+
+    return response
+
+
 @bp.route("/query", methods=["POST"])
 def query():
     """Return the Home page"""
 
     response: dict = request.json
-    aggregate_by: list[str] = response.pop("aggregate_by")
+    aggregate_by: list[str]
+    try:
+        aggregate_by = response.pop("aggregate_by")
+    except KeyError:
+        aggregate_by = []
+    s3 = boto3.client(
+        "s3",
+        config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+    )
 
     LOGGER.info("Acquiring records.")
     records = get_records(response)
-    AGG = helpers.AGG_DEFAULTS
+    AGG = helpers.AGG_DEFAULTS.copy()
     pop_keys = set()
     LOGGER.info("Successfully acquired records.")
 
@@ -40,7 +70,7 @@ def query():
         records = df.drop(columns=["question_id", "uid", "uqid"]).to_dict(
             orient="records"
         )
-        return records
+        LOGGER.info("No aggregation instructions.")
     else:
         for var in aggregate_by:
             try:
@@ -50,46 +80,55 @@ def query():
 
         aggregate_by.extend(["uqid", "year"])
 
-    df["answer"] = df["answer"].astype("float64")
+        df["answer"] = df["answer"].astype("float64")
 
-    if "grant_number" not in aggregate_by:
-        for key in AGG:
-            if key.startswith("grant"):
-                pop_keys.add(key)
+        if all([var not in aggregate_by for var in ["grant_number", "agency_id"]]):
+            for key in AGG:
+                if key.startswith("grant"):
+                    pop_keys.add(key)
 
-    if (
-        not any([var.startswith("program") for var in aggregate_by])
-        and "grant_number" not in aggregate_by
-        and "agency_id" not in aggregate_by
-    ):
-        for key in AGG:
-            if (
-                key.startswith("program")
-                or key.startswith("grant")
-                or key == "agency_id"
-            ):
-                pop_keys.add(key)
-    elif (
-        any([var.startswith("program") for var in aggregate_by])
-        and "grant_number" not in aggregate_by
-        and "agency_id" not in aggregate_by
-    ):
-        for key in AGG:
-            if (
-                key.startswith("program")
-                or key.startswith("grant")
-                or key == "agency_id"
-            ) and key not in aggregate_by:
-                pop_keys.add(key)
+        if (
+            not any([var.startswith("program") for var in aggregate_by])
+            and "grant_number" not in aggregate_by
+            and "agency_id" not in aggregate_by
+        ):
+            for key in AGG:
+                if (
+                    key.startswith("program")
+                    or key.startswith("grant")
+                    or key == "agency_id"
+                ):
+                    pop_keys.add(key)
+        elif (
+            any([var.startswith("program") for var in aggregate_by])
+            and "grant_number" not in aggregate_by
+            and "agency_id" not in aggregate_by
+        ):
+            for key in AGG:
+                if (
+                    key.startswith("program")
+                    or key.startswith("grant")
+                    or key == "agency_id"
+                ) and key not in aggregate_by:
+                    pop_keys.add(key)
 
-    for key in pop_keys:
-        AGG.pop(key)
+        for key in pop_keys:
+            AGG.pop(key)
 
-    df["uqid"] = df["uqid"].combine_first(df["question_id"])
-    df = df.groupby(aggregate_by).agg(**AGG).reset_index().drop(columns=["uqid"])
-    records = df.to_dict(orient="records")
+        df["uqid"] = df["uqid"].combine_first(df["question_id"])
+        df = df.groupby(aggregate_by).agg(**AGG).reset_index().drop(columns=["uqid"])
+        records = df.to_dict(orient="records")
 
-    LOGGER.info("Successfuly aggregated records.")
-    LOGGER.info("Successfully completed PIR extract query.")
+        LOGGER.info("Successfuly aggregated records.")
+        LOGGER.info("Successfully completed PIR extract query.")
 
-    return records
+    uu = uuid.uuid1().hex
+    write_to_s3(s3, records, Bucket=os.getenv("PIR_EXTRACT_BUCKET"), Key=f"{uu}.json")
+
+    url = gen_presigned_url(
+        s3,
+        Params={"Bucket": os.getenv("PIR_EXTRACT_BUCKET"), "Key": f"{uu}.json"},
+        ExpiresIn=10,
+    )
+
+    return url

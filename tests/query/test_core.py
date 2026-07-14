@@ -1,4 +1,5 @@
 import pytest
+import requests
 
 
 @pytest.mark.usefixtures(
@@ -20,8 +21,9 @@ class TestCoreRoutes:
                 "aggregate_by": [],
             },
         )
-        records = response.json
-        assert len(records) == 3 and len(records[0]) == 26, "Incorrect shape"
+        response = requests.get(response.text)
+        records = response.json()
+        assert len(records) == 3 and len(records[0]) == 27, "Incorrect shape"
         assert records[0]["grant_number"] == "01CH0002", "Incorrect Grant Number"
         assert records[0]["question_number"] == "A.22.k-1", "Incorrect Question Number"
 
@@ -34,7 +36,8 @@ class TestCoreRoutes:
                 "aggregate_by": ["program_type"],
             },
         )
-        records = response.json
+        response = requests.get(response.text)
+        records = response.json()
         assert len(records) == 1 and len(records[0]) == 12, "Incorrect shape"
         assert records[0]["answer"] == 10, "Incorrect answer value."
 
@@ -47,7 +50,8 @@ class TestCoreRoutes:
                 "aggregate_by": ["program_type"],
             },
         )
-        records = response.json
+        response = requests.get(response.text)
+        records = response.json()
         assert (
             len(records) == 3 and len(records[0]) == 12
         ), "Incorrect shape."  # Two different uqids leads to 3 records despite 2 program types

@@ -136,6 +136,7 @@ resource "aws_lambda_function" "pir_query" {
   environment {
     variables = {
       IN_AWS_LAMBDA = "True"
+      PIR_EXTRACT_BUCKET = aws_s3_bucket.extracts.bucket
     }
   }
   vpc_config {
@@ -183,13 +184,14 @@ data "aws_iam_policy_document" "pir_s3_policy" {
   statement {
     actions   = ["s3:ListBucket", "s3:ListObjects"]
     effect    = "Allow"
-    resources = [var.pir_s3_arn]
+    resources = [var.pir_s3_arn, aws_s3_bucket.extracts.arn]
   }
   statement {
     actions   = ["s3:GetObject", "s3:PutObject", "s3:CopyObject", "s3:DeleteObject"]
     effect    = "Allow"
-    resources = ["${var.pir_s3_arn}/*"]
+    resources = ["${var.pir_s3_arn}/*", "${aws_s3_bucket.extracts.arn}/*"]
   }
+  depends_on = [aws_s3_bucket.extracts]
 }
 
 resource "aws_iam_policy" "pir_s3_policy" {
@@ -263,7 +265,7 @@ resource "aws_api_gateway_deployment" "pir_query" {
         aws_api_gateway_resource.query.id,
         aws_api_gateway_method.query.id,
         aws_api_gateway_integration.query.id
-        ])
+      ])
     )
   }
   depends_on = [
@@ -280,23 +282,6 @@ resource "aws_api_gateway_stage" "lambda" {
   rest_api_id   = aws_api_gateway_rest_api.lambda.id
   stage_name    = "pir_query_lambda_stage"
   deployment_id = aws_api_gateway_deployment.pir_query.id
-
-  # access_log_settings {
-  #   destination_arn = aws_cloudwatch_log_group.api_gw.arn
-
-  #   format = jsonencode({
-  #     requestId               = "$context.requestId"
-  #     sourceIp                = "$context.identity.sourceIp"
-  #     requestTime             = "$context.requestTime"
-  #     protocol                = "$context.protocol"
-  #     httpMethod              = "$context.httpMethod"
-  #     resourcePath            = "$context.resourcePath"
-  #     routeKey                = "$context.routeKey"
-  #     status                  = "$context.status"
-  #     responseLength          = "$context.responseLength"
-  #     integrationErrorMessage = "$context.integrationErrorMessage"
-  #   })
-  # }
 }
 
 resource "aws_api_gateway_resource" "query" {
@@ -308,11 +293,11 @@ resource "aws_api_gateway_resource" "query" {
 
 
 resource "aws_api_gateway_method" "query" {
-  provider      = aws.infra
-  rest_api_id   = aws_api_gateway_rest_api.lambda.id
-  resource_id   = aws_api_gateway_resource.query.id
-  http_method   = "POST"
-  authorization = "NONE"
+  provider         = aws.infra
+  rest_api_id      = aws_api_gateway_rest_api.lambda.id
+  resource_id      = aws_api_gateway_resource.query.id
+  http_method      = "POST"
+  authorization    = "NONE"
   api_key_required = true
 }
 
@@ -326,9 +311,22 @@ resource "aws_api_gateway_integration" "query" {
   uri                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/${aws_lambda_function.pir_query.arn}/invocations"
 }
 
-resource "aws_api_gateway_api_key" "general" {
+
+resource "aws_api_gateway_api_key" "pir_query" {
+  for_each = var.pir_query_api_consumers
   provider = aws.infra
-  name     = "pir-query-general"
+
+  name        = "pir-query-${each.key}"
+  description = each.value.description
+}
+
+resource "aws_api_gateway_usage_plan_key" "pir_query" {
+  for_each = var.pir_query_api_consumers
+  provider = aws.infra
+
+  key_id        = aws_api_gateway_api_key.pir_query[each.key].id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.pir_query.id
 }
 
 resource "aws_api_gateway_usage_plan" "pir_query" {
@@ -345,13 +343,6 @@ resource "aws_api_gateway_usage_plan" "pir_query" {
     rate_limit  = 10
     burst_limit = 20
   }
-}
-
-resource "aws_api_gateway_usage_plan_key" "pir_query" {
-  provider      = aws.infra
-  key_id        = aws_api_gateway_api_key.general.id
-  key_type      = "API_KEY"
-  usage_plan_id = aws_api_gateway_usage_plan.pir_query.id
 }
 
 resource "aws_cloudwatch_log_group" "api_gw" {
@@ -387,7 +378,7 @@ resource "aws_wafv2_web_acl" "pir_query_acl" {
   scope    = "REGIONAL"
 
   default_action {
-    allow {}  # ← allow by default, block unknown IPs via rule below
+    allow {} # ← allow by default, block unknown IPs via rule below
   }
 
   rule {
@@ -424,4 +415,34 @@ resource "aws_wafv2_web_acl_association" "api_gw" {
   resource_arn = "arn:aws:apigateway:us-east-1::/restapis/${aws_api_gateway_rest_api.lambda.id}/stages/${aws_api_gateway_stage.lambda.stage_name}"
   web_acl_arn  = aws_wafv2_web_acl.pir_query_acl.arn
   depends_on   = [aws_api_gateway_stage.lambda]
+}
+
+# ------------------------------------------------------------------
+# Extract S3 Bucket
+# ------------------------------------------------------------------
+
+resource "aws_s3_bucket" "extracts" {
+  provider = aws.infra
+  bucket_prefix   = "pir-extracts-"
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "extracts" {
+  provider = aws.infra
+  bucket   = aws_s3_bucket.extracts.bucket
+  rule {
+    id = "pir-extract-expiry"
+    expiration {
+      days = 1
+    }
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "extracts" {
+  provider                = aws.infra
+  bucket                  = aws_s3_bucket.extracts.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }

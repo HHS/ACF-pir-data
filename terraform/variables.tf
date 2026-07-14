@@ -28,6 +28,11 @@ variable "pir_vpc" {
   description = "VPC ID for PIR resources"
 }
 
+# variable "pir_vpc_route_table_ids" {
+#   type = list(string)
+#   description = "VPC Route IDs for PIR resources"
+# }
+
 variable "app_name" {
   type    = string
   default = "pir-qa-dashboard"
@@ -46,4 +51,19 @@ variable "pir_s3_arn" {
 variable "pir_s3_name" {
   type    = string
   default = "pir-data-files"
+}
+
+variable "pir_query_api_consumers" {
+  description = "Map of API key consumers for the PirQuery usage plan"
+  type = map(object({
+    description = optional(string, "")
+  }))
+  default = {
+    "general" = {
+      description = "Default/general access key"
+    }
+    "ek" = {
+      description = "Key for EK"
+    }
+  }
 }
