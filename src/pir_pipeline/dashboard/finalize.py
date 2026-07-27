@@ -1,13 +1,15 @@
 import json
-from collections.abc import Sequence
+import re
+from collections.abc import Iterable, Sequence
 from math import ceil
-from typing import Iterable, Optional
+from typing import Optional
 
 from flask import Blueprint, render_template, request, session
-from sqlalchemy import func, select, text
+from sqlalchemy import String, bindparam, func, or_, select, text
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.dashboard.utils import administrator
+from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 bp = Blueprint("finalize", __name__, url_prefix="/finalize")
 
@@ -80,6 +82,51 @@ def get_page(number_displayed: Optional[int] = None) -> WrappedList:
     return page_wrapped
 
 
+def search_pending_questions(keyword: str, db: SQLAlchemyUtils) -> dict:
+    """Return results for the search page
+
+    Args:
+        keyword (str): The term to search for
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+        id_column (str): Column to use as the primary identifier
+
+    Returns:
+        dict: Dictionary of search results
+    """
+    proposed_changes = db.tables["finalize"]
+    link_history = db.tables["link_history"]
+
+    # Escape keyword (https://stackoverflow.com/questions/4202538/escape-special-characters-in-a-python-string)
+    keyword = re.escape(keyword)
+
+    # Adapted from
+    # https://stackoverflow.com/questions/34838302/sqlalchemy-adding-or-condition-with-different-filter
+    conditions = []
+    for column in proposed_changes.c.keys():
+        if db.engine.dialect.name == "mysql":
+            conditions.append(
+                proposed_changes.c[column].regexp_match(bindparam("keyword"))
+            )
+        else:
+            conditions.append(
+                func.cast(proposed_changes.c[column], String).regexp_match(
+                    func.cast(bindparam("keyword"), String), "i"
+                )
+            )
+
+    query = (
+        select(proposed_changes, link_history.c.user)
+        .where(or_(*conditions))
+        .join(
+            link_history,
+            link_history.c.link_id == proposed_changes.c.id,
+            isouter=True,
+        )
+    )
+
+    return query, keyword
+
+
 @bp.route("/", methods=["GET"])
 @administrator
 def index():
@@ -98,36 +145,43 @@ def index():
 def data():
     db = get_db()
 
-    number_displayed: int = session.get("number_displayed", DEFAULT_DISPLAYED)
-    page: WrappedList = get_page()
+    if request.headers["Content-Type"] == "application/json":
+        number_displayed: int = session.get("number_displayed", DEFAULT_DISPLAYED)
+        page: WrappedList = get_page()
 
-    response = request.get_json()
-    direction: str = response.get("direction")
+        response = request.get_json()
+        direction: str = response.get("direction")
 
-    if direction is None:
-        pass
-    elif direction.isdigit():
-        number_displayed = int(direction)
-        page = get_page(number_displayed)
-        session["number_displayed"] = number_displayed
-    elif direction == "next":
-        page.next()
-    else:
-        page.previous()
+        if direction is None:
+            pass
+        elif direction.isdigit():
+            number_displayed = int(direction)
+            page = get_page(number_displayed)
+            session["number_displayed"] = number_displayed
+        elif direction == "next":
+            page.next()
+        else:
+            page.previous()
 
-    session["page"] = page.to_json()
+        session["page"] = page.to_json()
 
-    proposed_changes = db.tables["finalize"]
-    link_history = db.tables["link_history"]
-    query = (
-        select(proposed_changes, link_history.c.user)
-        .limit(number_displayed)
-        .offset(page.current * number_displayed)
-        .join(
-            link_history, link_history.c.link_id == proposed_changes.c.id, isouter=True
+        proposed_changes = db.tables["finalize"]
+        link_history = db.tables["link_history"]
+        query = (
+            select(proposed_changes, link_history.c.user)
+            .limit(number_displayed)
+            .offset(page.current * number_displayed)
+            .join(
+                link_history,
+                link_history.c.link_id == proposed_changes.c.id,
+                isouter=True,
+            )
         )
-    )
-
-    records = db.get_records(query)
+        records = db.get_records(query)
+    else:
+        keyword = request.form["keyword-search"]
+        query, keyword = search_pending_questions(keyword, db)
+        records = db.get_records(query, {"keyword": keyword})
+        print(query, records)
 
     return records.to_dict(orient="index")

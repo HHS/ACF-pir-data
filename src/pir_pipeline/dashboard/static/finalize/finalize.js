@@ -134,6 +134,19 @@ function commitLink(e) {
         })
 }
 
+const searchForm = document.getElementById("search-form");
+searchForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = event.srcElement;
+    const formData = new FormData(form);
+
+    // Update the search table
+    fetch("/finalize/data", { "method": "POST", "body": formData })
+        .then(response => response.json())
+        .then(data => insertFinalizeTables(data));
+})
+
 document.expandContractRow = expandContractRow;
 document.paginate = paginate;
 document.commitLink = commitLink;

@@ -32,6 +32,16 @@
             <option value="50" {% if session["number_displayed"] == 50 %}selected{% endif %}>50</option>
         </select>
     </div>
+    <div>
+        <form id="search-form">
+            <div class="form-group">    
+                <input type="text" class="form-control" placeholder="Search By Keyword..." id="keyword-search" name="keyword-search">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" id="search-button" hidden>Search</button>
+            </div>
+        </form>
+    </div>
     <div class="table-box">
     </div>
 {% endblock %}
