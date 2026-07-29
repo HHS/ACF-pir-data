@@ -26,6 +26,8 @@ class TestSearchRoutes:
             "/search/",
             data={
                 "keyword-search": "B.18.d-1",
+                "year-filter": "2023, 2024",
+                "pending-filter": True,
             },
         )
         assert (
@@ -52,6 +54,8 @@ class TestSearchRoutes:
             "/search/",
             data={
                 "keyword-search": "0e9fdf808ccf193218f64d62ab9b0c60f860de6b",
+                "year-filter": "2012, 2013, 2014",
+                "pending-filter": True,
             },
         )
 
