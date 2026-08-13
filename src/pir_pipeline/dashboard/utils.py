@@ -13,6 +13,7 @@ def administrator(view):
             "emily.kowall",
             "reggie.gilliard",
             "alecsandra.velez",
+            "abigail.schmitt",
         ]:
             flash("You are not authorized to access this page.")
             return redirect(url_for("index"))
