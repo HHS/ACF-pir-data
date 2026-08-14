@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, request, session
 from sqlalchemy import bindparam, delete, func, select
 
 from pir_pipeline.dashboard.db import get_db
-from pir_pipeline.models.pir_sql_models import link_history
+from pir_pipeline.models.pir_sql_models import link_history, proposed_changes
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
     all_years,
@@ -213,7 +213,6 @@ def link():
     # Execute all linking actions
     elif action == "confirm":
         link_id = payload["id"]
-        proposed_changes = db.tables["proposed_changes"]
         link_dict_query = select(proposed_changes.c["link_dict"]).where(
             proposed_changes.c["id"] == bindparam("id")
         )
@@ -244,7 +243,6 @@ def link():
         message = "Links Updated!"
     elif action == "deny":
         link_id = payload["id"]
-        proposed_changes = db.tables["proposed_changes"]
         delete_query = delete(proposed_changes).where(
             proposed_changes.c["id"] == link_id
         )
@@ -269,5 +267,18 @@ def link():
         )
 
         message = f"Removed link associated with id: {payload["id"]}"
+    elif action == "delete":
+        link_id = payload["id"]
+        proposed_delete_query = delete(proposed_changes).where(
+            proposed_changes.c["id"] == link_id
+        )
+        history_delete_query = delete(link_history).where(
+            link_history.c["link_id"] == link_id
+        )
+        with db.engine.begin() as conn:
+            conn.execute(proposed_delete_query)
+            conn.execute(history_delete_query)
+
+        message = f"Deleted proposed link with id {link_id} and removed from history."
 
     return {"message": message}

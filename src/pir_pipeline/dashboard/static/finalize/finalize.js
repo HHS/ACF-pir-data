@@ -65,9 +65,18 @@ function insertFinalizeTables(data) {
         denyButton.name = "deny";
         denyButton.value = record["id"];
 
+        // Add delete button
+        const deleteButton = document.createElement("button");
+        deleteButton.classList.add(...["wrapper-button", "secondary-button"]);
+        deleteButton.innerHTML = "Delete";
+        deleteButton.setAttribute("onclick", "commitLink(event)");
+        deleteButton.name = "delete";
+        deleteButton.value = record["id"];
+
         // Create button container
         const buttonContainer = document.createElement("div");
         buttonContainer.className = "button-container";
+        buttonContainer.appendChild(deleteButton);
         buttonContainer.appendChild(denyButton);
         buttonContainer.appendChild(confirmButton);
 
