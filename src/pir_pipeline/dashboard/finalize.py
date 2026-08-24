@@ -9,6 +9,7 @@ from sqlalchemy import String, bindparam, func, or_, select, text
 
 from pir_pipeline.dashboard.db import get_db
 from pir_pipeline.dashboard.utils import administrator
+from pir_pipeline.utils.dashboard_utils import get_search_query
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
 bp = Blueprint("finalize", __name__, url_prefix="/finalize")
@@ -96,32 +97,21 @@ def search_pending_questions(keyword: str, db: SQLAlchemyUtils) -> dict:
     proposed_changes = db.tables["finalize"]
     link_history = db.tables["link_history"]
 
-    # Escape keyword (https://stackoverflow.com/questions/4202538/escape-special-characters-in-a-python-string)
-    keyword = re.escape(keyword)
-
-    # Adapted from
-    # https://stackoverflow.com/questions/34838302/sqlalchemy-adding-or-condition-with-different-filter
-    conditions = []
-    for column in proposed_changes.c.keys():
-        if db.engine.dialect.name == "mysql":
-            conditions.append(
-                proposed_changes.c[column].regexp_match(bindparam("keyword"))
-            )
-        else:
-            conditions.append(
-                func.cast(proposed_changes.c[column], String).regexp_match(
-                    func.cast(bindparam("keyword"), String), "i"
-                )
-            )
+    search_query, _ = get_search_query(keyword, db)
+    search_query = select(search_query.c.question_id).distinct().cte("sq")
 
     query = (
         select(proposed_changes, link_history.c.user)
-        .where(or_(*conditions))
         .join(
             link_history,
             link_history.c.link_id == proposed_changes.c.id,
             isouter=True,
         )
+        .cte("q")
+    )
+
+    query = select(query).join(
+        search_query, query.c.question_id == search_query.c.question_id
     )
 
     return query, keyword
@@ -182,6 +172,5 @@ def data():
         keyword = request.form["keyword-search"]
         query, keyword = search_pending_questions(keyword, db)
         records = db.get_records(query, {"keyword": keyword})
-        print(query, records)
 
     return records.to_dict(orient="index")

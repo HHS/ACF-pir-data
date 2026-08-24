@@ -10,6 +10,7 @@ from sqlalchemy import (
     BinaryExpression,
     String,
     Subquery,
+    Table,
     TableClause,
     and_,
     bindparam,
@@ -64,22 +65,25 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     return records
 
 
-def get_search_results(
+def build_filter(filters: list[str], table: Table):
+    final = []
+    for filter in filters:
+        variable, value = filter.split(":")
+        if value.isnumeric():
+            final.append(table.c[variable] == int(value))
+        else:
+            final.append(table.c[variable] == value)
+
+    return and_(*final)
+
+
+def get_search_query(
     keyword: str,
     db: SQLAlchemyUtils,
     id_column: str = "question_id",
     years: list[int] = [],
-) -> dict:
-    """Return results for the search page
+):
 
-    Args:
-        keyword (str): The term to search for
-        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
-        id_column (str): Column to use as the primary identifier
-
-    Returns:
-        dict: Dictionary of search results
-    """
     table = "question"
     table = db.tables[table]
 
@@ -96,6 +100,9 @@ def get_search_results(
     columns = tuple(columns.keys())
 
     # Escape keyword (https://stackoverflow.com/questions/4202538/escape-special-characters-in-a-python-string)
+    filters = re.findall(r"\w+:\w+", keyword)
+    filters = [re.escape(filter) for filter in filters]
+    keyword = re.split(r"\w+:\w+", keyword)[-1].strip()
     keyword = re.escape(keyword)
 
     # Create regex match query
@@ -114,7 +121,11 @@ def get_search_results(
                 )
             )
 
-    keyword_query = keyword_query.where(or_(*conditions)).order_by(
+    where_condition = or_(*conditions)
+    if filters:
+        where_condition = and_(build_filter(filters, table), where_condition)
+
+    keyword_query = keyword_query.where(where_condition).order_by(
         table.c["uqid"], table.c["year"].desc()
     )
     if years:
@@ -147,6 +158,44 @@ def get_search_results(
             )
             .order_by(table.c["uqid"], table.c["year"].desc())
         )
+
+    return search_query, search_dict
+
+
+def get_search_results(
+    keyword: str,
+    db: SQLAlchemyUtils,
+    id_column: str = "question_id",
+    years: list[int] = [],
+) -> dict:
+    """Return results for the search page
+
+    Args:
+        keyword (str): The term to search for
+        db (SQLAlchemyUtils): SQLAlchemyUtils object for database interactions
+        id_column (str): Column to use as the primary identifier
+
+    Returns:
+        dict: Dictionary of search results
+    """
+    table = "question"
+    table = db.tables[table]
+
+    columns = [
+        "question_id",
+        "uqid",
+        "year",
+        "question_number",
+        "question_name",
+        "question_text",
+    ]
+
+    columns = OrderedDict([(col, None) for col in columns])
+    columns = tuple(columns.keys())
+
+    search_query, search_dict = get_search_query(keyword, db, id_column, years)
+
+    with db.engine.connect() as conn:
         result = conn.execute(search_query)
 
         # Convert results to dictionary
