@@ -369,7 +369,7 @@ resource "aws_wafv2_ip_set" "allowed" {
   scope              = "REGIONAL"
   ip_address_version = "IPV4"
 
-  addresses = [for val in var.acf_vpn_ips : "${val}/32"]
+  addresses = [for val in var.acf_vpn_ips : "${val}"]
 }
 
 resource "aws_wafv2_web_acl" "pir_query_acl" {
