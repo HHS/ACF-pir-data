@@ -34,7 +34,7 @@ class HSES:
         self.__auth: tuple[str, str] = (self.__user, self.__key)
         self.__url: str = url
         self.__content: BytesIO
-        self.__tempdir: str
+        self.__tempdir: Optional[str] = None
 
     @property
     def content(self):
@@ -137,7 +137,9 @@ class HSES:
         Returns:
             Self: The instance of the class.
         """
-        shutil.rmtree(self.__tempdir)
+        if self.__tempdir is not None:
+            shutil.rmtree(self.__tempdir)
+            self.__tempdir = None
         return self
 
     def __del__(self):
