@@ -100,7 +100,8 @@ def close_logger(logger: logging.Logger):
 
 
 def nan_or_none(value: Any) -> bool:
-    if value is None or value is np.nan or value == "":
+    if value is None or (isinstance(value, str) and value == ""):
         return True
-    else:
-        return False
+    # np.nan is one particular float object. A NaN that came out of a dataframe or a
+    # database row is a different object with the same value, so `is` does not find it.
+    return isinstance(value, float) and bool(np.isnan(value))
