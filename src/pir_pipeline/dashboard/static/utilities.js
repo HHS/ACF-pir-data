@@ -64,7 +64,7 @@ function updateTable(event) {
  * @returns JSON object containing data from a table row
  */
 function rowToJSON(row) {
-    const cells = row.getElementsByTagName("td");
+    const cells = row.getElementsByTagName("td").length ? row.getElementsByTagName("td") : row.getElementsByTagName("th");
     let record = {}
     for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
@@ -450,6 +450,36 @@ function freezeQuestionTable(e) {
 
 }
 
+function getYearRange(years) {
+    years.sort();
+    var string_years = []
+    var current_array = []
+    var previous_year = null
+    for (let i=0; i < years.length; i++) {
+        let year = years[i];
+        if (previous_year == null || previous_year == year - 1) {
+            current_array.push(year)
+        } else {
+            string_years.push(current_array)
+            current_array = []
+            current_array.push(year)
+        }
+        previous_year = year;
+    }
+    string_years.push(current_array)
+    var year_ranges = ""
+    for (let i=0; i < string_years.length; i++) {
+        let year_range = string_years[i];
+        let year_string = year_range.length > 1 ? `${year_range[0]}-${year_range.pop()}` : `${year_range[0]}` 
+        if (year_ranges) {
+            year_ranges += ", " + year_string
+        } else {
+            year_ranges += year_string
+        }
+    }
+    return year_ranges
+}
+
 export {
     buildTable,
     updateTable,
@@ -457,5 +487,6 @@ export {
     updateFlashcardTables,
     storeLink,
     expandContractRow,
-    freezeQuestionTable
+    freezeQuestionTable,
+    getYearRange
 }
