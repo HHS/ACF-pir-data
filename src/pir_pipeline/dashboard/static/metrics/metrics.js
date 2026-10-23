@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", toggleActive())
 function toggleActive() {
     const links = document.querySelectorAll('.floating-nav-link');
     for (let i = 0; i < links.length; i++) {
-        console.log(links[i]);
         if (document.URL.includes(links[i].getAttribute("href"))) {
             links.forEach(link => {
                 link.classList.remove("active");
