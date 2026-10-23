@@ -104,25 +104,19 @@ async function commitChanges(e) {
     })
 
     // Commit changes to the database
-    var records = [];
-    var rows = questionTable.getElementsByTagName("tr");
-    var years = []
-    for (let i=0; i < rows.length; i++) {
-        let jsonRow = rowToJSON(rows[i]);
-        records.push(jsonRow);
-        years.push(jsonRow["year"])
-    }
-    var columns = records.splice(0, 1)[0];
-    years = years.splice(2);
-    records[0]["year"] = getYearRange(years);
-    console.log(records);
+    const rows = [...questionTable.getElementsByTagName("tr")];
+    const [columns, ...records] = rows.map(rowToJSON);
+
+    // Recompute the summary row's year range from the individual-year rows
+    records[0]["year"] = getYearRange(records.slice(1).map(r => r["year"]));
+
     delete columns["expand"];
     delete columns["action"];
+
     let dbHtml = questionTable.cloneNode(questionTable);
-    var recordKey = records[0].question_id
     let tableDict = {
         "columns": Object.keys(columns),
-        recordKey: records
+        [records[0].question_id]: records
     }
     buildTable(tableDict, dbHtml);
     payload = {
