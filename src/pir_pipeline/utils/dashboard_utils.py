@@ -660,4 +660,18 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_search_results("child", db)
+    QuestionLinker(
+        [
+            {
+                "link_type": "unlink",
+                "base_question_id": "ce1ef764997fee8b182fadc446fce30a683c5477",
+                "match_question_id": "ce1ef764997fee8b182fadc446fce30a683c5477",
+            },
+            {
+                "link_type": "confirm",
+                "base_question_id": "ce1ef764997fee8b182fadc446fce30a683c5477",
+                "match_question_id": None,
+            },
+        ],
+        db,
+    ).update_links()

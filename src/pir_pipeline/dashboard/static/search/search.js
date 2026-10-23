@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow, freezeQuestionTable } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow, freezeQuestionTable, getYearRange } from "../utilities.js";
 
 // Constant forms and modals
 const searchForm = document.getElementById("search-form");
@@ -104,9 +104,30 @@ async function commitChanges(e) {
     })
 
     // Commit changes to the database
+    var records = [];
+    var rows = questionTable.getElementsByTagName("tr");
+    var years = []
+    for (let i=0; i < rows.length; i++) {
+        let jsonRow = rowToJSON(rows[i]);
+        records.push(jsonRow);
+        years.push(jsonRow["year"])
+    }
+    var columns = records.splice(0, 1)[0];
+    years = years.splice(2);
+    records[0]["year"] = getYearRange(years);
+    console.log(records);
+    delete columns["expand"];
+    delete columns["action"];
+    let dbHtml = questionTable.cloneNode(questionTable);
+    var recordKey = records[0].question_id
+    let tableDict = {
+        "columns": Object.keys(columns),
+        recordKey: records
+    }
+    buildTable(tableDict, dbHtml);
     payload = {
         "action": "store",
-        "html": questionTable.outerHTML
+        "html": dbHtml.outerHTML
     }
 
     fetch("/review/link", {
@@ -144,3 +165,4 @@ document.storeLink = storeLink;
 document.commitChanges = commitChanges;
 document.expandContractRow = expandContractRow;
 document.freezeQuestionTable = freezeQuestionTable;
+document.getYearRange = getYearRange;
