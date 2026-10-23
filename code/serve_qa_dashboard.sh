@@ -12,6 +12,8 @@ elif [ $USER_NAME == "emily.kowall" ]; then
     export DB_PROFILE="approver"
 elif [ $USER_NAME == "alecsandra.velez" ]; then
     export DB_PROFILE="approver"
+elif [ $USER_NAME == "abigail.schmitt" ]; then
+    export DB_PROFILE="approver"
 else
     export DB_PROFILE="reviewer"
 fi
