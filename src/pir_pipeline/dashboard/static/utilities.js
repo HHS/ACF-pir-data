@@ -341,6 +341,16 @@ function storeLink(event) {
         "match_question_id": matchRecord.question_id
     }
 
+    // Only send a year for single-year (expanded) rows. A range/list (e.g.
+    // "2019-2021" or "2019, 2020") represents a whole question_id across years,
+    // which keeps the existing whole-question unlink behavior.
+    if (baseRecord.year && !baseRecord.year.match(/[,\-]/)) {
+        linkDetails.base_year = baseRecord.year;
+    }
+    if (matchRecord.year && !matchRecord.year.match(/[,\-]/)) {
+        linkDetails.match_year = matchRecord.year;
+    }
+
     // Store the link
     const payload = {
         "action": "build",

@@ -1,8 +1,7 @@
 from collections import namedtuple
-from hashlib import sha1
 
 import pytest
-from sqlalchemy import null, select
+from sqlalchemy import func, null, select
 
 from pir_pipeline.utils.dashboard_utils import (
     QuestionLinker,
@@ -153,30 +152,47 @@ class TestQuestionLinker:
             assert record[1][2] == match_qid, f"Incorrect question_id: {record[1][1]}"
             assert record[1][4] is None, f"Incorrect question_id: {record[1][4]}"
 
-        # In case 2, uqid for match_qid should remain the same, uqid for base_qid should change
+        # In case 2, the match question_id is peeled out of a group that still
+        # has other members. Under the surrogate-uqid scheme the peeled question
+        # gets a fresh, opaque uqid (not derived from its question_id), while the
+        # base question keeps the original group uqid.
         with sql_utils.engine.connect() as conn:
             base_qid, base_uqid, match_qid, match_uqid = get_ids(
                 question_linker_payload[1]
             )
+            # Match question_id moved to a fresh uqid, distinct from the old group
             result = conn.execute(
                 select(question_table.c["uqid"])
                 .where(question_table.c["question_id"] == match_qid)
                 .distinct()
             )
-            record = result.scalar_one()
-            assert record == match_uqid, f"Incorrect match_uqid: {record}"
+            new_match_uqid = result.scalar_one()
+            assert new_match_uqid is not None, "Match uqid should not be null"
+            assert (
+                new_match_uqid != base_uqid
+            ), f"Match uqid was not reassigned: {new_match_uqid}"
+            assert new_match_uqid != (
+                match_qid + match_qid
+            ), "uqid must not be content-derived"
 
+            # Base question keeps the original group uqid
             result = conn.execute(
                 select(question_table.c["uqid"])
                 .where(question_table.c["question_id"] == base_qid)
                 .distinct()
             )
             record = result.scalar_one()
+            assert record == base_uqid, f"Base uqid should be unchanged: {record}"
 
-            expected_uqid = base_qid
-            expected_uqid = (expected_uqid + expected_uqid).encode()
-            expected_uqid = sha1(expected_uqid).hexdigest()
-            assert record == expected_uqid, f"Incorrect base_uqid: {record}"
+            # The original group still exists (base question_id plus any siblings)
+            result = conn.execute(
+                select(func.count())
+                .select_from(question_table)
+                .where(question_table.c["uqid"] == base_uqid)
+            )
+            assert (
+                result.scalar() > 1
+            ), "Base uqid should still group more than one row"
 
             # Rows are logged in changelog
             result = conn.execute(
@@ -186,10 +202,10 @@ class TestQuestionLinker:
             )
             record = result.all()
             assert record[0][2] == base_qid, f"Incorrect question_id: {record[0][2]}"
-            assert record[0][4] == expected_uqid, f"Incorrect uqid: {record[0][4]}"
+            assert record[0][4] == base_uqid, f"Incorrect uqid: {record[0][4]}"
 
             assert record[1][2] == match_qid, f"Incorrect question_id: {record[1][2]}"
-            assert record[1][4] == match_uqid, f"Incorrect question_id: {record[1][4]}"
+            assert record[1][4] == new_match_uqid, f"Incorrect uqid: {record[1][4]}"
 
         # In case 3, base uqid should be kept the other should be removed
         with sql_utils.engine.connect() as conn:

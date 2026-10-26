@@ -163,7 +163,11 @@ def link():
     if action == "build":
         data = payload["data"]
         link_dict = session.get("link_dict")
-        dict_id = f"{data["base_question_id"]}{data.get("match_question_id", "") if data.get("match_question_id") else ""}"
+        dict_id = (
+            f"{data['base_question_id']}"
+            f"{data.get('match_question_id') or ''}"
+            f"{data.get('base_year') or ''}{data.get('match_year') or ''}"
+        )
         dict_id = sha1(dict_id.encode("utf-8")).hexdigest()
         if link_dict:
             if (dict_id in link_dict) and (
