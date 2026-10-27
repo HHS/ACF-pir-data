@@ -159,6 +159,12 @@ def get_search_results(
             max_year_query = (
                 select(table.c[id_column], func.max(table.c.year).label("year"))
                 .group_by(table.c[id_column])
+                .where(
+                    and_(
+                        table.c["question_id"] == result_dict["question_id"],
+                        table.c["uqid"] == result_dict["uqid"],
+                    )
+                )
                 .subquery()
             )
 
@@ -310,7 +316,12 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
         str: Year range as a string
     """
 
-    query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
+    if _id[0] == "uqid":
+        query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
+    else:
+        query = select(table.c["year"]).where(
+            and_(table.c["question_id"] == _id[1], table.c["uqid"] == None)
+        )
     with db.engine.connect() as conn:
         result = conn.execute(query)
         years = result.scalars().all()
@@ -506,9 +517,7 @@ class QuestionLinker:
         match_pred = question.c["question_id"] == bindparam("match_qid")
         match_params = {"match_qid": match_qid}
         if match_year is not None:
-            match_pred = and_(
-                match_pred, question.c["year"] == bindparam("match_year")
-            )
+            match_pred = and_(match_pred, question.c["year"] == bindparam("match_year"))
             match_params["match_year"] = match_year
 
         # One row peeled -> unlinked (None); multiple -> keep as their own group.
@@ -622,7 +631,10 @@ def pending(db: SQLAlchemyUtils):
         result = conn.execute(query)
         proposed_ids.extend(result.scalars().fetchall())
 
-    return list(set(proposed_ids))
+    proposed_ids = list(set(proposed_ids))
+    proposed_ids.remove(None)
+
+    return proposed_ids
 
 
 def confirmed(db: SQLAlchemyUtils):
