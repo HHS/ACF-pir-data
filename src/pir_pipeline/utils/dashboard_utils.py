@@ -4,7 +4,6 @@ __all__ = ["get_matches"]
 
 import re
 from collections import OrderedDict, namedtuple
-from hashlib import sha1
 
 from sqlalchemy import (
     BinaryExpression,
@@ -13,7 +12,6 @@ from sqlalchemy import (
     TableClause,
     and_,
     bindparam,
-    distinct,
     func,
     or_,
     select,
@@ -22,7 +20,7 @@ from sqlalchemy import (
 
 from pir_pipeline.linking.PIRLinker import PIRLinker
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-from pir_pipeline.utils.utils import clean_name, nan_or_none
+from pir_pipeline.utils.utils import clean_name, nan_or_none, new_uqid
 
 
 def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
@@ -161,6 +159,12 @@ def get_search_results(
             max_year_query = (
                 select(table.c[id_column], func.max(table.c.year).label("year"))
                 .group_by(table.c[id_column])
+                .where(
+                    and_(
+                        table.c["question_id"] == result_dict["question_id"],
+                        table.c["uqid"] == result_dict["uqid"],
+                    )
+                )
                 .subquery()
             )
 
@@ -312,7 +316,12 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
         str: Year range as a string
     """
 
-    query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
+    if _id[0] == "uqid":
+        query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
+    else:
+        query = select(table.c["year"]).where(
+            and_(table.c["question_id"] == _id[1], table.c["uqid"] == None)
+        )
     with db.engine.connect() as conn:
         result = conn.execute(query)
         years = result.scalars().all()
@@ -374,24 +383,33 @@ class QuestionLinker:
         self._changes = namedtuple("Changes", ["base", "match"])
 
     def get_ids(self):
-        """Return the ids from the present record"""
+        """Return the ids from the present record.
+
+        When the record carries a ``base_year``/``match_year``, the uqid lookup
+        is narrowed to that ``(question_id, year)`` row. This matters under a
+        ``question_id`` collision, where the same question_id can sit under
+        different uqids across years and a lookup by question_id alone would
+        return an arbitrary one.
+        """
         question = self._db.tables["question"]
 
         base_qid = self._record.get("base_question_id")
         match_qid = self._record.get("match_question_id")
+        base_year = self._record.get("base_year")
+        match_year = self._record.get("match_year")
 
-        base_uqid = self._db.get_scalar(
-            select(question.c["uqid"]).where(
+        def lookup_uqid(qid, year):
+            stmt = select(question.c["uqid"]).where(
                 question.c["question_id"] == bindparam("question_id")
-            ),
-            {"question_id": base_qid},
-        )
-        match_uqid = self._db.get_scalar(
-            select(question.c["uqid"]).where(
-                question.c["question_id"] == bindparam("question_id")
-            ),
-            {"question_id": match_qid},
-        )
+            )
+            params = {"question_id": qid}
+            if year is not None:
+                stmt = stmt.where(question.c["year"] == bindparam("year"))
+                params["year"] = year
+            return self._db.get_scalar(stmt, params)
+
+        base_uqid = lookup_uqid(base_qid, base_year)
+        match_uqid = lookup_uqid(match_qid, match_year)
 
         return base_qid, base_uqid, match_qid, match_uqid
 
@@ -443,8 +461,7 @@ class QuestionLinker:
         # Matching two questions with one or no uqid
         else:
             if not match_uqid and not base_uqid:
-                qids_encoded = (base_qid + match_qid).encode("utf-8")
-                match_uqid = sha1(qids_encoded).hexdigest()
+                match_uqid = new_uqid()
             elif base_uqid or match_uqid:
                 if match_uqid:
                     pass
@@ -465,9 +482,22 @@ class QuestionLinker:
         self.log(changes)
 
     def unlink(self):
-        """Unlink two questions"""
+        """Unlink a question (or a single question-year) from its group.
+
+        When the record carries a ``match_year`` the peel targets only that
+        ``(question_id, year)`` row; otherwise every year of ``match_qid`` is
+        peeled out (the prior whole-question behavior). A peeled set of one row
+        becomes unlinked (``uqid`` None); a multi-row set stays together under a
+        fresh uqid. The group being unlinked from is dissolved if a single row
+        is left behind, since a uqid should never group a lone question-year.
+        """
         question = self._db.tables["question"]
-        base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
+        base_qid, base_uqid, match_qid, _ = self.get_ids()
+        match_year = self._record.get("match_year")
+
+        assert (
+            base_qid and match_qid
+        ), f"Base ({base_qid}) or match ({match_qid}) missing"
 
         changes = self._changes(
             {
@@ -481,37 +511,41 @@ class QuestionLinker:
             },
         )
 
-        assert (
-            base_qid and match_qid
-        ), f"Base ({base_qid}) or match ({match_qid}) missing"
+        # Predicate selecting the row(s) to peel out of base_uqid. A match_year
+        # narrows this to a single (question_id, year) row, which is what makes
+        # it possible to separate questions that share a question_id.
+        match_pred = question.c["question_id"] == bindparam("match_qid")
+        match_params = {"match_qid": match_qid}
+        if match_year is not None:
+            match_pred = and_(match_pred, question.c["year"] == bindparam("match_year"))
+            match_params["match_year"] = match_year
 
-        # Get rows with question_id
-        qid_count_query = select(func.count(question.c["question_id"])).where(
-            question.c["question_id"] == bindparam("qid")
+        # One row peeled -> unlinked (None); multiple -> keep as their own group.
+        peel_count = self._db.get_scalar(
+            select(func.count(question.c["question_id"])).where(match_pred),
+            match_params,
         )
+        if not peel_count:
+            raise Exception("No matching question_id!")
+        match_uqid = None if peel_count == 1 else new_uqid()
 
-        # Handle base
-        qid_in_uqid_statement = select(distinct(question.c["question_id"])).where(
-            and_(
-                question.c["uqid"] == bindparam("base_uqid"),
-                question.c["question_id"] != bindparam("match_qid"),
-            )
+        self._db.update_records(
+            question,
+            {"uqid": bindparam("uqid")},
+            match_pred,
+            [{**match_params, "uqid": match_uqid}],
         )
+        changes.match["new_uqid"] = match_uqid
 
-        with self._db.engine.connect() as conn:
-            result = conn.execute(
-                qid_in_uqid_statement, {"base_uqid": base_uqid, "match_qid": match_qid}
+        # Dissolve base_uqid if only a single row now remains in it.
+        if base_uqid is not None:
+            remaining = self._db.get_scalar(
+                select(func.count(question.c["question_id"])).where(
+                    question.c["uqid"] == bindparam("base_uqid")
+                ),
+                {"base_uqid": base_uqid},
             )
-            remaining_qids = result.scalars().all()
-
-        # If only one remaining qid, ensure there is more than one occurrence otherwise
-        # uqid should be removed entirely
-        if len(remaining_qids) == 1:
-            with self._db.engine.connect() as conn:
-                result = conn.execute(qid_count_query, {"qid": remaining_qids[0]})
-                qid_count = result.scalar()
-
-            if qid_count == 1:
+            if remaining is not None and remaining <= 1:
                 self._db.update_records(
                     question,
                     {"uqid": bindparam("uqid")},
@@ -519,47 +553,6 @@ class QuestionLinker:
                     [{"uqid": None, "base_uqid": base_uqid}],
                 )
                 changes.base["new_uqid"] = None
-
-        # Handle match_qid
-        with self._db.engine.connect() as conn:
-            result = conn.execute(qid_count_query, {"qid": match_qid})
-            qid_count = result.scalar()
-
-        # If there is only one occurrence of this qid, uqid should now be none
-        if qid_count == 1:
-            match_uqid = None
-        # Otherwise, ensure uqid is equal to what should occur if matched with self
-        elif qid_count > 1:
-            qids_encoded = (match_qid + match_qid).encode("utf-8")
-            match_uqid = sha1(qids_encoded).hexdigest()
-        else:
-            raise Exception("No matching question_id!")
-
-        changes.match["new_uqid"] = match_uqid
-
-        # If the newly generated match_uqid is the same as the base_uqid, update the base_uqid
-        # Maybe something more sophisticated here to simulate what would happen in the
-        # real process?
-        if match_uqid == base_uqid:
-            qids_encoded = (base_qid + base_qid).encode("utf-8")
-            new_uqid = sha1(qids_encoded).hexdigest()
-
-            self._db.update_records(
-                question,
-                {"uqid": bindparam("uqid")},
-                question.c["uqid"] == bindparam("base_uqid"),
-                [{"uqid": new_uqid, "base_uqid": base_uqid}],
-            )
-
-            changes.base["new_uqid"] = new_uqid
-
-        # Update the matched uqid
-        self._db.update_records(
-            question,
-            {"uqid": bindparam("uqid")},
-            question.c["question_id"] == bindparam("match_qid"),
-            [{"uqid": match_uqid, "match_qid": match_qid}],
-        )
 
         self.log(changes)
 
@@ -638,7 +631,10 @@ def pending(db: SQLAlchemyUtils):
         result = conn.execute(query)
         proposed_ids.extend(result.scalars().fetchall())
 
-    return list(set(proposed_ids))
+    proposed_ids = list(set(proposed_ids))
+    proposed_ids.remove(None)
+
+    return proposed_ids
 
 
 def confirmed(db: SQLAlchemyUtils):
@@ -660,4 +656,18 @@ if __name__ == "__main__":
     from pir_pipeline.config import DB_CONFIG
 
     db = SQLAlchemyUtils(**DB_CONFIG, database="pir")
-    get_search_results("child", db)
+    QuestionLinker(
+        [
+            {
+                "link_type": "unlink",
+                "base_question_id": "ce1ef764997fee8b182fadc446fce30a683c5477",
+                "match_question_id": "ce1ef764997fee8b182fadc446fce30a683c5477",
+            },
+            {
+                "link_type": "confirm",
+                "base_question_id": "ce1ef764997fee8b182fadc446fce30a683c5477",
+                "match_question_id": None,
+            },
+        ],
+        db,
+    ).update_links()

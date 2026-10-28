@@ -1,13 +1,31 @@
 """General utilities"""
 
-__all__ = ["get_searchable_columns", "clean_name", "get_logger"]
+__all__ = ["get_searchable_columns", "clean_name", "get_logger", "new_uqid"]
 
 import logging
 import re
 import sys
 from typing import Any
+from uuid import uuid4
 
 import numpy as np
+
+
+def new_uqid() -> str:
+    """Mint a fresh, opaque unique question id (uqid).
+
+    The uqid is a surrogate key used to group a question across years. It is
+    intentionally *not* derived from ``question_id`` (a content hash of question
+    number + name): deriving it meant two distinct questions that hashed to the
+    same ``question_id`` could never be given distinct uqids, making them
+    impossible to unlink. Minting an opaque value guarantees uniqueness
+    regardless of content collisions.
+
+    Returns:
+        str: A fresh uqid (32-char hex), small enough for the existing
+        ``uqid`` column and never equal to any pre-existing uqid.
+    """
+    return uuid4().hex
 
 
 def error_thrower(logger: logging.Logger, message: str, error_type: Exception):

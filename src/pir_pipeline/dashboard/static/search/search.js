@@ -1,4 +1,4 @@
-import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow, freezeQuestionTable } from "../utilities.js";
+import { updateTable, rowToJSON, updateFlashcardTables, storeLink, buildTable, expandContractRow, freezeQuestionTable, getYearRange } from "../utilities.js";
 
 // Constant forms and modals
 const searchForm = document.getElementById("search-form");
@@ -104,9 +104,24 @@ async function commitChanges(e) {
     })
 
     // Commit changes to the database
+    const rows = [...questionTable.getElementsByTagName("tr")];
+    const [columns, ...records] = rows.map(rowToJSON);
+
+    // Recompute the summary row's year range from the individual-year rows
+    records[0]["year"] = getYearRange(records.slice(1).map(r => r["year"]));
+
+    delete columns["expand"];
+    delete columns["action"];
+
+    let dbHtml = questionTable.cloneNode(questionTable);
+    let tableDict = {
+        "columns": Object.keys(columns),
+        [records[0].question_id]: records
+    }
+    buildTable(tableDict, dbHtml);
     payload = {
         "action": "store",
-        "html": questionTable.outerHTML
+        "html": dbHtml.outerHTML
     }
 
     fetch("/review/link", {
@@ -144,3 +159,4 @@ document.storeLink = storeLink;
 document.commitChanges = commitChanges;
 document.expandContractRow = expandContractRow;
 document.freezeQuestionTable = freezeQuestionTable;
+document.getYearRange = getYearRange;

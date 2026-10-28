@@ -64,7 +64,7 @@ function updateTable(event) {
  * @returns JSON object containing data from a table row
  */
 function rowToJSON(row) {
-    const cells = row.getElementsByTagName("td");
+    const cells = row.getElementsByTagName("td").length ? row.getElementsByTagName("td") : row.getElementsByTagName("th");
     let record = {}
     for (let i = 0; i < cells.length; i++) {
         const cell = cells[i];
@@ -341,6 +341,16 @@ function storeLink(event) {
         "match_question_id": matchRecord.question_id
     }
 
+    // Only send a year for single-year (expanded) rows. A range/list (e.g.
+    // "2019-2021" or "2019, 2020") represents a whole question_id across years,
+    // which keeps the existing whole-question unlink behavior.
+    if (baseRecord.year && !baseRecord.year.match(/[,\-]/)) {
+        linkDetails.base_year = baseRecord.year;
+    }
+    if (matchRecord.year && !matchRecord.year.match(/[,\-]/)) {
+        linkDetails.match_year = matchRecord.year;
+    }
+
     // Store the link
     const payload = {
         "action": "build",
@@ -450,6 +460,24 @@ function freezeQuestionTable(e) {
 
 }
 
+function getYearRange(years) {
+    const sorted = [...years].map(Number).sort((a, b) => a - b);
+
+    const groups = [];
+    for (const year of sorted) {
+        const run = groups.at(-1);
+        if (run && year === run.at(-1) + 1) {
+            run.push(year);
+        } else {
+            groups.push([year]);
+        }
+    }
+
+    return groups
+        .map(run => (run.length > 1 ? `${run[0]}-${run.at(-1)}` : `${run[0]}`))
+        .join(", ");
+}
+
 export {
     buildTable,
     updateTable,
@@ -457,5 +485,6 @@ export {
     updateFlashcardTables,
     storeLink,
     expandContractRow,
-    freezeQuestionTable
+    freezeQuestionTable,
+    getYearRange
 }

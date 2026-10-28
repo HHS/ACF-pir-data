@@ -1,5 +1,3 @@
-import hashlib
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -85,42 +83,54 @@ class TestPIRLinker:
     def test_gen_uqid(self, pir_linker):
         index_names = ["question_id", "linked_id", "uqid"]
         pir_linker._uqid_dict = {"linked_id_3": "some_hash"}
-        data = [
+
+        # Deterministic cases: existing uqid, missing linked_id, cached linked_id
+        passthrough = [
             (
-                pd.Series(
-                    index_names,
-                    index=index_names,
-                ),
+                pd.Series(index_names, index=index_names),
                 "uqid",
             ),
             (pd.Series(["question_id", np.nan, ""], index=index_names), np.nan),
-            (
-                pd.Series(["question_id", "linked_id_2", ""], index=index_names),
-                hashlib.sha1("question_idlinked_id_2".encode()).hexdigest(),
-            ),
             (
                 pd.Series(["question_id_2", "linked_id_3", ""], index=index_names),
                 "some_hash",
             ),
         ]
-        for input, output in data:
+        for input, output in passthrough:
             result = pir_linker.gen_uqid(input)
             assert (output == result) or (
                 output is result
             ), f"Incorrect value: {output} != {result}"
 
-    def test_update_unlinked(self, pir_linker):
-        # Assert that uqids are updated in final database
-        # Confirm that uqids are set to the correct value
-        def check_uqid(row: pd.Series):
-            expected_uqid = row["question_id"] + row["question_id"]
-            assert row["uqid"] == hashlib.sha1(expected_uqid.encode()).hexdigest()
+        # A newly linked pair with no uqid gets a fresh, opaque surrogate (not
+        # derived from the question_ids), cached under both ids.
+        row = pd.Series(["question_id", "linked_id_2", ""], index=index_names)
+        minted = pir_linker.gen_uqid(row)
+        assert isinstance(minted, str) and len(minted) == 32, "Expected a uuid-hex uqid"
+        assert minted != "question_idlinked_id_2", "uqid must not be content-derived"
+        assert pir_linker._uqid_dict["question_id"] == minted
+        assert pir_linker._uqid_dict["linked_id_2"] == minted
 
+        # The same linked component reuses the cached uqid rather than re-minting
+        again = pir_linker.gen_uqid(
+            pd.Series(["question_id_x", "linked_id_2", ""], index=index_names)
+        )
+        assert again == minted, "Cached uqid should be reused for the linked component"
+
+    def test_update_unlinked(self, pir_linker):
+        # uqids are opaque surrogates: populated for every linked record,
+        # constant within a question_id, and distinct across question_ids.
         pir_linker.link().update_unlinked()
         linked = pir_linker._sql.get_records("SELECT * from linked")
         unlinked = pir_linker._sql.get_records("SELECT * from unlinked")
         assert unlinked.empty, "Unlinked should be empty"
-        linked.apply(check_uqid, axis=1)
+        assert linked["uqid"].notna().all(), "All linked records should have a uqid"
+        assert (
+            linked.groupby("question_id")["uqid"].nunique() == 1
+        ).all(), "uqid should be constant within a question_id"
+        assert (
+            linked.groupby("uqid")["question_id"].nunique() == 1
+        ).all(), "Distinct question_ids should not share a uqid"
 
     def test_link(self, pir_linker, question_columns):
         pir_linker.link()

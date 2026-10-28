@@ -1,6 +1,5 @@
 """Class for linking PIR data"""
 
-import hashlib
 from typing import Self
 
 import numpy as np
@@ -10,7 +9,7 @@ from sqlalchemy import bindparam, select
 
 from pir_pipeline.config import DB_CONFIG
 from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
-from pir_pipeline.utils.utils import get_logger
+from pir_pipeline.utils.utils import get_logger, new_uqid
 
 
 class PIRLinker:
@@ -484,8 +483,7 @@ class PIRLinker:
         if row["linked_id"] in uqid_dict:
             return uqid_dict[row["linked_id"]]
         else:
-            qids_concat = row["question_id"] + row["linked_id"]
-            uqid = hashlib.sha1(qids_concat.encode()).hexdigest()
+            uqid = new_uqid()
             uqid_dict[row["question_id"]] = uqid
             uqid_dict[row["linked_id"]] = uqid
             return uqid
