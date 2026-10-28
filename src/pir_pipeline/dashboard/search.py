@@ -26,7 +26,7 @@ def unpack_years(years: str) -> list[int]:
     for year in split:
         if year.find("-") > -1:
             min, max = year.split("-")
-            year_list.extend(list(range(int(min), int(max))))
+            year_list.extend(list(range(int(min), int(max) + 1)))
         else:
             year_list.append(int(year))
 
