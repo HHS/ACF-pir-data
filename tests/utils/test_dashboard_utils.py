@@ -190,9 +190,7 @@ class TestQuestionLinker:
                 .select_from(question_table)
                 .where(question_table.c["uqid"] == base_uqid)
             )
-            assert (
-                result.scalar() > 1
-            ), "Base uqid should still group more than one row"
+            assert result.scalar() > 1, "Base uqid should still group more than one row"
 
             # Rows are logged in changelog
             result = conn.execute(
