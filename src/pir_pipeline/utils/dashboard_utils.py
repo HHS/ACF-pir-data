@@ -131,24 +131,45 @@ def get_search_results(
     search_dict["columns"] = [clean_name(col, "title") for col in columns]
 
     with db.engine.connect() as conn:
-        # Get all search results
-        question_ids = conn.execute(
-            select(keyword_query.c["question_id"])
-            .distinct()
-            .where(keyword_query.c["question_id"].is_not(None)),
-            {"keyword": keyword},
-        ).scalars()
-        years = conn.execute(
-            select(keyword_query.c["year"])
-            .distinct()
-            .where(keyword_query.c["year"].is_not(None)),
-            {"keyword": keyword},
-        ).scalars()
+        # Resolve each keyword match to its group identity. A question_id can now
+        # sit under multiple uqids (and a null uqid for a peeled year), so a match
+        # is grouped by its uqid when set, else by (question_id, uqid IS NULL).
+        # Selecting on question_id alone would pull in rows from a different group
+        # that happen to share the question_id.
+        matched_uqids = (
+            conn.execute(
+                select(keyword_query.c["uqid"])
+                .distinct()
+                .where(keyword_query.c["uqid"].is_not(None)),
+                {"keyword": keyword},
+            )
+            .scalars()
+            .all()
+        )
+        matched_null_qids = (
+            conn.execute(
+                select(keyword_query.c["question_id"])
+                .distinct()
+                .where(
+                    and_(
+                        keyword_query.c["question_id"].is_not(None),
+                        keyword_query.c["uqid"].is_(None),
+                    )
+                ),
+                {"keyword": keyword},
+            )
+            .scalars()
+            .all()
+        )
         search_query = (
             select(table.c[columns])
             .where(
-                and_(
-                    table.c["question_id"].in_(question_ids), table.c["year"].in_(years)
+                or_(
+                    table.c["uqid"].in_(matched_uqids),
+                    and_(
+                        table.c["question_id"].in_(matched_null_qids),
+                        table.c["uqid"].is_(None),
+                    ),
                 )
             )
             .order_by(table.c["uqid"], table.c["year"].desc())
