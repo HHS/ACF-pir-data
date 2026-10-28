@@ -105,10 +105,17 @@ async function commitChanges(e) {
 
     // Commit changes to the database
     const rows = [...questionTable.getElementsByTagName("tr")];
-    const [columns, ...records] = rows.map(rowToJSON);
+    const [columns, ...allRecords] = rows.map(rowToJSON);
 
-    // Recompute the summary row's year range from the individual-year rows
-    records[0]["year"] = getYearRange(records.slice(1).map(r => r["year"]));
+    // A question_id can now span multiple uqids, so the table may contain several
+    // summary (year-range) rows. Keep only the single-year rows, and rebuild one
+    // summary whose range is computed from them (deduped) — avoids NaN from feeding
+    // range strings into Number() and drops the stray summary rows from the output.
+    const summary = allRecords[0];
+    const individualRows = allRecords.filter(r => r.year && !/[,\-]/.test(r.year));
+    const years = [...new Set(individualRows.map(r => r["year"]))];
+    summary["year"] = getYearRange(years);
+    const records = [summary, ...individualRows];
 
     delete columns["expand"];
     delete columns["action"];
