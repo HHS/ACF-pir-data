@@ -20,7 +20,22 @@ from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 bp = Blueprint("search", __name__, url_prefix="/search")
 
 
-def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtils):
+def unpack_years(years: str) -> list[int]:
+    split = years.split(",")
+    year_list = []
+    for year in split:
+        if year.find("-") > -1:
+            min, max = year.split("-")
+            year_list.extend(list(range(int(min), int(max))))
+        else:
+            year_list.append(int(year))
+
+    return year_list
+
+
+def get_flashcard_question(
+    offset: int | str, id_column: str, db: SQLAlchemyUtils, years: list[int] = []
+):
     """Get data for displaying a flashcard
 
     Args:
@@ -35,7 +50,7 @@ def get_flashcard_question(offset: int | str, id_column: str, db: SQLAlchemyUtil
 
     id_column, record = get_review_question("question", offset, id_column, db)
     matches = get_matches({"record": record}, db)
-    output = {"question": get_search_results(record[id_column], db, id_column)}
+    output = {"question": get_search_results(record[id_column], db, id_column, years)}
 
     if matches and len(matches) > 1:
         matches.pop(0)
@@ -109,7 +124,9 @@ def data():
     db = get_db()
     response = request.get_json()
     id_column = "uqid" if response["uqid"] else "question_id"
-    output = get_flashcard_question(response[id_column], id_column, db)
+    output = get_flashcard_question(
+        response[id_column], id_column, db, years=unpack_years(response["year"])
+    )
     output.get("question").update(
         {
             "proposed": pending(db),

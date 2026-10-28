@@ -37,12 +37,20 @@ def get_matches(payload: dict, db: SQLAlchemyUtils) -> list:
     """
 
     question_table = db.tables["question"]
+    record = payload["record"]
+    if record["uqid"] is None:
+        where_condition = and_(
+            question_table.c["question_id"] == bindparam("question_id"),
+            question_table.c["uqid"].is_(None),
+        )
+    else:
+        where_condition = and_(
+            question_table.c["question_id"] == bindparam("question_id"),
+            question_table.c["uqid"] == bindparam("uqid"),
+        )
 
-    id_column = "question_id"
+    query = select(question_table).where(where_condition)
 
-    query = select(question_table).where(
-        question_table.c[id_column] == bindparam(id_column)
-    )
     records = db.get_records(query, payload["record"])
 
     if not records[["question_type", "section"]].any().all():
@@ -130,17 +138,17 @@ def get_search_results(
             .where(keyword_query.c["question_id"].is_not(None)),
             {"keyword": keyword},
         ).scalars()
-        uqids = conn.execute(
-            select(keyword_query.c["uqid"])
+        years = conn.execute(
+            select(keyword_query.c["year"])
             .distinct()
-            .where(keyword_query.c["uqid"].is_not(None)),
+            .where(keyword_query.c["year"].is_not(None)),
             {"keyword": keyword},
         ).scalars()
         search_query = (
             select(table.c[columns])
             .where(
-                or_(
-                    table.c["question_id"].in_(question_ids), table.c["uqid"].in_(uqids)
+                and_(
+                    table.c["question_id"].in_(question_ids), table.c["year"].in_(years)
                 )
             )
             .order_by(table.c["uqid"], table.c["year"].desc())
