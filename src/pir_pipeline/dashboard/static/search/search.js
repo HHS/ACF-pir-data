@@ -103,12 +103,22 @@ async function commitChanges(e) {
         "body": JSON.stringify(payload)
     })
 
-    // Commit changes to the database
-    const rows = [...questionTable.getElementsByTagName("tr")];
-    const [columns, ...records] = rows.map(rowToJSON);
+    // Commit changes to the database. Individual (expandable) rows are the ones
+    // buildTable tagged with the "collapse" class; every other body row is a
+    // summary. A question_id can span multiple uqids, so there may be several
+    // summaries — keep the first as THE summary, drop the rest, and rebuild its
+    // range from the individual rows (deduped). Classifying by the year string
+    // would misread a single-year group's summary as an individual and duplicate it.
+    const columns = rowToJSON(questionTable.querySelector("thead tr"));
+    const bodyRows = [...questionTable.querySelectorAll("tbody tr")];
+    const summary = rowToJSON(bodyRows.find(tr => !tr.className.includes("collapse")));
+    const individualRows = bodyRows
+        .filter(tr => tr.className.includes("collapse"))
+        .map(rowToJSON);
 
-    // Recompute the summary row's year range from the individual-year rows
-    records[0]["year"] = getYearRange(records.slice(1).map(r => r["year"]));
+    const years = [...new Set(individualRows.map(r => r["year"]))];
+    summary["year"] = getYearRange(years);
+    const records = [summary, ...individualRows];
 
     delete columns["expand"];
     delete columns["action"];

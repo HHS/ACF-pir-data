@@ -461,7 +461,7 @@ function freezeQuestionTable(e) {
 }
 
 function getYearRange(years) {
-    const sorted = [...years].map(Number).sort((a, b) => a - b);
+    const sorted = [...years].map(Number).filter(Number.isFinite).sort((a, b) => a - b);
 
     const groups = [];
     for (const year of sorted) {
