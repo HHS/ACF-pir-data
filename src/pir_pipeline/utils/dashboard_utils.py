@@ -147,7 +147,11 @@ def get_search_results(
         )
         result = conn.execute(search_query)
 
-        # Convert results to dictionary
+        # Group every matched row by its identifier (uqid when present, else
+        # question_id). Rows arrive ordered by (uqid, year desc), so the first
+        # row seen for an identifier is its most-recent year. The query returns
+        # every year for each matched identifier, so the header row and full
+        # year range can both be derived in memory -- no per-question queries.
         for res in result.all():
             result_dict = db.to_dict([res], columns)[0]
             id_column = (
@@ -155,49 +159,22 @@ def get_search_results(
             )
             ident = result_dict[id_column]
 
-            # Get the maximum year
-            max_year_query = (
-                select(table.c[id_column], func.max(table.c.year).label("year"))
-                .group_by(table.c[id_column])
-                .where(
-                    and_(
-                        table.c["question_id"] == result_dict["question_id"],
-                        table.c["uqid"] == result_dict["uqid"],
-                    )
-                )
-                .subquery()
-            )
-
-            # Get data for the most recent year to create a header row
-            header_row_query = (
-                select(table.c[columns])
-                .join(
-                    max_year_query,
-                    and_(
-                        table.c[id_column] == max_year_query.c[id_column],
-                        table.c.year == max_year_query.c.year,
-                    ),
-                )
-                .where(table.c[id_column] == bindparam(id_column))
-            )
-
-            # Append instances of the same question_id to an existing list
+            # Append instances of the same identifier to an existing list
             if ident in search_dict:
                 search_dict[ident].append(result_dict)
-            # Otherwise, create a summary header row and append that and maximal year
+            # Otherwise seed the group with a summary header row (a copy of the
+            # most-recent-year row); its year cell is filled in below.
             else:
-                header = conn.execute(header_row_query, {id_column: ident})
-                header_row = header.one()
-                header_row = {key: header_row[i] for i, key in enumerate(header.keys())}
-
-                if header_row.get("uqid"):
-                    id_tuple = ("uqid", header_row["uqid"])
-                else:
-                    id_tuple = ("question_id", header_row["question_id"])
-
-                header_row.update({"year": get_year_range(table, id_tuple, db)})
-
+                header_row = dict(result_dict)
                 search_dict[ident] = [header_row, result_dict]
+
+    # Replace each header row's year with the collapsed range built from the
+    # group's own rows (matching get_year_range, but without extra queries).
+    for ident, rows in search_dict.items():
+        if ident == "columns":
+            continue
+        header_row, *data_rows = rows
+        header_row["year"] = _format_year_range([row["year"] for row in data_rows])
 
     return search_dict
 
@@ -303,29 +280,19 @@ def search_matches(matches: dict, db: SQLAlchemyUtils) -> dict:
     return output
 
 
-def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> str:
-    """Return the range of years covered by the target question
+def _format_year_range(years: list[int]) -> str:
+    """Collapse a list of years into a compact range string.
+
+    Consecutive years are collapsed into ``start-end`` spans; non-consecutive
+    years are listed individually, e.g. ``[2019, 2020, 2021, 2023]`` ->
+    ``"2019-2021, 2023"``.
 
     Args:
-        table (TableClause): Table to search in for the year range
-        _id (tuple[str]): tuple[column_name, value]. Identifies which question to find \
-        the year range for.
-        db (SQLAlchemyUtils): SQLAlchemyUtils object
+        years (list[int]): Years to collapse (may contain duplicates/unsorted).
 
     Returns:
-        str: Year range as a string
+        str: Year range as a string.
     """
-
-    if _id[0] == "uqid":
-        query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
-    else:
-        query = select(table.c["year"]).where(
-            and_(table.c["question_id"] == _id[1], table.c["uqid"] == None)
-        )
-    with db.engine.connect() as conn:
-        result = conn.execute(query)
-        years = result.scalars().all()
-
     years = sorted(years)
     if len(years) == 1:
         return str(years[0])
@@ -349,6 +316,32 @@ def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> 
     output = ", ".join(output)
 
     return output
+
+
+def get_year_range(table: TableClause, _id: tuple[str], db: SQLAlchemyUtils) -> str:
+    """Return the range of years covered by the target question
+
+    Args:
+        table (TableClause): Table to search in for the year range
+        _id (tuple[str]): tuple[column_name, value]. Identifies which question to find \
+        the year range for.
+        db (SQLAlchemyUtils): SQLAlchemyUtils object
+
+    Returns:
+        str: Year range as a string
+    """
+
+    if _id[0] == "uqid":
+        query = select(table.c["year"]).where(table.c[_id[0]] == _id[1])
+    else:
+        query = select(table.c["year"]).where(
+            and_(table.c["question_id"] == _id[1], table.c["uqid"] == None)
+        )
+    with db.engine.connect() as conn:
+        result = conn.execute(query)
+        years = result.scalars().all()
+
+    return _format_year_range(years)
 
 
 class QuestionLinker:
