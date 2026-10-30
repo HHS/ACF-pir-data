@@ -135,20 +135,14 @@ def data():
         session["current_question"] = offset
         session["max_questions"] = max_questions
 
-    output.get("question").update(
-        {
-            "proposed": pending(db),
-            "confirmed": confirmed(db),
-            "all_years": all_years(db),
-        }
-    )
-    output.get("matches").update(
-        {
-            "proposed": pending(db),
-            "confirmed": confirmed(db),
-            "all_years": all_years(db),
-        }
-    )
+    # Compute the shared metadata once and reuse it for both blocks
+    metadata = {
+        "proposed": pending(db),
+        "confirmed": confirmed(db),
+        "all_years": all_years(db),
+    }
+    output.get("question").update(metadata)
+    output.get("matches").update(metadata)
 
     return json.dumps(output)
 
