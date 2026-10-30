@@ -451,7 +451,6 @@ class QuestionLinker:
             .distinct()
         )
         base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
-
         changes = self._changes(
             {
                 "question_id": base_qid,
@@ -588,13 +587,16 @@ class QuestionLinker:
     def confirm(self):
         """Mark a question as confirmed"""
         base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
-        changes = {
-            "question_id": base_qid,
-            "original_uqid": base_uqid,
-            "new_uqid": match_uqid,
-            "complete_series_flag": True,
-        }
-        self.log(changes)
+        if base_uqid and match_uqid:
+            changes = {
+                "question_id": base_qid,
+                "original_uqid": base_uqid,
+                "new_uqid": match_uqid,
+                "complete_series_flag": True,
+            }
+            self.log(changes)
+        else:
+            self.link()
 
     def log(self, changes: dict):
         if self._log:
