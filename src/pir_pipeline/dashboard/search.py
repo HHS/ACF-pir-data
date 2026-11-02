@@ -124,7 +124,9 @@ def data():
     db = get_db()
     response = request.get_json()
     id_column = "uqid" if response["uqid"] else "question_id"
-    output = get_flashcard_question(response[id_column], id_column, db)
+    output = get_flashcard_question(
+        response[id_column], id_column, db, years=unpack_years(response["year"])
+    )
 
     # Compute the shared metadata once and reuse it for both blocks
     metadata = {

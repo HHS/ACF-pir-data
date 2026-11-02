@@ -86,7 +86,8 @@ async function commitChanges(e) {
     const linkDetails = {
         "link_type": value,
         "base_question_id": baseRecord.question_id,
-        "match_question_id": null
+        "match_question_id": null,
+        "base_year": baseRecord.year
     }
 
     let payload = {

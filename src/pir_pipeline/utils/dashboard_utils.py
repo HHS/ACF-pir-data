@@ -183,10 +183,10 @@ def get_search_results(
         # year range can both be derived in memory -- no per-question queries.
         for res in result.all():
             result_dict = db.to_dict([res], columns)[0]
-            id_column = (
-                "uqid" if not nan_or_none(result_dict.get("uqid")) else "question_id"
-            )
-            ident = result_dict[id_column]
+            if not nan_or_none(result_dict.get("uqid")):
+                ident = result_dict["uqid"]
+            else:
+                ident = f"{result_dict["question_id"]}{result_dict["year"]}"
 
             # Append instances of the same identifier to an existing list
             if ident in search_dict:
@@ -541,14 +541,14 @@ class QuestionLinker:
             match_pred = and_(match_pred, question.c["year"] == bindparam("match_year"))
             match_params["match_year"] = match_year
 
-        # One row peeled -> unlinked (None); multiple -> keep as their own group.
         peel_count = self._db.get_scalar(
             select(func.count(question.c["question_id"])).where(match_pred),
             match_params,
         )
         if not peel_count:
             raise Exception("No matching question_id!")
-        match_uqid = None if peel_count == 1 else new_uqid()
+
+        match_uqid = new_uqid()
 
         self._db.update_records(
             question,
@@ -557,23 +557,6 @@ class QuestionLinker:
             [{**match_params, "uqid": match_uqid}],
         )
         changes.match["new_uqid"] = match_uqid
-
-        # Dissolve base_uqid if only a single row now remains in it.
-        if base_uqid is not None:
-            remaining = self._db.get_scalar(
-                select(func.count(question.c["question_id"])).where(
-                    question.c["uqid"] == bindparam("base_uqid")
-                ),
-                {"base_uqid": base_uqid},
-            )
-            if remaining is not None and remaining <= 1:
-                self._db.update_records(
-                    question,
-                    {"uqid": bindparam("uqid")},
-                    question.c["uqid"] == bindparam("base_uqid"),
-                    [{"uqid": None, "base_uqid": base_uqid}],
-                )
-                changes.base["new_uqid"] = None
 
         self.log(changes)
 
@@ -589,7 +572,8 @@ class QuestionLinker:
             }
             self.log(changes)
         else:
-            self.link()
+            # self.link()
+            pass
 
     def log(self, changes: dict):
         if self._log:
@@ -600,7 +584,7 @@ class QuestionLinker:
     def update_links(self):
         """Update links
 
-        Makes calles to QuestionLinker.link and QuestionLinker.unlink as needed
+        Makes calls to QuestionLinker.link and QuestionLinker.unlink as needed
         """
         for value in self._data:
             try:
