@@ -563,17 +563,13 @@ class QuestionLinker:
     def confirm(self):
         """Mark a question as confirmed"""
         base_qid, base_uqid, match_qid, match_uqid = self.get_ids()
-        if base_uqid and match_uqid:
-            changes = {
-                "question_id": base_qid,
-                "original_uqid": base_uqid,
-                "new_uqid": match_uqid,
-                "complete_series_flag": True,
-            }
-            self.log(changes)
-        else:
-            # self.link()
-            pass
+        changes = {
+            "question_id": base_qid,
+            "original_uqid": base_uqid,
+            "new_uqid": match_uqid,
+            "complete_series_flag": True,
+        }
+        self.log(changes)
 
     def log(self, changes: dict):
         if self._log:
