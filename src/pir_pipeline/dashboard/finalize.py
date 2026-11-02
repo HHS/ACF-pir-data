@@ -182,6 +182,5 @@ def data():
         keyword = request.form["keyword-search"]
         query, keyword = search_pending_questions(keyword, db)
         records = db.get_records(query, {"keyword": keyword})
-        print(query, records)
 
     return records.to_dict(orient="index")
