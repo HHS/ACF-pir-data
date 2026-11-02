@@ -434,9 +434,16 @@ class PIRLinker:
         except AttributeError:
             self._question_columns = self._sql.get_columns("question")
 
+        self._unlinked["source"] = "Auto-generated"
+        self._unlinked["uqid"] = self._unlinked["uqid"].map(lambda x: new_uqid())
+        self._logger.info("Auto-generated UQIDs for uninked records")
+
+        appended = pd.concat([self._linked, self._unlinked])
+        self._logger.info("Appended linked and unlinked data")
+
         df = self._data
         df = df.merge(
-            self._linked[["question_id", "linked_id", "uqid", "source"]],
+            appended[["question_id", "linked_id", "uqid", "source"]],
             how="left",
             on="question_id",
         )
