@@ -27,6 +27,32 @@ from pir_pipeline.models.pir_sql_models import (
 )
 from pir_pipeline.utils.SQLUtils import SQLUtils
 
+# Cache the detected drivername for the lifetime of the process. Driver
+# availability (the ``psql`` binary, the IN_AWS_LAMBDA env var) does not change
+# while the process runs, so there is no need to re-detect — and re-spawn the
+# ``psql --version`` subprocess — on every SQLAlchemyUtils construction.
+_DRIVERNAME: str | None = None
+
+
+def _detect_drivername() -> str:
+    """Determine the SQLAlchemy drivername, detecting it at most once.
+
+    Returns:
+        str: The drivername to use for the engine URL.
+    """
+    global _DRIVERNAME
+    if _DRIVERNAME is None:
+        try:
+            srun(["psql", "--version"])
+            _DRIVERNAME = "postgresql+psycopg"
+        except Exception:
+            if os.environ.get("IN_AWS_LAMBDA"):
+                _DRIVERNAME = "postgresql+psycopg"
+            else:
+                _DRIVERNAME = "mysql+mysqlconnector"
+
+    return _DRIVERNAME
+
 
 class SQLAlchemyUtils(SQLUtils):
     """Utilities for interacting with SQL via SQLAlchemy"""
@@ -41,14 +67,7 @@ class SQLAlchemyUtils(SQLUtils):
             port (int): Database port
             database (str): Database name
         """
-        try:
-            srun(["psql", "--version"])
-            drivername = "postgresql+psycopg"
-        except Exception:
-            if os.environ.get("IN_AWS_LAMBDA"):
-                drivername = "postgresql+psycopg"
-            else:
-                drivername = "mysql+mysqlconnector"
+        drivername = _detect_drivername()
 
         self._engine: Engine
         self.gen_engine(

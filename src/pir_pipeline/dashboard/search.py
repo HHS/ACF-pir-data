@@ -127,19 +127,14 @@ def data():
     output = get_flashcard_question(
         response[id_column], id_column, db, years=unpack_years(response["year"])
     )
-    output.get("question").update(
-        {
-            "proposed": pending(db),
-            "confirmed": confirmed(db),
-            "all_years": all_years(db),
-        }
-    )
-    output.get("matches").update(
-        {
-            "proposed": pending(db),
-            "confirmed": confirmed(db),
-            "all_years": all_years(db),
-        }
-    )
+
+    # Compute the shared metadata once and reuse it for both blocks
+    metadata = {
+        "proposed": pending(db),
+        "confirmed": confirmed(db),
+        "all_years": all_years(db),
+    }
+    output.get("question").update(metadata)
+    output.get("matches").update(metadata)
 
     return json.dumps(output)
