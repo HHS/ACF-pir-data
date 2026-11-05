@@ -3,6 +3,12 @@ variable "account_id" {
   description = "The AWS Account ID"
 }
 
+variable "project_name" {
+  type        = string
+  description = "Name of the project, used to prefix shared resource names"
+  default     = "pir-pipeline"
+}
+
 variable "environment" {
   type    = string
   default = "development"
@@ -41,16 +47,6 @@ variable "app_name" {
 variable "pir_rds_arn" {
   type        = string
   description = "ARN for PIR database RDS"
-}
-
-variable "pir_s3_arn" {
-  type        = string
-  description = "ARN for PIR s3 bucket"
-}
-
-variable "pir_s3_name" {
-  type    = string
-  default = "pir-data-files"
 }
 
 variable "pir_query_api_consumers" {

@@ -1,0 +1,23 @@
+# Direct runtime dependencies of the Lambda handlers (PirIngestor, PirLinker,
+# PirQuery). boto3 is provided by the Lambda runtime and is intentionally
+# omitted. Versions match what the SAM-deployed functions ran.
+#
+# requirements.txt is the lock terraform installs into the layer. Regenerate it
+# after editing this file (from the repo root):
+#
+#   uv pip compile src/handlers/requirements.in \
+#     --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
+#     --output-file src/handlers/requirements.txt
+pandas==3.0.1
+numpy==2.4.2
+SQLAlchemy==2.0.46
+SQLAlchemy-Utils==0.42.1
+psycopg[binary]==3.3.3
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.27.3
+openpyxl==3.1.5
+xlrd==2.0.2
+pydantic==2.12.5
+Flask==3.1.2
+aws-wsgi==0.2.7
+python-dotenv==1.2.1
