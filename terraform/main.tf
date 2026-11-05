@@ -55,7 +55,7 @@ data "aws_secretsmanager_secret" "query_config" {
 
 # Read/write credentials for PirIngestor and PirLinker (replaces the SAM
 # DBUser/DBPassword/... stack parameters).
-data "aws_secretsmanager_secret" "pipeline_config" {
+resource "aws_secretsmanager_secret" "pipeline_config" {
   provider = aws.infra
   name     = "pir/pipeline/config"
 }
@@ -205,7 +205,7 @@ data "aws_iam_policy_document" "pir_secrets" {
     actions = ["secretsmanager:GetSecretValue"]
     resources = [
       data.aws_secretsmanager_secret.query_config.arn,
-      data.aws_secretsmanager_secret.pipeline_config.arn,
+      aws_secretsmanager_secret.pipeline_config.arn,
     ]
   }
 }

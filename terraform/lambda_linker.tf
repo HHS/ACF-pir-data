@@ -17,7 +17,7 @@ resource "aws_lambda_function" "pir_linker" {
 
   environment {
     variables = merge(local.lambda_env, {
-      DB_SECRET_NAME = data.aws_secretsmanager_secret.pipeline_config.name
+      DB_SECRET_NAME = aws_secretsmanager_secret.pipeline_config.name
     })
   }
 

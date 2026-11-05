@@ -139,3 +139,4 @@ override.tf.json
 
 # Include the lock file (overriding the .terraform/ ignore if necessary)
 !.terraform.lock.hcl
+terraform/tfplan.cache
