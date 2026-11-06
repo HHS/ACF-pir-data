@@ -13,8 +13,11 @@ def lambda_handler(event, context):
         records = sql_utils.get_records(select(sql_utils.tables["unlinked"])).to_dict(
             orient="records"
         )
-        PIRLinker(records, sql_utils).link().update_unlinked()
-        message = "Records linked successfully."
+        if not records:
+            message = "No unlinked records."
+        else:
+            PIRLinker(records, sql_utils).link().update_unlinked()
+            message = "Records linked successfully."
 
         return {"message": message}
     except Exception as e:
