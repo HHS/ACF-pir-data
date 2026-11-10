@@ -347,7 +347,11 @@ function storeLink(event) {
     if (baseRecord.year && !baseRecord.year.match(/[,\-]/)) {
         linkDetails.base_year = baseRecord.year;
     }
-    if (matchRecord.year && !matchRecord.year.match(/[,\-]/)) {
+
+    if (matchRecord.year && linkType == "link") {
+        let yearMatch = matchRecord.year.match("\\d{4}")[0];
+        linkDetails.match_year = yearMatch;
+    } else if (matchRecord.year && !matchRecord.year.match(/[,\-]/)) {
         linkDetails.match_year = matchRecord.year;
     }
 
