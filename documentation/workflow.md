@@ -7,9 +7,11 @@ The PIR pipeline consists of three main steps:
 
 A diagram showing the PIR Pipeline as well as implementation details for the ingestion and linking processes are provided below.
 
+The Lambda functions (PirIngestor, PirLinker, and PirQuery) are deployed with Terraform from `terraform/`; their entry points are in `src/handlers/`. PirIngestor and PirLinker read database credentials from the `pir/pipeline/config` secret in AWS Secrets Manager, and PirQuery reads them from `pir/query/config`.
+
 ## Ingesting Data
 
-Data ingestion is handled by an AWS Lambda function. When a new file is added to the S3 bucket associated with the PIRIngestor Lambda, it triggers the ingestion process. The *response*, *program*, and *question* tables are updated with new data. Logs are captured in AWS CloudWatch. The same process can be used to re-ingest a year that has already been processed, but it is important to note that re-ingesting a year can only update existing records or add new records. Records will never be removed from the database during the ingestion process.
+Data ingestion is handled by an AWS Lambda function. When a new file is added under the `input/` prefix of the PIR data bucket (`terraform output data_bucket`), it triggers the PirIngestor Lambda. The *response*, *program*, and *question* tables are updated with new data. Logs are captured in AWS CloudWatch. The same process can be used to re-ingest a year that has already been processed, but it is important to note that re-ingesting a year can only update existing records or add new records. Records will never be removed from the database during the ingestion process.
 
 ### Extraction
 
@@ -78,7 +80,7 @@ After ingestion, the successfully ingested workbooks are moved from the input fo
 
 ## Linking Questions
 
-Once daily the PIRLinker Lambda will run. This function checks for questions missing a **uqid** and attempts to match them with other questions.
+Once daily (00:00 UTC) the PirLinker Lambda will run. This function checks for questions missing a **uqid** and attempts to match them with other questions.
 
 ### Methodology
 

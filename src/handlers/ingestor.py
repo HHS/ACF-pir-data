@@ -1,27 +1,13 @@
-import os
+"""PirIngestor: ingest a PIR export dropped into the data bucket's input/ prefix"""
+
 from collections import namedtuple
 
 import boto3
 
+from handlers.common import get_sql_utils
 from pir_pipeline.ingestion.PIRIngestor import PIRIngestor
-from pir_pipeline.utils.SQLAlchemyUtils import SQLAlchemyUtils
 
-try:
-    DB_CONFIG = {
-        "user": os.getenv("DB_USER"),
-        "password": os.getenv("DB_PASSWORD"),
-        "host": os.getenv("DB_HOST"),
-        "port": os.getenv("DB_PORT"),
-        "database": os.getenv("DB_NAME"),
-    }
-    os.environ["IN_AWS_LAMBDA"] = "True"
-    sql_utils = SQLAlchemyUtils(**DB_CONFIG)
-except Exception as e:
-    print(f"Error creating sql_utils object: {e}")
-    raise e
-
-os.environ["IN_AWS_LAMBDA"] = "True"
-
+sql_utils = get_sql_utils()
 s3 = boto3.client("s3")
 
 

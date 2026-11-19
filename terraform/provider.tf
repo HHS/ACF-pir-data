@@ -13,3 +13,11 @@ provider "aws" {
     role_arn = "arn:aws:iam::${var.account_id}:role/live-acf-ocio-infrastructure-engineer"
   }
 }
+
+provider "aws" {
+  region = "us-east-1"
+  alias  = "architect"
+  assume_role {
+    role_arn = "arn:aws:iam::${var.account_id}:role/live-acf-ocio-enterprise-architect"
+  }
+}
